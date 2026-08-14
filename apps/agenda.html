@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha Agenda</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2230;--border:#21262d;--text:#e6edf3;--text2:#adbac7;--muted:#8b949e;--teal:#14b8a6;--green:#10b981;--amber:#f59e0b;--red:#ef4444;--orange:#ea580c;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+button{font-family:inherit;cursor:pointer;}
+#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0d14,#0f1117,#111827);z-index:100;padding:16px;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;width:100%;max-width:360px;}
+.login-card h1{font-size:20px;text-align:center;margin-bottom:4px;}
+.login-card .sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:22px;}
+.login-card label{display:block;font-size:12px;color:var(--text2);margin:12px 0 5px;}
+.login-card input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:13px;outline:none;}
+.login-card button{width:100%;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:11px;font-weight:600;margin-top:18px;}
+#login-error{color:var(--red);font-size:12px;text-align:center;margin-top:10px;min-height:16px;}
+#app{display:none;min-height:100vh;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;flex-wrap:wrap;gap:10px;}
+.topbar h1{font-size:17px;}
+.topbar .who{font-size:12px;color:var(--muted);}
+.btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s;}
+.btn:hover{border-color:var(--teal);}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
+.btn.sm{padding:4px 9px;font-size:12px;}
+.btn.ghost{background:transparent;}
+.wrap{max-width:1100px;margin:0 auto;padding:22px;}
+.hoje-card{background:linear-gradient(135deg,#14b8a615,transparent);border:1px solid #14b8a650;border-left:4px solid var(--teal);border-radius:14px;padding:18px 20px;margin-bottom:22px;}
+.hoje-card h2{font-size:15px;margin-bottom:2px;}
+.hoje-card .hd{font-size:12px;color:var(--muted);margin-bottom:14px;}
+.ev{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.ev:last-child{margin-bottom:0;}
+.ev .hora{font-family:monospace;font-weight:700;color:var(--teal);min-width:96px;font-size:13px;}
+.ev .corpo{flex:1;min-width:140px;}
+.ev .tit{color:var(--text);font-weight:600;font-size:14px;}
+.ev .loc{font-size:12px;color:var(--text2);margin-top:2px;}
+.ev .obs{font-size:12px;color:var(--muted);margin-top:3px;white-space:pre-line;}
+.ev .badge{font-size:10px;font-weight:700;border-radius:20px;padding:2px 8px;background:#ea580c22;color:#fb923c;white-space:nowrap;}
+.ev .acts{white-space:nowrap;}
+.vazio{color:var(--muted);font-size:13px;padding:8px 2px;}
+.sec-title{display:flex;align-items:center;gap:10px;margin:20px 0 10px;font-size:13px;color:var(--text2);font-weight:600;}
+.sec-title .linha{flex:1;height:1px;background:var(--border);}
+.overlay{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:520px;max-height:92vh;overflow:auto;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);}
+.modal-head h3{font-size:16px;}
+.modal-head .x{background:none;border:none;color:var(--muted);font-size:22px;}
+.modal-body{padding:20px;}
+.fld{margin-bottom:13px;}
+.fld label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;}
+.fld input,.fld textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;}
+.fld textarea{min-height:60px;resize:vertical;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border);}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;z-index:200;opacity:0;transition:.3s;pointer-events:none;}
+.toast.show{opacity:1;bottom:30px;}
+
+/* ── Calendário mensal do compromisso ── */
+.dp{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 12px 12px;user-select:none;}
+.dp-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.dp-hd b{font-size:13.5px;text-transform:capitalize;}
+.dp-nav{background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1;transition:.15s;}
+.dp-nav:hover{border-color:var(--teal);color:var(--teal);}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.dp-w{font-size:10px;color:var(--muted);text-align:center;padding:3px 0;font-weight:600;}
+.dp-d{aspect-ratio:1.25;display:flex;align-items:center;justify-content:center;font-size:12.5px;border-radius:8px;cursor:pointer;color:var(--text2);transition:.13s;border:1px solid transparent;}
+.dp-d:hover{background:var(--surface);border-color:var(--border);color:var(--text);}
+.dp-d.out{opacity:.28;}
+.dp-d.past{opacity:.22;cursor:not-allowed;text-decoration:line-through;pointer-events:auto;}
+.dp-d.past:hover{background:none;border-color:transparent;color:var(--text2);}
+.dp-d.hoje{border-color:var(--amber);color:var(--amber);font-weight:700;}
+.dp-d.sel{background:var(--teal);color:#04211d;font-weight:700;border-color:var(--teal);}
+.dp-d.sel.hoje{box-shadow:0 0 0 2px var(--amber) inset;}
+.dp-ft{margin-top:8px;font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
+.dp-hoje-btn{background:none;border:none;color:var(--teal);cursor:pointer;font-size:11.5px;font-weight:600;padding:0;}
+</style>
+</head>
+<body>
+<div id="login-screen">
+  <div class="login-card">
+    <h1>📆 Minha Agenda</h1>
+    <div class="sub">Agenda pessoal</div>
+    <label>Usuário</label><input id="login-user" onkeydown="if(event.key==='Enter')doLogin()">
+    <label>Senha</label><input type="password" id="login-pass" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div><h1>📆 Minha Agenda</h1><div class="who" id="whoBox"></div></div>
+    <button class="btn primary" onclick="openModal()">+ Novo compromisso</button>
+  </div>
+  <div class="wrap">
+    <div class="hoje-card">
+      <h2>⭐ Compromissos de hoje</h2>
+      <div class="hd" id="hojeData"></div>
+      <div id="hojeList"></div>
+    </div>
+    <div class="sec-title">Próximos compromissos<div class="linha"></div></div>
+    <div id="proxList"></div>
+    <div class="sec-title" style="margin-top:26px">Passados (últimos 15)<div class="linha"></div></div>
+    <div id="pastList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="mTitle">Novo compromisso</h3><button class="x" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="fld"><label>Título *</label><input id="mTit" placeholder="Ex.: Reunião com a diretoria"></div>
+      <div class="fld"><label>Data *</label>
+        <input type="hidden" id="mData" onchange="convDisp()">
+        <div id="dpBox" class="dp"></div>
+      </div>
+      <div class="fld"><label>Local</label><input id="mLoc" placeholder="Ex.: Sala Verde, Garagem..."></div>
+      <div class="g2">
+        <div class="fld"><label>Início *</label><input type="time" id="mIni" value="08:00" onchange="_ajustarHorarioMin();convDisp()"></div>
+        <div class="fld"><label>Término</label><input type="time" id="mFim" value="09:00" onchange="convDisp()"></div>
+      </div>
+      <div class="fld"><label>Convidados (pessoas da plataforma)</label>
+        <div style="display:flex;gap:8px">
+          <select id="mConvSel" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none"></select>
+          <button type="button" class="btn" onclick="addConvidado()">&#10133;</button>
+        </div>
+        <div id="mConvChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+        <div id="mConvDisp" style="margin-top:6px"></div>
+      </div>
+      <div class="fld"><label>Observações</label><textarea id="mObs"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveItem()">Salvar</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var ME={nome:'',username:''};
+function agKey(){ return 'agenda_'+(ME.username||'local'); }
+var evs=[], editId=null, _conv=[], _usersCache=null;
+async function _users(){
+  if(_usersCache) return _usersCache;
+  try{ _usersCache=await (window.parent&&window.parent.usersBasic?window.parent.usersBasic():Promise.resolve([])); }catch(e){ _usersCache=[]; }
+  return _usersCache;
+}
+async function popularConvSel(){
+  var sel=document.getElementById('mConvSel'); if(!sel) return;
+  var us=await _users();
+  sel.innerHTML='<option value="">Selecionar pessoa...</option>'+us
+    .filter(function(u){ return u.username!==ME.username; })
+    .map(function(u){ return '<option value="'+u.username+'">'+esc(u.name)+'</option>'; }).join('');
+}
+function renderChips(){
+  var box=document.getElementById('mConvChips'); if(!box) return;
+  box.innerHTML=_conv.map(function(c,i){
+    return '<span style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px">\uD83D\uDC64 '+esc(c.nome)+
+      '<button type="button" onclick="rmConvidado('+i+')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0">\u2715</button></span>';
+  }).join('');
+}
+async function addConvidado(){
+  var sel=document.getElementById('mConvSel');
+  var u=sel.value; if(!u) return;
+  if(_conv.some(function(c){return c.username===u;})) return;
+  var us=await _users();
+  var p=us.find(function(x){return x.username===u;});
+  if(p){ _conv.push({username:p.username,nome:p.name}); renderChips(); convDisp(); }
+  sel.value='';
+}
+function rmConvidado(i){ _conv.splice(i,1); renderChips(); convDisp(); }
+function _sobrepoe(aIni,aFim,bIni,bFim){ aFim=aFim||aIni; bFim=bFim||bIni; return aIni<bFim && bIni<aFim; }
+async function convDisp(){
+  var box=document.getElementById('mConvDisp'); if(!box) return;
+  if(!_conv.length){ box.innerHTML=''; return; }
+  var dia=document.getElementById('mData').value;
+  var ini=document.getElementById('mIni').value, fim=document.getElementById('mFim').value||ini;
+  if(!dia){ box.innerHTML=''; return; }
+  box.innerHTML='<div style="font-size:11px;color:var(--muted)">Consultando disponibilidade...</div>';
+  var linhas=[];
+  for(var i=0;i<_conv.length;i++){
+    var c=_conv[i]; var ags=[];
+    try{ ags=await (window.parent&&window.parent.agendaFetch?window.parent.agendaFetch(c.username):Promise.resolve([])); }catch(e){}
+    var doDia=(ags||[]).filter(function(e){return e.data===dia;}).sort(function(a,b){return (a.inicio||'').localeCompare(b.inicio||'');});
+    var conflita=doDia.some(function(e){ return _sobrepoe(ini,fim,e.inicio||'',e.fim||e.inicio||''); });
+    var ocup=doDia.map(function(e){ return (e.inicio||'')+(e.fim?('\u2013'+e.fim):''); }).join(' \u00b7 ');
+    linhas.push('<div style="font-size:12px;padding:5px 8px;border-radius:6px;margin-top:4px;border:1px solid '+(conflita?'#ef444466':'var(--border)')+';background:'+(conflita?'#ef444414':'var(--surface)')+'">'+
+      (conflita?'\u26A0':'\u2705')+' <b>'+esc(c.nome)+'</b>: '+(doDia.length?('ocupado(a) '+ocup+(conflita?' \u2014 <b style="color:#f87171">conflita com este hor\u00e1rio</b>':'')):'livre o dia todo')+'</div>');
+  }
+  box.innerHTML=linhas.join('');
+}
+
+function load(){ try{ var s=localStorage.getItem(agKey()); evs=s?JSON.parse(s):[]; }catch(e){ evs=[]; } if(!Array.isArray(evs))evs=[]; }
+function save(){
+  try{ localStorage.setItem(agKey(), JSON.stringify(evs)); }catch(e){}
+  try{ if(window.parent&&window.parent.syncPush) window.parent.syncPush(); }catch(e){}
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function hojeISO(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+function fdate(d){ if(!d)return '—'; var x=new Date(d+'T00:00:00'); return isNaN(x)?'—':x.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}); }
+function fdateS(d){ var x=new Date(d+'T00:00:00'); return isNaN(x)?d:x.toLocaleDateString('pt-BR'); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function _convStatusHtml(e){
+  if(!e.conv||!e.conv.length) return '';
+  var sts=[];
+  try{ sts=(window.parent&&window.parent.agendaConvitesDoEvento)?window.parent.agendaConvitesDoEvento(e.id):[]; }catch(err){}
+  var mapa={}; sts.forEach(function(x){ mapa[x.paraUser]=x.status; });
+  return '<div style="width:100%;display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">'+e.conv.map(function(c){
+    var st=mapa[c.username]||'pendente';
+    var ic=st==='aceito'?'\u2714':(st==='recusado'?'\u2715':'\u23F3');
+    var cor=st==='aceito'?'#34d399':(st==='recusado'?'#f87171':'#fbbf24');
+    return '<span style="font-size:10px;border:1px solid '+cor+'55;color:'+cor+';border-radius:20px;padding:1px 8px">'+ic+' '+esc(c.nome)+'</span>';
+  }).join('')+'</div>';
+}
+function evHtml(e,mostrarData){
+  return '<div class="ev">'+
+    '<div class="hora">'+esc(e.inicio||'')+(e.fim?('\u2013'+esc(e.fim)):'')+(mostrarData?('<div style="font-size:10px;color:var(--muted)">'+fdateS(e.data)+'</div>'):'')+'</div>'+
+    '<div class="corpo"><div class="tit">'+esc(e.titulo)+'</div>'+
+    (e.local?('<div class="loc">\uD83D\uDCCD '+esc(e.local)+'</div>'):'')+
+    (e.obs?('<div class="obs">'+esc(e.obs)+'</div>'):'')+'</div>'+
+    (e.origem==='sala'?'<span class="badge">\uD83D\uDCC5 Sala</span>':'')+
+    (e.origem==='convite'?'<span class="badge" style="background:#14b8a622;color:#2dd4bf">\uD83D\uDCE9 Convite</span>':'')+
+    _convStatusHtml(e)+
+    '<div class="acts"><button class="btn sm ghost" onclick="openModal(\''+e.id+'\')">\u270E</button> '+
+    '<button class="btn sm ghost" style="color:var(--red)" onclick="delItem(\''+e.id+'\')">\u2715</button></div>'+
+  '</div>';
+}
+function render(){
+  var h=hojeISO();
+  document.getElementById('whoBox').textContent=ME.nome?('\uD83D\uDC64 '+ME.nome):'';
+  document.getElementById('hojeData').textContent=fdate(h);
+  var ordena=function(a,b){return (a.data+a.inicio).localeCompare(b.data+b.inicio);};
+  var hoje=evs.filter(function(e){return e.data===h;}).sort(ordena);
+  var prox=evs.filter(function(e){return e.data>h;}).sort(ordena).slice(0,30);
+  var past=evs.filter(function(e){return e.data<h;}).sort(ordena).reverse().slice(0,15);
+  document.getElementById('hojeList').innerHTML=hoje.map(function(e){return evHtml(e,false);}).join('')||'<div class="vazio">\u2705 Nenhum compromisso hoje. Aproveite!</div>';
+  document.getElementById('proxList').innerHTML=prox.map(function(e){return evHtml(e,true);}).join('')||'<div class="vazio">Nada agendado nos pr\u00f3ximos dias.</div>';
+  document.getElementById('pastList').innerHTML=past.map(function(e){return evHtml(e,true);}).join('')||'<div class="vazio">\u2014</div>';
+}
+
+/* ── Calendário mensal (datepicker) ── */
+var _dpY,_dpM;
+function _agoraHM(){ var n=new Date(); function p2(x){return('0'+x).slice(-2);} return p2(n.getHours())+':'+p2(n.getMinutes()); }
+function _proxQuarto(){ var n=new Date(); n.setMinutes(n.getMinutes()+ (15 - n.getMinutes()%15)%15 || 15); function p2(x){return('0'+x).slice(-2);} return p2(n.getHours())+':'+p2(n.getMinutes()); }
+function _ehPassado(iso){ return iso < hojeISO(); }
+function _ajustarHorarioMin(){
+  var iso=document.getElementById('mData').value;
+  var ini=document.getElementById('mIni');
+  if(iso===hojeISO()){
+    ini.min=_agoraHM();
+    if(ini.value && ini.value<_agoraHM()){
+      ini.value=_proxQuarto();
+      var fim=document.getElementById('mFim');
+      if(fim.value && fim.value<=ini.value){ var pt=ini.value.split(':'); var h=(parseInt(pt[0],10)+1)%24; fim.value=('0'+h).slice(-2)+':'+pt[1]; }
+      toast('\u23F0 Hor\u00e1rio ajustado para o pr\u00f3ximo dispon\u00edvel (n\u00e3o d\u00e1 para agendar no passado).');
+    }
+  } else { ini.removeAttribute('min'); }
+}
+function _dpISO(y,m,d){function p2(x){return('0'+x).slice(-2);}return y+'-'+p2(m+1)+'-'+p2(d);}
+function dpSet(iso){
+  if(_ehPassado(iso)){ toast('\u26A0 N\u00e3o \u00e9 poss\u00edvel agendar em dias que j\u00e1 passaram.'); return; }
+  document.getElementById('mData').value=iso;
+  try{convDisp();}catch(e){}
+  _ajustarHorarioMin();
+  var x=new Date(iso+'T12:00'); if(!isNaN(x)){_dpY=x.getFullYear();_dpM=x.getMonth();}
+  dpRender();
+}
+function dpNav(dir){
+  var y=_dpY, m=_dpM+dir; if(m<0){m=11;y--;} if(m>11){m=0;y++;}
+  var h=new Date();
+  if(y<h.getFullYear() || (y===h.getFullYear() && m<h.getMonth())) return; /* não volta antes do mês atual */
+  _dpY=y; _dpM=m; dpRender();
+}
+function dpRender(){
+  var box=document.getElementById('dpBox'); if(box==null)return;
+  var sel=document.getElementById('mData').value||'';
+  var hoje=new Date(); var hISO=_dpISO(hoje.getFullYear(),hoje.getMonth(),hoje.getDate());
+  var meses=['janeiro','fevereiro','mar\u00e7o','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var hj=new Date(); var noMesAtual=(_dpY===hj.getFullYear()&&_dpM===hj.getMonth());
+  var h='<div class="dp-hd"><button type="button" class="dp-nav" onclick="dpNav(-1)"'+(noMesAtual?' style="opacity:.25;cursor:not-allowed"':'')+'>\u2039</button><b>'+meses[_dpM]+' '+_dpY+'</b><button type="button" class="dp-nav" onclick="dpNav(1)">\u203a</button></div>';
+  h+='<div class="dp-grid">';
+  ['D','S','T','Q','Q','S','S'].forEach(function(w){h+='<div class="dp-w">'+w+'</div>';});
+  var first=new Date(_dpY,_dpM,1); var start=first.getDay();
+  var prevLast=new Date(_dpY,_dpM,0).getDate();
+  var last=new Date(_dpY,_dpM+1,0).getDate();
+  var cells=[];
+  for(var i=start-1;i>=0;i--){var pm=_dpM-1,py=_dpY;if(pm<0){pm=11;py--;}cells.push({d:prevLast-i,y:py,m:pm,out:1});}
+  for(var d=1;d<=last;d++)cells.push({d:d,y:_dpY,m:_dpM,out:0});
+  var nx=1; while(cells.length%7!==0){var nm=_dpM+1,ny=_dpY;if(nm>11){nm=0;ny++;}cells.push({d:nx++,y:ny,m:nm,out:1});}
+  cells.forEach(function(c){
+    var iso=_dpISO(c.y,c.m,c.d);
+    var past=iso<hISO;
+    var cls='dp-d'+(c.out?' out':'')+(past?' past':'')+(iso===hISO?' hoje':'')+(iso===sel?' sel':'');
+    h+='<div class="'+cls+'"'+(past?' title="Dia j\u00e1 passou"':' onclick="dpSet(\''+iso+'\')"')+'>'+c.d+'</div>';
+  });
+  h+='</div>';
+  var selTxt=sel?new Date(sel+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  h+='<div class="dp-ft"><span>'+(selTxt?('\uD83D\uDCC5 '+selTxt.charAt(0).toUpperCase()+selTxt.slice(1)):'Escolha o dia')+'</span><button type="button" class="dp-hoje-btn" onclick="dpSet(\''+hISO+'\')">Hoje</button></div>';
+  box.innerHTML=h;
+}
+function openModal(id){
+  editId=id||null;
+  var e=id?evs.find(function(x){return x.id===id;}):null;
+  document.getElementById('mTitle').textContent=id?'Editar compromisso':'Novo compromisso';
+  document.getElementById('mTit').value=e?e.titulo:'';
+  document.getElementById('mData').value=e?e.data:hojeISO();
+  window._origDataHora=e?((e.data||'')+'|'+(e.inicio||'')):null;
+  (function(){ var x=new Date((e?e.data:hojeISO())+'T12:00'); var hj=new Date();
+    if(x<new Date(hj.getFullYear(),hj.getMonth(),1)){ _dpY=hj.getFullYear(); _dpM=hj.getMonth(); } else { _dpY=x.getFullYear(); _dpM=x.getMonth(); }
+    dpRender(); })();
+  setTimeout(_ajustarHorarioMin, 0);
+  document.getElementById('mLoc').value=e?(e.local||''):'';
+  document.getElementById('mIni').value=e?(e.inicio||'08:00'):'08:00';
+  document.getElementById('mFim').value=e?(e.fim||''):'09:00';
+  document.getElementById('mObs').value=e?(e.obs||''):'';
+  _conv=(e&&Array.isArray(e.conv))?e.conv.slice():[];
+  renderChips(); popularConvSel(); convDisp();
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+function saveItem(){
+  var _d=document.getElementById('mData').value, _i=document.getElementById('mIni').value;
+  var _mudou=window._origDataHora!==(_d+'|'+_i);
+  if(_mudou){
+    if(_ehPassado(_d)){ toast('\u26A0 A data escolhida j\u00e1 passou \u2014 escolha a partir de hoje.'); return; }
+    if(_d===hojeISO() && _i && _i<_agoraHM()){ toast('\u26A0 O hor\u00e1rio de in\u00edcio j\u00e1 passou \u2014 escolha a partir de '+_agoraHM()+'.'); return; }
+  }
+  var _f=document.getElementById('mFim').value;
+  if(_f && _i && _f<=_i){ toast('\u26A0 O t\u00e9rmino precisa ser depois do in\u00edcio.'); return; }
+
+  var t=document.getElementById('mTit').value.trim();
+  var d=document.getElementById('mData').value;
+  var i=document.getElementById('mIni').value;
+  if(!t||!d||!i){ toast('\u26A0 Preencha t\u00edtulo, data e in\u00edcio.'); return; }
+  var obj={titulo:t,data:d,inicio:i,fim:document.getElementById('mFim').value||'',local:document.getElementById('mLoc').value.trim(),obs:document.getElementById('mObs').value.trim(),conv:_conv.slice()};
+  var alvo;
+  if(editId){ alvo=evs.find(function(x){return x.id===editId;}); Object.assign(alvo,obj); }
+  else { obj.id=uid(); obj.origem='manual'; evs.push(obj); alvo=obj; }
+  save(); render(); closeModal();
+  var enviados=0;
+  try{
+    if(_conv.length && window.parent && typeof window.parent.agendaConvidar==='function'){
+      enviados=window.parent.agendaConvidar(alvo,_conv);
+    }
+  }catch(e){}
+  toast('\u2705 Compromisso salvo!'+(enviados?(' \uD83D\uDCE9 '+enviados+' convite(s) enviado(s).'):''));
+}
+function delItem(id){
+  var e=evs.find(function(x){return x.id===id;});
+  var msg=(e&&e.origem==='sala')?'Remover da SUA agenda? (isso n\u00e3o cancela a reserva da sala)':'Excluir este compromisso?';
+  if(!confirm(msg))return;
+  evs=evs.filter(function(x){return x.id!==id;});
+  save(); render(); toast('\uD83D\uDDD1 Removido.');
+}
+var toastT;
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove('show');},2600); }
+function doLogin(){
+  var u=(document.getElementById('login-user').value||'').trim().toLowerCase();
+  var p=(document.getElementById('login-pass').value||'').trim();
+  if(u==='lorena'&&p==='8586'){ ME={nome:'Lorena',username:'lorena'}; entrar(); }
+  else { document.getElementById('login-error').textContent='Usu\u00e1rio ou senha inv\u00e1lidos.'; }
+}
+function entrar(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  load(); render();
+}
+(function(){
+  var emb; try{ emb=(window.self!==window.top); }catch(e){ emb=true; }
+  if(!emb) return;
+  try{
+    var cs=window.parent.currentSession||{};
+    ME={nome:cs.name||'', username:cs.username||''};
+  }catch(e){}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',entrar); else entrar();
+})();
+</script>
+<script>
+/* ☁ Receptor do painel Drive do Redentor Hub */
+window.addEventListener("message",function(ev){
+  try{
+    var d=ev.data;
+    if(!(d&&d.hubDrive==="import"&&d.buf))return;
+    var f=new File([d.buf],d.nome||"planilha.xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var inp=document.querySelector("input[type=file][accept*=xls i]")||document.querySelector("input[type=file][accept*=sheet i]")||document.querySelector("input[type=file]");
+    if(inp){
+      try{
+        var dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files;
+        try{ev.source.postMessage({hubDrive:"ok"},"*");}catch(e){}
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+        return;
+      }catch(e){}
+    }
+    /* sem importador nativo: o Hub mostra o aviso adequado */
+  }catch(e){}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,3406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direção Inteligente 2026 — Gestão e Análise de Condução</title>
+<style>
+/* ============================================================
+   DESIGN SYSTEM GLOBAL — DARK MODE TOTAL
+   Direção Inteligente 2026
+   ============================================================ */
+:root {
+  /* Paleta Dark Core */
+  --dk-bg:        #0d1117;
+  --dk-surface:   #161b22;
+  --dk-surface2:  #1c2230;
+  --dk-surface3:  #21262d;
+  --dk-border:    #30363d;
+  --dk-border2:   #21262d;
+  --dk-text:      #e6edf3;
+  --dk-text2:     #c9d1d9;
+  --dk-muted:     #8b949e;
+  --dk-muted2:    #6e7681;
+  --dk-blue:      #388bfd;
+  --dk-blue-dim:  #1f3358;
+  --dk-blue-glow: rgba(56,139,253,.18);
+  --dk-green:     #3fb950;
+  --dk-green-dim: #1a3830;
+  --dk-red:       #f85149;
+  --dk-red-dim:   #3a1a1a;
+  --dk-yellow:    #d29922;
+  --dk-yellow-dim:#2a1f06;
+  --dk-orange:    #f0883e;
+  --dk-purple:    #bc8cff;
+  --dk-input-bg:  #0d1117;
+
+  /* Tokens semânticos mapeados para dark */
+  --blue-900: #0a0f1e;
+  --blue-800: #0d1a36;
+  --blue-700: #1a3a6b;
+  --blue-600: #388bfd;
+  --blue-500: #388bfd;
+  --blue-400: #79c0ff;
+  --blue-300: #a5d6ff;
+  --blue-100: #1f3358;
+  --gray-900: #e6edf3;
+  --gray-800: #c9d1d9;
+  --gray-700: #b1bac4;
+  --gray-600: #8b949e;
+  --gray-500: #6e7681;
+  --gray-400: #484f58;
+  --gray-300: #30363d;
+  --gray-200: #21262d;
+  --gray-100: #161b22;
+  --gray-50:  #1c2230;
+  --white:    #e6edf3;
+  --green-700: #3fb950;
+  --green-600: #56d364;
+  --green-500: #56d364;
+  --green-100: #1a3830;
+  --red-700:   #f85149;
+  --red-600:   #ff7b72;
+  --red-500:   #ff7b72;
+  --red-100:   #3a1a1a;
+  --yellow-600: #d29922;
+  --yellow-100: #2a1f06;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.5),  0 1px 2px rgba(0,0,0,.35);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.6), 0 2px 4px rgba(0,0,0,.4);
+  --shadow-lg: 0 12px 28px rgba(0,0,0,.7),0 4px 8px rgba(0,0,0,.5);
+  --radius:    8px;
+  --radius-lg: 12px;
+}
+
+/* ============================================================
+   TEMAS DE FUNDO — Sistema de Personalização
+   ============================================================ */
+
+/* Tema: Dark Galaxy (padrão original) */
+html[data-theme="galaxy"] {
+  --dk-bg:        #0d1117;
+  --dk-surface:   #161b22;
+  --dk-surface2:  #1c2230;
+  --dk-surface3:  #21262d;
+  --dk-border:    #30363d;
+  --dk-border2:   #21262d;
+  --dk-input-bg:  #0d1117;
+  --login-grad-1: #1a3a6b;
+  --login-grad-2: #0a0f1e;
+  --login-header-1: #0d1a36;
+  --login-header-2: #1a3a6b;
+}
+
+/* Tema: Carvão (cinza escuro sofisticado) */
+html[data-theme="charcoal"] {
+  --dk-bg:        #18191a;
+  --dk-surface:   #242526;
+  --dk-surface2:  #2d2e30;
+  --dk-surface3:  #3a3b3c;
+  --dk-border:    #4a4b4d;
+  --dk-border2:   #3a3b3c;
+  --dk-input-bg:  #18191a;
+  --login-grad-1: #2a4a6b;
+  --login-grad-2: #111213;
+  --login-header-1: #1a2a40;
+  --login-header-2: #253a5e;
+}
+
+/* Tema: Aço Azul (midtone — mais claro, azulado) */
+html[data-theme="steel"] {
+  --dk-bg:        #1a1f2e;
+  --dk-surface:   #232b3e;
+  --dk-surface2:  #2c3650;
+  --dk-surface3:  #344060;
+  --dk-border:    #3d4f70;
+  --dk-border2:   #2c3650;
+  --dk-input-bg:  #1a1f2e;
+  --login-grad-1: #1e4a8a;
+  --login-grad-2: #0f1520;
+  --login-header-1: #142040;
+  --login-header-2: #1e3a7a;
+}
+
+/* Tema: Nox (quase preto total) */
+html[data-theme="nox"] {
+  --dk-bg:        #050608;
+  --dk-surface:   #0d0e12;
+  --dk-surface2:  #121318;
+  --dk-surface3:  #18191f;
+  --dk-border:    #22242c;
+  --dk-border2:   #18191f;
+  --dk-input-bg:  #050608;
+  --login-grad-1: #0e2a55;
+  --login-grad-2: #020305;
+  --login-header-1: #060d1e;
+  --login-header-2: #0d2040;
+}
+
+/* Tema: Verde Noturno (terminal / operacional) */
+html[data-theme="matrix"] {
+  --dk-bg:        #0a110a;
+  --dk-surface:   #101810;
+  --dk-surface2:  #162016;
+  --dk-surface3:  #1c281c;
+  --dk-border:    #24382a;
+  --dk-border2:   #1c281c;
+  --dk-input-bg:  #0a110a;
+  --login-grad-1: #0d3320;
+  --login-grad-2: #050a05;
+  --login-header-1: #071a0c;
+  --login-header-2: #0d3020;
+}
+
+/* Tema: Meia-noite Arroxeado */
+html[data-theme="midnight"] {
+  --dk-bg:        #120e1e;
+  --dk-surface:   #1c1730;
+  --dk-surface2:  #231d3c;
+  --dk-surface3:  #2c2448;
+  --dk-border:    #3d3260;
+  --dk-border2:   #2c2448;
+  --dk-input-bg:  #120e1e;
+  --login-grad-1: #2a1a5e;
+  --login-grad-2: #0c0814;
+  --login-header-1: #180e38;
+  --login-header-2: #2a1a5e;
+}
+
+/* Tema: Café Escuro (marrom executivo) */
+html[data-theme="espresso"] {
+  --dk-bg:        #130e0a;
+  --dk-surface:   #1e1510;
+  --dk-surface2:  #271c14;
+  --dk-surface3:  #30241a;
+  --dk-border:    #4a3628;
+  --dk-border2:   #30241a;
+  --dk-input-bg:  #130e0a;
+  --login-grad-1: #3a2010;
+  --login-grad-2: #0c0806;
+  --login-header-1: #1e1008;
+  --login-header-2: #3a2010;
+}
+
+/* Tema: Cinza Claro (modo mais suave) */
+html[data-theme="slate"] {
+  --dk-bg:        #1e2028;
+  --dk-surface:   #282c38;
+  --dk-surface2:  #303544;
+  --dk-surface3:  #383e50;
+  --dk-border:    #454d62;
+  --dk-border2:   #383e50;
+  --dk-input-bg:  #1e2028;
+  --login-grad-1: #1e3a6a;
+  --login-grad-2: #131620;
+  --login-header-1: #182040;
+  --login-header-2: #1e3a6a;
+}
+
+/* Aplicação dinâmica dos tokens de tema ao login */
+html[data-theme] #screen-login {
+  background: radial-gradient(ellipse at 50% 0%, var(--login-grad-1) 0%, var(--login-grad-2) 60%);
+}
+html[data-theme] .login-header {
+  background: linear-gradient(135deg, var(--login-header-1) 0%, var(--login-header-2) 100%);
+}
+
+/* ============================================================
+   THEME PICKER — Gatilho Flutuante
+   ============================================================ */
+#theme-trigger {
+  position: fixed;
+  right: 16px;
+  bottom: 24px;
+  z-index: 8000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+#theme-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--dk-surface);
+  border: 1.5px solid var(--dk-border);
+  color: var(--dk-text);
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+  transition: box-shadow .2s, border-color .2s, transform .15s;
+  outline: none;
+}
+#theme-btn:hover {
+  border-color: var(--dk-blue);
+  box-shadow: 0 4px 20px rgba(56,139,253,.35);
+  transform: scale(1.06);
+}
+
+#theme-panel {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.7);
+  padding: 16px;
+  width: 230px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeUp .2s ease;
+}
+#theme-panel.open { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#theme-panel h4 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--dk-muted);
+  margin-bottom: 2px;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.theme-opt {
+  border-radius: 9px;
+  border: 1.5px solid var(--dk-border);
+  padding: 9px 10px;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--dk-surface2);
+}
+.theme-opt:hover {
+  border-color: var(--dk-blue);
+  box-shadow: 0 0 0 3px rgba(56,139,253,.12);
+}
+.theme-opt.active {
+  border-color: var(--dk-blue);
+  background: var(--dk-blue-dim);
+}
+.theme-opt .swatch {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.theme-opt .opt-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dk-text2);
+  line-height: 1.2;
+}
+
+.theme-divider {
+  height: 1px;
+  background: var(--dk-border);
+  margin: 2px 0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { color-scheme: dark; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--dk-bg);
+  color: var(--dk-text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   SCREENS
+   ============================================================ */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ============================================================
+   LOGIN — DARK MODE
+   ============================================================ */
+#screen-login {
+  background: radial-gradient(ellipse at 50% 0%, #1a3a6b 0%, #0a0f1e 60%);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+#screen-login::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(56,139,253,.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(63,185,80,.05)  0%, transparent 50%);
+  pointer-events: none;
+}
+
+.login-box {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), 0 0 80px rgba(56,139,253,.12);
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+  position: relative; z-index: 1;
+}
+
+.login-header {
+  background: linear-gradient(135deg, #0d1a36 0%, #1a3a6b 100%);
+  padding: 40px 36px 32px;
+  text-align: center;
+  color: var(--dk-text);
+  border-bottom: 1px solid var(--dk-border);
+  position: relative;
+}
+.login-header::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56,139,253,.5), transparent);
+}
+
+.login-logo {
+  width: 68px; height: 68px;
+  background: linear-gradient(135deg, #1f3358, #388bfd22);
+  border: 1.5px solid rgba(56,139,253,.35);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 18px;
+  font-size: 30px;
+  box-shadow: 0 0 20px rgba(56,139,253,.2);
+}
+
+.login-header h1 { font-size: 21px; font-weight: 800; letter-spacing: -.4px; color: var(--dk-text); }
+.login-header p  { font-size: 13px; color: var(--dk-muted); margin-top: 5px; }
+
+.login-body { padding: 32px 36px; background: var(--dk-surface); }
+
+.form-group { margin-bottom: 20px; }
+.form-group label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--dk-muted); text-transform: uppercase; letter-spacing: .7px;
+  margin-bottom: 7px;
+}
+.form-group input {
+  width: 100%; padding: 12px 14px;
+  background: var(--dk-input-bg);
+  border: 1.5px solid var(--dk-border);
+  border-radius: var(--radius);
+  font-size: 14px; color: var(--dk-text);
+  transition: border-color .2s, box-shadow .2s;
+  outline: none;
+}
+.form-group input:focus {
+  border-color: var(--dk-blue);
+  box-shadow: 0 0 0 3px rgba(56,139,253,.15);
+}
+.form-group input::placeholder { color: var(--dk-muted2); }
+
+.btn-primary {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, #1a3a8a, var(--dk-blue));
+  color: #fff; border: none;
+  border-radius: var(--radius); font-size: 14px; font-weight: 700;
+  cursor: pointer; letter-spacing: .3px;
+  transition: opacity .2s, transform .1s;
+  box-shadow: 0 4px 14px rgba(56,139,253,.35);
+}
+.btn-primary:hover  { opacity: .9; }
+.btn-primary:active { transform: scale(.98); }
+
+.login-error {
+  background: var(--dk-red-dim); color: var(--dk-red);
+  border: 1px solid rgba(248,81,73,.35); border-radius: var(--radius);
+  padding: 10px 14px; font-size: 13px; margin-bottom: 18px;
+  display: none;
+}
+
+.login-footer {
+  padding: 16px 36px;
+  border-top: 1px solid var(--dk-border);
+  text-align: center;
+  background: var(--dk-surface2);
+}
+.login-footer span { font-size: 11px; color: var(--dk-muted2); }
+
+/* ============================================================
+   APP LAYOUT — TOPBAR
+   ============================================================ */
+#screen-app { background: var(--dk-bg); }
+
+.topbar {
+  background: var(--dk-surface);
+  border-bottom: 1px solid var(--dk-border);
+  color: var(--dk-text);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  box-shadow: 0 1px 0 var(--dk-border), var(--shadow-sm);
+  position: sticky; top: 0; z-index: 100;
+}
+
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-brand .icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--dk-blue-dim), #1a3a6b);
+  border: 1px solid rgba(56,139,253,.3);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.topbar-brand h1 { font-size: 15px; font-weight: 700; letter-spacing: -.2px; color: var(--dk-text); }
+.topbar-brand p  { font-size: 11px; color: var(--dk-muted); }
+
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-user  { font-size: 13px; color: var(--dk-text2); }
+.btn-logout {
+  background: var(--dk-surface2); color: var(--dk-text2);
+  border: 1px solid var(--dk-border); border-radius: 6px;
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background .2s, border-color .2s;
+}
+.btn-logout:hover { background: var(--dk-surface3); border-color: var(--dk-blue); color: var(--dk-blue); }
+
+/* ============================================================
+   NAV TABS
+   ============================================================ */
+.nav-tabs {
+  background: var(--dk-surface);
+  border-bottom: 1px solid var(--dk-border);
+  display: flex; gap: 0;
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.nav-tab {
+  padding: 14px 20px;
+  font-size: 13px; font-weight: 600; color: var(--dk-muted);
+  cursor: pointer; border-bottom: 2.5px solid transparent;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s;
+  display: flex; align-items: center; gap: 7px;
+}
+.nav-tab:hover { color: var(--dk-text2); }
+.nav-tab.active { color: var(--dk-blue); border-bottom-color: var(--dk-blue); }
+
+.tab-content { display: none; flex: 1; }
+.tab-content.active { display: block; }
+
+/* ============================================================
+   INNER CONTAINER
+   ============================================================ */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+.section-header { margin-bottom: 24px; }
+.section-header h2 { font-size: 20px; font-weight: 700; color: var(--dk-text); }
+.section-header p  { font-size: 13px; color: var(--dk-muted); margin-top: 3px; }
+
+/* ============================================================
+   KPI CARDS
+   ============================================================ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  border-left: 3px solid var(--dk-blue);
+  position: relative; overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); }
+.kpi-card.green  { border-left-color: var(--dk-green); }
+.kpi-card.red    { border-left-color: var(--dk-red); }
+.kpi-card.yellow { border-left-color: var(--dk-yellow); }
+
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--dk-muted); text-transform: uppercase; letter-spacing: .5px; }
+.kpi-value { font-size: 28px; font-weight: 800; color: var(--dk-text); margin: 6px 0 2px; line-height: 1; }
+.kpi-value.big { font-size: 22px; }
+.kpi-sub   { font-size: 12px; color: var(--dk-muted); }
+.kpi-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; margin-top: 6px;
+}
+.kpi-badge.up   { background: var(--dk-green-dim); color: var(--dk-green); }
+.kpi-badge.down { background: var(--dk-red-dim);   color: var(--dk-red); }
+.kpi-badge.neu  { background: var(--dk-surface2);  color: var(--dk-muted); }
+
+.kpi-icon {
+  position: absolute; right: 16px; top: 16px;
+  font-size: 28px; opacity: .08;
+}
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+.panel {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--dk-border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--dk-surface2);
+}
+.panel-header h3 { font-size: 14px; font-weight: 700; color: var(--dk-text); }
+.panel-body { padding: 20px; }
+
+/* ============================================================
+   TWO COLUMN
+   ============================================================ */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   FORM ELEMENTS (legacy selectors kept for dashboard filters)
+   ============================================================ */
+.form-card {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.form-card-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--dk-border);
+  background: var(--dk-surface2);
+}
+.form-card-header h3 { font-size: 15px; font-weight: 700; color: var(--dk-text); }
+.form-card-header p  { font-size: 12px; color: var(--dk-muted); margin-top: 2px; }
+.form-card-body { padding: 24px; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+.fld label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--dk-muted); text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 5px;
+}
+.fld input, .fld select {
+  width: 100%; padding: 9px 12px;
+  background: var(--dk-input-bg);
+  border: 1.5px solid var(--dk-border);
+  border-radius: var(--radius); font-size: 13px; color: var(--dk-text);
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.fld input:focus, .fld select:focus {
+  border-color: var(--dk-blue);
+  box-shadow: 0 0 0 3px rgba(56,139,253,.12);
+}
+.fld input::placeholder { color: var(--dk-muted2); }
+.fld select option { background: var(--dk-surface); color: var(--dk-text); }
+
+.volta-divider {
+  background: linear-gradient(135deg, var(--dk-surface2), var(--dk-blue-dim));
+  color: var(--dk-text2);
+  border: 1px solid var(--dk-blue-dim);
+  padding: 10px 16px; margin: 20px 0 16px;
+  border-radius: var(--radius);
+  font-size: 12px; font-weight: 700; letter-spacing: .5px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn-save {
+  background: linear-gradient(135deg, #1a3a8a, var(--dk-blue));
+  color: #fff; border: none;
+  border-radius: var(--radius); padding: 12px 28px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: opacity .2s, transform .1s;
+  display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 2px 8px rgba(56,139,253,.3);
+}
+.btn-save:hover  { opacity: .9; }
+.btn-save:active { transform: scale(.98); }
+
+.btn-outline {
+  background: var(--dk-surface2); color: var(--dk-blue);
+  border: 1.5px solid var(--dk-border);
+  border-radius: var(--radius); padding: 10px 20px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .2s, border-color .2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-outline:hover { background: var(--dk-surface3); border-color: var(--dk-blue); }
+
+.btn-danger-outline {
+  background: var(--dk-surface2); color: var(--dk-red);
+  border: 1.5px solid var(--dk-border);
+  border-radius: var(--radius); padding: 8px 16px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.btn-danger-outline:hover { background: var(--dk-red-dim); border-color: var(--dk-red); }
+
+.btn-green {
+  background: linear-gradient(135deg, #1a3830, var(--dk-green));
+  color: #fff; border: none;
+  border-radius: var(--radius); padding: 10px 20px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: opacity .2s;
+  box-shadow: 0 2px 8px rgba(63,185,80,.25);
+}
+.btn-green:hover { opacity: .9; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: var(--dk-surface); color: var(--dk-text);
+  border: 1px solid var(--dk-border);
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg);
+  transform: translateY(80px); opacity: 0;
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.show    { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--dk-green-dim); border-color: var(--dk-green); color: var(--dk-green); }
+.toast.error   { background: var(--dk-red-dim);   border-color: var(--dk-red);   color: var(--dk-red); }
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  background: var(--dk-surface3); color: var(--dk-text2);
+  padding: 10px 14px; text-align: left;
+  font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  border-bottom: 1px solid var(--dk-border);
+}
+th:first-child { border-radius: 6px 0 0 0; }
+th:last-child  { border-radius: 0 6px 0 0; }
+td {
+  padding: 10px 14px; border-bottom: 1px solid var(--dk-border2);
+  color: var(--dk-text2);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--dk-surface2); }
+.td-center { text-align: center; }
+.td-right  { text-align: right; }
+.tag-up   { background: var(--dk-green-dim); color: var(--dk-green); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+.tag-down { background: var(--dk-red-dim);   color: var(--dk-red);   padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+.tag-neu  { background: var(--dk-surface2);  color: var(--dk-muted); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+
+/* ============================================================
+   CHART CONTAINER
+   ============================================================ */
+.chart-container { position: relative; }
+canvas { max-width: 100%; }
+
+/* ============================================================
+   DASHBOARD FILTER BAR
+   ============================================================ */
+.filter-bar {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+}
+.filter-bar .fld { flex: 1; min-width: 160px; }
+
+/* ============================================================
+   COMPARISON SECTION (Dashboard)
+   ============================================================ */
+.compare-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  border: 1px solid var(--dk-border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.compare-col { padding: 16px; }
+.compare-col:first-child { border-right: 1px solid var(--dk-border); background: var(--dk-blue-dim); }
+.compare-col h4 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--dk-muted); margin-bottom: 10px;
+}
+.compare-val { font-size: 26px; font-weight: 800; color: var(--dk-text); }
+.compare-sub { font-size: 12px; color: var(--dk-muted); margin-top: 2px; }
+
+/* ============================================================
+   ALERT CARDS (Inteligência Analítica)
+   ============================================================ */
+.alert-card {
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+.alert-card.info    { background: var(--dk-blue-dim);    color: var(--blue-400);  border-color: rgba(56,139,253,.25);  border-left: 3px solid var(--dk-blue); }
+.alert-card.success { background: var(--dk-green-dim);   color: var(--dk-green);  border-color: rgba(63,185,80,.25);   border-left: 3px solid var(--dk-green); }
+.alert-card.warning { background: var(--dk-yellow-dim);  color: var(--dk-yellow); border-color: rgba(210,153,34,.25);  border-left: 3px solid var(--dk-yellow); }
+.alert-card.danger  { background: var(--dk-red-dim);     color: var(--dk-red);    border-color: rgba(248,81,73,.25);   border-left: 3px solid var(--dk-red); }
+.alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.alert-text strong { display: block; font-weight: 700; margin-bottom: 2px; }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--dk-muted2);
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
+.empty-state p { font-size: 14px; }
+
+/* ============================================================
+   RANK BADGES
+   ============================================================ */
+.rank-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  font-size: 11px; font-weight: 800;
+}
+.rank-badge.gold   { background: #2a200a; color: #d29922; border: 1px solid #d2992260; }
+.rank-badge.silver { background: var(--dk-surface2); color: var(--dk-text2); border: 1px solid var(--dk-border); }
+.rank-badge.bronze { background: #2a1505; color: var(--dk-orange); border: 1px solid #f0883e60; }
+.rank-badge.other  { background: var(--dk-surface3); color: var(--dk-muted); }
+
+/* ============================================================
+   INLINE COMPUTED (form preview legacy)
+   ============================================================ */
+.computed-row {
+  background: var(--dk-surface2); border: 1px solid var(--dk-border);
+  border-radius: var(--radius);
+  padding: 14px 16px; margin-top: 14px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;
+}
+.computed-item label { font-size: 10px; font-weight: 700; color: var(--dk-muted); text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 3px; }
+.computed-item span  { font-size: 15px; font-weight: 700; color: var(--dk-blue); }
+
+/* ============================================================
+   HISTORICO — RECORD CARDS
+   ============================================================ */
+.record-card {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.record-card:hover { border-color: rgba(56,139,253,.35); }
+.record-card-header {
+  background: var(--dk-surface2); padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--dk-border);
+}
+.record-card-header .driver-name { font-weight: 700; color: var(--dk-text); font-size: 14px; }
+.record-card-header .record-date { font-size: 12px; color: var(--dk-muted); }
+.record-card-body { padding: 14px 16px; }
+.mini-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;
+}
+.mini-item label { font-size: 10px; color: var(--dk-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px; }
+.mini-item span  { font-size: 13px; font-weight: 700; color: var(--dk-text2); }
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  .topbar, .nav-tabs, .filter-bar, .print-hide,
+  .btn-save, .btn-outline, .btn-green, .btn-danger-outline,
+  .btn-logout, .topbar-right { display: none !important; }
+  body { background: white !important; color: #111 !important; }
+  .screen { display: block !important; }
+  #screen-login { display: none !important; }
+  #screen-app { display: block !important; background: white !important; }
+  .tab-content { display: block !important; }
+  .panel, .form-card, .kpi-card { box-shadow: none !important; border: 1px solid #ddd !important; background: white !important; }
+  .panel-header, .form-card-header, .record-card-header { background: #f3f4f6 !important; }
+  th { background: #374151 !important; }
+  td, .kpi-label, .kpi-value, .kpi-sub, .section-header h2,
+  .section-header p, .panel-header h3 { color: #111 !important; }
+  .print-report { display: block !important; }
+}
+.print-report { display: none; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 600px) {
+  .container { padding: 16px; }
+  .kpi-grid  { grid-template-columns: 1fr 1fr; }
+  .topbar    { padding: 0 16px; }
+  .topbar-brand h1 { font-size: 13px; }
+  .compare-row { grid-template-columns: 1fr; }
+  .compare-col:first-child { border-right: none; border-bottom: 1px solid var(--dk-border); }
+}
+
+/* ============================================================
+   IA LOADING ANIMATION
+   ============================================================ */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Score bars */
+.score-bar-wrap { margin-bottom: 14px; }
+.score-bar-label { display:flex; justify-content:space-between; font-size:12px; color:var(--dk-text2); margin-bottom:5px; font-weight:600; }
+.score-bar-track { background:var(--dk-surface3); border-radius:6px; height:10px; overflow:hidden; }
+.score-bar-fill { height:100%; border-radius:6px; transition:width .6s ease; }
+.score-bar-fill.good  { background:var(--dk-green); }
+.score-bar-fill.warn  { background:var(--dk-yellow); }
+.score-bar-fill.bad   { background:var(--dk-red); }
+
+/* Marchas KPI extras */
+.marchas-proj-card {
+  background: var(--dk-surface2);
+  border: 1px solid var(--dk-border);
+  border-radius:10px;
+  padding:14px 16px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.marchas-proj-card .proj-title { font-size:11px; font-weight:700; color:var(--dk-muted); text-transform:uppercase; letter-spacing:.5px; }
+.marchas-proj-card .proj-row   { display:flex; justify-content:space-between; align-items:center; }
+.marchas-proj-card .proj-label { font-size:12px; color:var(--dk-muted); }
+.marchas-proj-card .proj-val   { font-size:14px; font-weight:700; color:var(--dk-text); }
+.marchas-proj-card .proj-val.good { color:var(--dk-green); }
+.marchas-proj-card .proj-val.bad  { color:var(--dk-red); }
+
+/* ============================================================
+   SCROLLBAR — DARK
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--dk-bg); }
+::-webkit-scrollbar-thumb { background: var(--dk-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dk-muted2); }
+
+/* ============================================================
+   REGISTRO DE AVALIAÇÃO — DARK COMPONENTS
+   (Gatilhos, Cards, Step Indicator, Autocomplete)
+   ============================================================ */
+
+/* Toggle 1ª/2ª Volta */
+.volta-toggle-wrap {
+  display: flex;
+  background: var(--dk-surface2);
+  border-radius: 10px;
+  padding: 6px; gap: 6px;
+  border: 1px solid var(--dk-border);
+  margin-bottom: 28px;
+}
+.volta-toggle-btn {
+  flex: 1; padding: 12px 20px;
+  border-radius: 8px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 700; letter-spacing: .3px;
+  transition: all .25s cubic-bezier(.4,0,.2,1);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: transparent; color: var(--dk-muted);
+}
+.volta-toggle-btn.v1.active {
+  background: linear-gradient(135deg, #1e3a5f, #1a3a8a);
+  color: #79c0ff;
+  box-shadow: 0 2px 8px rgba(56,139,253,.3);
+}
+.volta-toggle-btn.v2.active {
+  background: linear-gradient(135deg, #1a3830, #1a4a2e);
+  color: #56d364;
+  box-shadow: 0 2px 8px rgba(63,185,80,.3);
+}
+.volta-toggle-btn:hover:not(.active) { background: var(--dk-surface3); color: var(--dk-text2); }
+.volta-toggle-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  font-size: 10px; font-weight: 800;
+}
+.v1.active .volta-toggle-badge { background: rgba(56,139,253,.2); color: #388bfd; }
+.v2.active .volta-toggle-badge { background: rgba(63,185,80,.2);  color: #3fb950; }
+
+/* Dark Section Header */
+#tab-cadastro { background: var(--dk-bg); }
+.dark-section-header {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--dk-border);
+}
+.dark-section-header h2 { font-size: 20px; font-weight: 700; color: var(--dk-text); }
+.dark-section-header p  { font-size: 13px; color: var(--dk-muted); margin-top: 4px; }
+.dark-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+/* Dark Card */
+.dark-card {
+  background: var(--dk-surface);
+  border: 1px solid var(--dk-border);
+  border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+}
+.dark-card-header {
+  padding: 16px 22px; border-bottom: 1px solid var(--dk-border);
+  background: var(--dk-surface2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dark-card-header h3 { font-size: 14px; font-weight: 700; color: var(--dk-text); display: flex; align-items: center; gap: 8px; }
+.dark-card-header p  { font-size: 12px; color: var(--dk-muted); margin-top: 2px; }
+.dark-card-body { padding: 24px; }
+
+/* Dark Field */
+.dk-fld label {
+  display: block; font-size: 11px; font-weight: 700;
+  color: var(--dk-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px;
+}
+.dk-fld input, .dk-fld select {
+  width: 100%; padding: 10px 13px;
+  background: var(--dk-input-bg);
+  border: 1.5px solid var(--dk-border);
+  border-radius: 8px; font-size: 13px; color: var(--dk-text);
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.dk-fld input:focus, .dk-fld select:focus {
+  border-color: var(--dk-blue);
+  box-shadow: 0 0 0 3px rgba(56,139,253,.15);
+}
+.dk-fld input::placeholder { color: var(--dk-muted2); }
+.dk-fld input:disabled, .dk-fld select:disabled {
+  background: var(--dk-surface2); border-color: var(--dk-border2); color: var(--dk-muted2); cursor: not-allowed;
+}
+.dk-fld select option { background: var(--dk-surface); color: var(--dk-text); }
+
+/* Dark Computed Row */
+.dk-computed-row {
+  background: var(--dk-surface2); border: 1px solid var(--dk-border);
+  border-radius: 10px; padding: 16px 18px; margin: 20px 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px;
+}
+.dk-computed-item label {
+  font-size: 10px; font-weight: 700; color: var(--dk-muted);
+  text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 4px;
+}
+.dk-computed-item span          { font-size: 16px; font-weight: 700; color: var(--dk-blue); }
+.dk-computed-item span.positive { color: var(--dk-green); }
+.dk-computed-item span.negative { color: var(--dk-red); }
+.dk-computed-item span.neutral  { color: var(--dk-muted); }
+
+/* Lookup Banner */
+.lookup-banner {
+  background: var(--dk-surface2); border: 1px solid var(--dk-border);
+  border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.lookup-banner.found     { border-color: var(--dk-green); background: var(--dk-green-dim); }
+.lookup-banner.not-found { border-color: var(--dk-yellow); background: var(--dk-yellow-dim); }
+.lookup-banner .lb-icon  { font-size: 20px; }
+.lookup-banner .lb-text  { flex: 1; }
+.lookup-banner .lb-text strong { display: block; font-size: 13px; color: var(--dk-text); font-weight: 700; }
+.lookup-banner .lb-text span   { font-size: 12px; color: var(--dk-muted); }
+
+/* Dark Buttons */
+.btn-dk-primary {
+  background: linear-gradient(135deg, #1a3a8a, var(--dk-blue));
+  color: #fff; border: none; border-radius: 8px; padding: 12px 28px;
+  font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: .3px;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: opacity .2s, transform .1s;
+  box-shadow: 0 2px 8px rgba(37,99,235,.3);
+}
+.btn-dk-primary:hover  { opacity: .9; }
+.btn-dk-primary:active { transform: scale(.98); }
+
+.btn-dk-success {
+  background: linear-gradient(135deg, #1a4a2e, #22c55e);
+  color: #fff; border: none; border-radius: 8px; padding: 12px 28px;
+  font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: .3px;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: opacity .2s, transform .1s;
+  box-shadow: 0 2px 8px rgba(34,197,94,.25);
+}
+.btn-dk-success:hover  { opacity: .9; }
+.btn-dk-success:active { transform: scale(.98); }
+
+.btn-dk-ghost {
+  background: transparent; color: var(--dk-muted);
+  border: 1.5px solid var(--dk-border); border-radius: 8px; padding: 10px 20px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: border-color .2s, color .2s;
+}
+.btn-dk-ghost:hover { border-color: var(--dk-blue); color: var(--dk-blue); }
+
+/* Dark Form Grid */
+.dk-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .dk-form-grid { grid-template-columns: 1fr; } }
+
+/* Step Indicator */
+.step-indicator {
+  display: flex; gap: 0; margin-bottom: 24px;
+  border: 1px solid var(--dk-border); border-radius: 10px; overflow: hidden;
+}
+.step-item {
+  flex: 1; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--dk-surface2);
+  border-right: 1px solid var(--dk-border);
+  transition: background .2s;
+}
+.step-item:last-child { border-right: none; }
+.step-item.done   { background: #1a3830; }
+.step-item.active { background: #1e3a5f; }
+.step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; flex-shrink: 0;
+  background: var(--dk-border); color: var(--dk-muted);
+}
+.step-item.done   .step-num { background: var(--dk-green); color: #fff; }
+.step-item.active .step-num { background: var(--dk-blue);  color: #fff; }
+.step-label { font-size: 12px; font-weight: 600; color: var(--dk-muted); }
+.step-item.done   .step-label { color: #3fb950; }
+.step-item.active .step-label { color: #60a5fa; }
+.step-sub { font-size: 10px; color: var(--dk-muted2); margin-top: 1px; }
+
+/* Volta Divider Dark */
+.volta-divider-dk {
+  padding: 10px 14px; margin: 4px 0 20px;
+  border-radius: 8px; font-size: 12px; font-weight: 700; letter-spacing: .4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.volta-divider-dk.v1 { background: var(--dk-blue-dim); color: #79c0ff; border: 1px solid #1e3a5f; }
+.volta-divider-dk.v2 { background: var(--dk-green-dim); color: #56d364; border: 1px solid #1a3830; }
+
+/* Driver Autocomplete */
+#driver-suggestions { position: relative; }
+.suggestions-list {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--dk-surface); border: 1px solid var(--dk-border);
+  border-radius: 8px; z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,.55);
+  max-height: 200px; overflow-y: auto;
+}
+.suggestion-item {
+  padding: 10px 14px; font-size: 13px; color: var(--dk-text);
+  cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.suggestion-item:hover { background: var(--dk-surface2); }
+.suggestion-item .sug-name { font-weight: 600; }
+.suggestion-item .sug-meta { font-size: 11px; color: var(--dk-muted); margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ========== TOAST ========== -->
+<div class="toast" id="toast"></div>
+
+<!-- ========== THEME PICKER ========== -->
+<div id="theme-trigger">
+  <div id="theme-panel">
+    <h4>🎨 Tema de Fundo</h4>
+    <div class="theme-options">
+      <div class="theme-opt" data-theme="galaxy" onclick="setTheme('galaxy')">
+        <span class="swatch" style="background:linear-gradient(135deg,#0d1117,#161b22);"></span>
+        <span class="opt-label">Dark<br>Galaxy</span>
+      </div>
+      <div class="theme-opt" data-theme="charcoal" onclick="setTheme('charcoal')">
+        <span class="swatch" style="background:linear-gradient(135deg,#18191a,#242526);"></span>
+        <span class="opt-label">Carvão</span>
+      </div>
+      <div class="theme-opt" data-theme="steel" onclick="setTheme('steel')">
+        <span class="swatch" style="background:linear-gradient(135deg,#1a1f2e,#232b3e);"></span>
+        <span class="opt-label">Aço<br>Azul</span>
+      </div>
+      <div class="theme-opt" data-theme="nox" onclick="setTheme('nox')">
+        <span class="swatch" style="background:linear-gradient(135deg,#050608,#0d0e12);"></span>
+        <span class="opt-label">Nox<br>Total</span>
+      </div>
+      <div class="theme-opt" data-theme="matrix" onclick="setTheme('matrix')">
+        <span class="swatch" style="background:linear-gradient(135deg,#0a110a,#101810);"></span>
+        <span class="opt-label">Verde<br>Terminal</span>
+      </div>
+      <div class="theme-opt" data-theme="midnight" onclick="setTheme('midnight')">
+        <span class="swatch" style="background:linear-gradient(135deg,#120e1e,#1c1730);"></span>
+        <span class="opt-label">Meia<br>Noite</span>
+      </div>
+      <div class="theme-opt" data-theme="espresso" onclick="setTheme('espresso')">
+        <span class="swatch" style="background:linear-gradient(135deg,#130e0a,#1e1510);"></span>
+        <span class="opt-label">Café<br>Escuro</span>
+      </div>
+      <div class="theme-opt" data-theme="slate" onclick="setTheme('slate')">
+        <span class="swatch" style="background:linear-gradient(135deg,#1e2028,#282c38);"></span>
+        <span class="opt-label">Ardósia</span>
+      </div>
+    </div>
+  </div>
+  <button id="theme-btn" onclick="toggleThemePanel()" title="Personalizar tema de fundo">🎨</button>
+</div>
+
+<!-- ========== LOGIN ========== -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-header">
+      <div class="login-logo">🚗</div>
+      <h1>Direção Inteligente 2026</h1>
+      <p>Análise Comparativa de Condução — Câmbio Manual</p>
+    </div>
+    <div class="login-body">
+      <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
+      <div class="form-group">
+        <label>Usuário</label>
+        <input type="text" id="login-user" placeholder="Digite seu usuário" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="login-pass" placeholder="••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Entrar no Sistema</button>
+    </div>
+    <div class="login-footer">
+      <span>🔒 Acesso restrito — Operação Interna</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APP ========== -->
+<div id="screen-app" class="screen">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="icon">🚗</div>
+      <div>
+        <h1>Direção Inteligente 2026</h1>
+        <p>Câmbio Manual — Análise Comparativa</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="topbar-user"></span>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- NAV TABS -->
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="setTab('cadastro')" id="ntab-cadastro">
+      ✍️ Registro de Avaliação
+    </div>
+    <div class="nav-tab" onclick="setTab('dashboard')" id="ntab-dashboard">
+      📊 Dashboard
+    </div>
+    <div class="nav-tab" onclick="setTab('historico')" id="ntab-historico">
+      📋 Histórico
+    </div>
+    <div class="nav-tab" onclick="setTab('ranking')" id="ntab-ranking">
+      🏆 Ranking
+    </div>
+    <div class="nav-tab" onclick="setTab('marchas')" id="ntab-marchas">
+      🔄 Análise de Marchas
+    </div>
+    <div class="nav-tab" onclick="setTab('ia')" id="ntab-ia">
+      🤖 Feedback IA
+    </div>
+  </div>
+
+  <!-- ======== TAB: CADASTRO (DARK MODE) ======== -->
+  <div class="tab-content active" id="tab-cadastro">
+
+    <div class="dark-section-header">
+      <h2>✍️ Registro de Avaliação</h2>
+      <p>Registre a 1ª Volta (referência) e a 2ª Volta (resultado) de forma independente ou unificada.</p>
+    </div>
+
+    <div class="dark-container">
+
+      <!-- INDICADOR DE ETAPAS -->
+      <div class="step-indicator" id="step-indicator">
+        <div class="step-item active" id="step-1">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-label">Identificação</div>
+            <div class="step-sub">Motorista e data</div>
+          </div>
+        </div>
+        <div class="step-item" id="step-2">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-label">Dados da Volta</div>
+            <div class="step-sub">KM, Litros, Marchas</div>
+          </div>
+        </div>
+        <div class="step-item" id="step-3">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-label">Preview &amp; Salvar</div>
+            <div class="step-sub">Confirmar registros</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOGGLE DE VOLTA -->
+      <div class="volta-toggle-wrap">
+        <button class="volta-toggle-btn v1 active" id="btn-toggle-v1" onclick="setVoltaMode('v1')">
+          🔵 <span class="volta-toggle-badge">1</span> 1ª Volta — Referência
+          <span style="font-size:10px;opacity:.7;font-weight:400;margin-left:6px;">Antes do treinamento</span>
+        </button>
+        <button class="volta-toggle-btn v2" id="btn-toggle-v2" onclick="setVoltaMode('v2')">
+          🟢 <span class="volta-toggle-badge">2</span> 2ª Volta — Resultado
+          <span style="font-size:10px;opacity:.7;font-weight:400;margin-left:6px;">Após orientação</span>
+        </button>
+      </div>
+
+      <!-- CARD: IDENTIFICAÇÃO -->
+      <div class="dark-card">
+        <div class="dark-card-header">
+          <div>
+            <h3>👤 Identificação do Motorista</h3>
+            <p>Dados obrigatórios para vincular a avaliação</p>
+          </div>
+        </div>
+        <div class="dark-card-body">
+          <div class="dk-form-grid">
+            <div class="dk-fld" id="driver-suggestions" style="position:relative;">
+              <label>Motorista *</label>
+              <input type="text" id="f-nome" placeholder="Nome completo do motorista"
+                oninput="onDriverInput()" autocomplete="off">
+              <div class="suggestions-list" id="suggestions-dropdown" style="display:none;"></div>
+            </div>
+            <div class="dk-fld">
+              <label>Matrícula</label>
+              <input type="text" id="f-matricula" placeholder="Ex.: MAT-001">
+            </div>
+            <div class="dk-fld">
+              <label>Prefixo do Veículo *</label>
+              <input type="text" id="f-prefixo" placeholder="Ex.: BUS-042" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+            </div>
+            <div class="dk-fld">
+              <label>Data da Avaliação *</label>
+              <input type="date" id="f-data" onchange="onDateChange()">
+            </div>
+            <div class="dk-fld">
+              <label>Instrutor Responsável</label>
+              <input type="text" id="f-instrutor" placeholder="Nome do instrutor">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOOKUP BANNER (2ª Volta) -->
+      <div id="lookup-banner" style="display:none;"></div>
+
+      <!-- CARD: DADOS DA 1ª VOLTA -->
+      <div class="dark-card" id="card-v1">
+        <div class="dark-card-header">
+          <h3>🔵 1ª Volta — Referência <span style="font-size:11px;font-weight:400;color:var(--dk-muted);margin-left:8px;">Condição inicial sem orientação</span></h3>
+        </div>
+        <div class="dark-card-body">
+          <div class="dk-form-grid">
+            <div class="dk-fld">
+              <label>Horário de Início *</label>
+              <input type="time" id="f-v1-inicio" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>Horário de Fim *</label>
+              <input type="time" id="f-v1-fim" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>KM Percorrido *</label>
+              <input type="number" id="f-v1-km" placeholder="Ex.: 5.0" min="0" step="0.1" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>Litros Consumidos *</label>
+              <input type="number" id="f-v1-litros" placeholder="Ex.: 2.0" min="0" step="0.01" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>Qtd. Trocas de Marcha *</label>
+              <input type="number" id="f-v1-marchas" placeholder="Ex.: 200" min="0" step="1" oninput="computeFields()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD: DADOS DA 2ª VOLTA -->
+      <div class="dark-card" id="card-v2" style="display:none;">
+        <div class="dark-card-header">
+          <h3>🟢 2ª Volta — Resultado <span style="font-size:11px;font-weight:400;color:var(--dk-muted);margin-left:8px;">Desempenho após orientação técnica</span></h3>
+        </div>
+        <div class="dark-card-body">
+          <div class="dk-form-grid">
+            <div class="dk-fld">
+              <label>Horário de Início *</label>
+              <input type="time" id="f-v2-inicio" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>Horário de Fim *</label>
+              <input type="time" id="f-v2-fim" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>KM Percorrido *</label>
+              <input type="number" id="f-v2-km" placeholder="Ex.: 5.0" min="0" step="0.1" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>Litros Consumidos *</label>
+              <input type="number" id="f-v2-litros" placeholder="Ex.: 1.8" min="0" step="0.01" oninput="computeFields()">
+            </div>
+            <div class="dk-fld">
+              <label>Qtd. Trocas de Marcha *</label>
+              <input type="number" id="f-v2-marchas" placeholder="Ex.: 190" min="0" step="1" oninput="computeFields()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PREVIEW COMPUTADO -->
+      <div class="dk-computed-row" id="computed-preview" style="display:none;">
+        <div class="dk-computed-item">
+          <label>Tempo 1ª Volta</label>
+          <span id="cp-t1">—</span>
+        </div>
+        <div class="dk-computed-item">
+          <label>Tempo 2ª Volta</label>
+          <span id="cp-t2">—</span>
+        </div>
+        <div class="dk-computed-item">
+          <label>Dif. Tempo</label>
+          <span id="cp-dt">—</span>
+        </div>
+        <div class="dk-computed-item">
+          <label>Média 1ª (Km/L)</label>
+          <span id="cp-m1">—</span>
+        </div>
+        <div class="dk-computed-item">
+          <label>Média 2ª (Km/L)</label>
+          <span id="cp-m2">—</span>
+        </div>
+        <div class="dk-computed-item">
+          <label>Evolução Km/L</label>
+          <span id="cp-em">—</span>
+        </div>
+        <div class="dk-computed-item">
+          <label>Dif. Marchas</label>
+          <span id="cp-dm">—</span>
+        </div>
+        <div class="dk-computed-item">
+          <label>Evolução Marchas</label>
+          <span id="cp-evmarchas">—</span>
+        </div>
+      </div>
+
+      <!-- AÇÕES -->
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; padding-bottom:32px;">
+        <button class="btn-dk-primary print-hide" id="btn-salvar-main" onclick="saveRecord()">
+          💾 Salvar 1ª Volta
+        </button>
+        <button class="btn-dk-ghost print-hide" onclick="clearForm()">
+          🗑 Limpar Campos
+        </button>
+        <div style="flex:1;"></div>
+        <span style="font-size:11px;color:var(--dk-muted);" id="form-mode-label">
+          Modo: <strong style="color:#60a5fa;">1ª Volta — Novo Registro</strong>
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======== TAB: DASHBOARD ======== -->
+  <div class="tab-content" id="tab-dashboard">
+    <div class="container">
+      <div class="section-header">
+        <h2>Dashboard Comparativo</h2>
+        <p>Análise individual de desempenho por motorista e data.</p>
+      </div>
+
+      <!-- FILTROS -->
+      <div class="filter-bar print-hide">
+        <div class="fld">
+          <label>Motorista</label>
+          <select id="dash-filter-motorista" onchange="renderDashboard()">
+            <option value="">Todos os motoristas</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Período</label>
+          <select id="dash-filter-periodo" onchange="renderDashboard()">
+            <option value="">Todos os períodos</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+          </select>
+        </div>
+        <button class="btn-outline" onclick="renderDashboard()" style="margin-bottom:0;">🔄 Atualizar</button>
+        <button class="btn-green print-hide" onclick="exportarHTML()">⬇ Salvar HTML</button>
+        <button class="btn-outline print-hide" onclick="window.print()">🖨 Imprimir</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="dash-kpis"></div>
+
+      <!-- GRÁFICOS + COMPARATIVO -->
+      <div class="two-col" style="margin-bottom:16px;">
+        <div class="panel">
+          <div class="panel-header"><h3>📈 Consumo Médio (Km/L)</h3></div>
+          <div class="panel-body" style="padding:12px 16px;">
+            <canvas id="chart-consumo" height="150"></canvas>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>🔄 Trocas de Marcha</h3></div>
+          <div class="panel-body" style="padding:12px 16px;">
+            <canvas id="chart-marchas" height="150"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-bottom:16px;">
+        <div class="panel">
+          <div class="panel-header"><h3>⏱ Tempo de Condução</h3></div>
+          <div class="panel-body" style="padding:12px 16px;">
+            <canvas id="chart-tempo" height="150"></canvas>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>📊 Evolução por Avaliação</h3></div>
+          <div class="panel-body" style="padding:12px 16px;">
+            <canvas id="chart-evolucao" height="150"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALERTAS -->
+      <div class="panel">
+        <div class="panel-header"><h3>⚠️ Inteligência Analítica</h3></div>
+        <div class="panel-body" id="dash-alertas">
+          <div class="empty-state"><div class="icon">💡</div><p>Nenhum dado disponível.</p></div>
+        </div>
+      </div>
+
+      <!-- DETALHES POR MOTORISTA -->
+      <div class="panel">
+        <div class="panel-header"><h3>👤 Detalhamento por Motorista</h3></div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table id="dash-table">
+              <thead>
+                <tr>
+                  <th>Motorista</th>
+                  <th>Prefixo</th>
+                  <th>Data</th>
+                  <th>Km/L 1ª</th>
+                  <th>Km/L 2ª</th>
+                  <th>Evolução</th>
+                  <th>Marchas 1ª</th>
+                  <th>Marchas 2ª</th>
+                  <th>Red. Marchas</th>
+                  <th>Tempo 1ª</th>
+                  <th>Tempo 2ª</th>
+                </tr>
+              </thead>
+              <tbody id="dash-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TAB: HISTÓRICO ======== -->
+  <div class="tab-content" id="tab-historico">
+    <div class="container">
+      <div class="section-header">
+        <h2>Histórico de Avaliações</h2>
+        <p>Todos os registros cadastrados no sistema.</p>
+      </div>
+      <div id="historico-list"></div>
+    </div>
+  </div>
+
+  <!-- ======== TAB: RANKING ======== -->
+  <div class="tab-content" id="tab-ranking">
+    <div class="container">
+      <div class="section-header">
+        <h2>Ranking de Desempenho</h2>
+        <p>Classificação dos motoristas por evolução de consumo e eficiência de trocas.</p>
+      </div>
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-header"><h3>🥇 Ranking — Melhor Evolução Km/L</h3></div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Motorista</th><th>Km/L 1ª</th><th>Km/L 2ª</th><th>Evolução</th></tr></thead>
+                <tbody id="rank-consumo"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>🥈 Ranking — Redução de Trocas</h3></div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Motorista</th><th>Marchas 1ª</th><th>Marchas 2ª</th><th>Redução</th></tr></thead>
+                <tbody id="rank-marchas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TAB: ANÁLISE DE MARCHAS ======== -->
+  <div class="tab-content" id="tab-marchas">
+    <div class="container">
+      <div class="section-header">
+        <h2>🔄 Análise de Trocas de Marchas</h2>
+        <p>Comparativo de desempenho entre 1ª e 2ª volta — projeção de 1h e 6h de operação.</p>
+      </div>
+
+      <!-- Filtro de motorista -->
+      <div class="filter-bar print-hide" style="margin-bottom:20px;">
+        <div class="fld">
+          <label>Motorista</label>
+          <select id="marchas-filter-motorista" onchange="renderMarchas()">
+            <option value="">Todos os motoristas</option>
+          </select>
+        </div>
+        <button class="btn-outline" onclick="renderMarchas()">🔄 Atualizar</button>
+      </div>
+
+      <!-- KPIs de Marchas -->
+      <div class="kpi-grid" id="marchas-kpis" style="margin-bottom:24px;"></div>
+
+      <!-- Tabela detalhada -->
+      <div class="panel">
+        <div class="panel-header"><h3>📋 Detalhamento por Avaliação</h3></div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Motorista</th>
+                  <th>Prefixo</th>
+                  <th>Data</th>
+                  <th>Marchas 1ª V.</th>
+                  <th>Marchas 2ª V.</th>
+                  <th>Dif. Absoluta</th>
+                  <th>Evolução %</th>
+                  <th>Proj. 1h (1ª)</th>
+                  <th>Proj. 1h (2ª)</th>
+                  <th>Proj. 6h (1ª)</th>
+                  <th>Proj. 6h (2ª)</th>
+                  <th>Econ. 6h</th>
+                </tr>
+              </thead>
+              <tbody id="marchas-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos comparativos de marchas -->
+      <div class="two-col" style="margin-bottom:24px;">
+        <div class="panel">
+          <div class="panel-header"><h3>📊 Trocas por Avaliação (Real)</h3></div>
+          <div class="panel-body">
+            <canvas id="chart-marchas-det" height="150"></canvas>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>📈 Projeção 6h de Operação</h3></div>
+          <div class="panel-body">
+            <canvas id="chart-marchas-proj" height="150"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Análise narrativa -->
+      <div class="panel" id="marchas-narrativa-panel">
+        <div class="panel-header"><h3>💡 Análise de Eficiência de Marchas</h3></div>
+        <div class="panel-body" id="marchas-narrativa"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TAB: FEEDBACK IA ======== -->
+  <div class="tab-content" id="tab-ia">
+    <div class="container">
+      <div class="section-header">
+        <h2>🤖 Feedback Inteligente — IA</h2>
+        <p>Análise automatizada de desempenho com recomendações práticas de direção econômica.</p>
+      </div>
+
+      <!-- Seletor de avaliação para análise -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel-header"><h3>🎯 Selecionar Avaliação para Análise</h3></div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:flex-end;">
+            <div class="dk-fld">
+              <label>Motorista</label>
+              <select id="ia-filter-motorista" onchange="populateIADates()">
+                <option value="">Selecione um motorista</option>
+              </select>
+            </div>
+            <div class="dk-fld">
+              <label>Avaliação (Data)</label>
+              <select id="ia-filter-data">
+                <option value="">Selecione a data</option>
+              </select>
+            </div>
+            <button class="btn-dk-primary" onclick="runIAAnalysis()" id="btn-ia-analyze">
+              🤖 Gerar Análise IA
+            </button>
+          </div>
+          <div style="margin-top:12px;padding:10px 14px;background:var(--dk-blue-dim);border-radius:8px;border:1px solid var(--dk-border);font-size:12px;color:var(--dk-muted);">
+            ℹ️ A análise usa IA para interpretar os dados operacionais e gerar recomendações personalizadas de direção econômica.
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div id="ia-loading" style="display:none;text-align:center;padding:60px 20px;">
+        <div style="font-size:40px;margin-bottom:16px;animation:spin 1.2s linear infinite;display:inline-block;">⚙️</div>
+        <div style="font-size:15px;font-weight:700;color:var(--dk-text);">Analisando dados operacionais...</div>
+        <div style="font-size:13px;color:var(--dk-muted);margin-top:6px;">A IA está processando o comportamento de condução e gerando recomendações.</div>
+      </div>
+
+      <!-- Result area -->
+      <div id="ia-result" style="display:none;">
+
+        <!-- Header da análise -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header" id="ia-result-header">
+            <h3>📄 Relatório de Análise</h3>
+          </div>
+          <div class="panel-body">
+            <div id="ia-result-snapshot" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;"></div>
+          </div>
+        </div>
+
+        <!-- Feedback da IA -->
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header"><h3>🤖 Análise e Recomendações (IA)</h3></div>
+          <div class="panel-body">
+            <div id="ia-feedback-text" style="font-size:14px;line-height:1.8;color:var(--dk-text2);white-space:pre-wrap;"></div>
+          </div>
+        </div>
+
+        <!-- Score de desempenho -->
+        <div class="panel">
+          <div class="panel-header"><h3>📊 Score de Desempenho do Motorista</h3></div>
+          <div class="panel-body" id="ia-score-panel"></div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="ia-empty" class="empty-state">
+        <div class="icon">🤖</div>
+        <p>Selecione um motorista e uma avaliação para gerar a análise de IA.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /screen-app -->
+
+<!-- ============================================================
+     JAVASCRIPT — ENGINE COMPLETO
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ============================================================
+   1. AUTENTICAÇÃO (Session via sessionStorage)
+   ============================================================ */
+const AUTH = {
+  USERS: { LORENA: '8586' },
+  SESSION_KEY: 'di2026_session',
+
+  login(user, pass) {
+    const u = user.trim().toUpperCase();
+    if (this.USERS[u] && this.USERS[u] === pass.trim()) {
+      const session = { user: u, ts: Date.now() };
+      sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+      return true;
+    }
+    return false;
+  },
+
+  logout() {
+    sessionStorage.removeItem(this.SESSION_KEY);
+  },
+
+  isLogged() {
+    const raw = sessionStorage.getItem(this.SESSION_KEY);
+    if (!raw) return false;
+    try {
+      const s = JSON.parse(raw);
+      return !!s.user;
+    } catch { return false; }
+  },
+
+  getUser() {
+    try { return JSON.parse(sessionStorage.getItem(this.SESSION_KEY)).user; }
+    catch { return ''; }
+  }
+};
+
+function doLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  if (AUTH.login(u, p)) {
+    document.getElementById('login-error').style.display = 'none';
+    showApp();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-pass').value = '';
+  }
+}
+
+function doLogout() {
+  AUTH.logout();
+  document.getElementById('screen-app').classList.remove('active');
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+// Enter no campo de senha faz login
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('login-user').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('login-pass').focus();
+  });
+
+  // Setar data de hoje no form
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+
+  if (AUTH.isLogged()) showApp();
+});
+
+function showApp() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+  document.getElementById('topbar-user').textContent = '👤 ' + AUTH.getUser();
+  renderDashboard();
+  renderHistorico();
+  renderRanking();
+  renderMarchas();
+  populateDriverFilter();
+  populateMarchasFilter();
+  populateIAFilters();
+  // Initialize form state
+  setVoltaMode('v1');
+  updateSteps(1);
+}
+
+/* ============================================================
+   2. STORAGE — localStorage com chave única
+   ============================================================ */
+const STORE = {
+  KEY: 'di2026_records',
+
+  getAll() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || []; }
+    catch { return []; }
+  },
+
+  save(arr) {
+    localStorage.setItem(this.KEY, JSON.stringify(arr));
+  },
+
+  add(record) {
+    const arr = this.getAll();
+    record.id = Date.now();
+    arr.push(record);
+    this.save(arr);
+    return record;
+  },
+
+  update(id, fields) {
+    const arr = this.getAll();
+    const idx = arr.findIndex(r => r.id === id);
+    if (idx === -1) return null;
+    arr[idx] = { ...arr[idx], ...fields, updatedAt: new Date().toISOString() };
+    this.save(arr);
+    return arr[idx];
+  },
+
+  remove(id) {
+    const arr = this.getAll().filter(r => r.id !== id);
+    this.save(arr);
+  },
+
+  findByNameDate(nome, data) {
+    const n = nome.trim().toUpperCase();
+    return this.getAll().find(r => r.nome.trim().toUpperCase() === n && r.data === data) || null;
+  }
+};
+
+/* ============================================================
+   3. CÁLCULOS E MÉTRICAS
+   ============================================================ */
+function timeToMinutes(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToHHMM(min) {
+  if (min === null || isNaN(min)) return '—';
+  const h = Math.floor(Math.abs(min) / 60);
+  const m = Math.abs(min) % 60;
+  const sign = min < 0 ? '-' : '';
+  return `${sign}${String(h).padStart(2,'0')}h${String(m).padStart(2,'0')}min`;
+}
+
+function calcRecord(d) {
+  const t1 = (d.v1_inicio && d.v1_fim) ? timeToMinutes(d.v1_fim) - timeToMinutes(d.v1_inicio) : null;
+  const t2 = (d.v2_inicio && d.v2_fim) ? timeToMinutes(d.v2_fim) - timeToMinutes(d.v2_inicio) : null;
+  const difTempo = (t1 !== null && t2 !== null) ? t2 - t1 : null;
+  const m1 = (d.v1_km && d.v1_litros && d.v1_litros > 0) ? d.v1_km / d.v1_litros : null;
+  const m2 = (d.v2_km && d.v2_litros && d.v2_litros > 0) ? d.v2_km / d.v2_litros : null;
+  const evolMedia = (m1 && m2 && m1 > 0) ? ((m2 / m1) - 1) * 100 : null;
+  const difMarchas = (d.v1_marchas != null && d.v2_marchas != null) ? d.v2_marchas - d.v1_marchas : null;
+  const evolMarchas = (d.v1_marchas && d.v2_marchas && d.v1_marchas > 0)
+    ? ((d.v2_marchas / d.v1_marchas) - 1) * 100 : null;
+  const m1h_v1 = d.v1_marchas && t1 ? Math.round(d.v1_marchas * (60 / t1)) : null;
+  const m6h_v1 = m1h_v1 ? m1h_v1 * 6 : null;
+  const m1h_v2 = d.v2_marchas && t2 ? Math.round(d.v2_marchas * (60 / t2)) : null;
+  const m6h_v2 = m1h_v2 ? m1h_v2 * 6 : null;
+  return { t1, t2, difTempo, m1, m2, evolMedia, difMarchas, evolMarchas, m1h_v1, m6h_v1, m1h_v2, m6h_v2 };
+}
+
+/* ============================================================
+   4. FORMULÁRIO INTELIGENTE — GATILHOS 1ª/2ª VOLTA
+   ============================================================ */
+let voltaMode = 'v1';          // 'v1' | 'v2'
+let linkedRecordId = null;     // ID do registro existente (modo 2ª Volta)
+let hideSuggestionsTimer = null;
+
+function setVoltaMode(mode) {
+  voltaMode = mode;
+  linkedRecordId = null;
+
+  // Toggle visual
+  document.getElementById('btn-toggle-v1').classList.toggle('active', mode === 'v1');
+  document.getElementById('btn-toggle-v2').classList.toggle('active', mode === 'v2');
+
+  // Cards
+  document.getElementById('card-v1').style.display = mode === 'v1' ? 'block' : 'none';
+  document.getElementById('card-v2').style.display = mode === 'v2' ? 'block' : 'none';
+
+  // Botão salvar
+  const btn = document.getElementById('btn-salvar-main');
+  btn.innerHTML = mode === 'v1' ? '💾 Salvar 1ª Volta' : '🟢 Salvar 2ª Volta';
+  btn.className = mode === 'v1' ? 'btn-dk-primary print-hide' : 'btn-dk-success print-hide';
+
+  // Label de modo
+  document.getElementById('form-mode-label').innerHTML = mode === 'v1'
+    ? 'Modo: <strong style="color:#60a5fa;">1ª Volta — Novo Registro</strong>'
+    : 'Modo: <strong style="color:#3fb950;">2ª Volta — Complementar Registro</strong>';
+
+  // Steps
+  updateSteps(mode === 'v1' ? 1 : 2);
+
+  // Limpar lookup banner
+  document.getElementById('lookup-banner').style.display = 'none';
+  document.getElementById('lookup-banner').innerHTML = '';
+
+  // Limpar campos da volta que não está em foco
+  if (mode === 'v2') clearV1Fields();
+  else clearV2Fields();
+
+  // Trigger lookup se já tiver nome e data
+  tryLookup();
+  computeFields();
+}
+
+function updateSteps(active) {
+  [1, 2, 3].forEach(n => {
+    const el = document.getElementById('step-' + n);
+    el.className = 'step-item' + (n < active ? ' done' : n === active ? ' active' : '');
+    const num = el.querySelector('.step-num');
+    if (n < active) num.textContent = '✓';
+    else num.textContent = n;
+  });
+}
+
+/* Autocomplete de motoristas já cadastrados */
+function onDriverInput() {
+  const val = document.getElementById('f-nome').value.trim();
+  const dd = document.getElementById('suggestions-dropdown');
+
+  if (val.length < 2) { dd.style.display = 'none'; return; }
+
+  const drivers = [...new Set(STORE.getAll().map(r => r.nome))]
+    .filter(n => n.toLowerCase().includes(val.toLowerCase()))
+    .slice(0, 6);
+
+  if (!drivers.length) { dd.style.display = 'none'; return; }
+
+  dd.innerHTML = drivers.map(n => {
+    const records = STORE.getAll().filter(r => r.nome === n);
+    const lastDate = records.map(r => r.data).sort().pop() || '—';
+    return `<div class="suggestion-item" onmousedown="selectDriver('${n.replace(/'/g,"\\'")}')">
+      <span>👤</span>
+      <div>
+        <div class="sug-name">${n}</div>
+        <div class="sug-meta">Última avaliação: ${lastDate} · ${records.length} registro(s)</div>
+      </div>
+    </div>`;
+  }).join('');
+  dd.style.display = 'block';
+
+  // Auto-fill matricula e instrutor do último registro
+  const lastRecord = STORE.getAll()
+    .filter(r => r.nome.toLowerCase().includes(val.toLowerCase()))
+    .sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0];
+  if (lastRecord) {
+    if (!document.getElementById('f-matricula').value && lastRecord.matricula)
+      document.getElementById('f-matricula').value = lastRecord.matricula;
+    if (!document.getElementById('f-prefixo').value && lastRecord.prefixo)
+      document.getElementById('f-prefixo').value = lastRecord.prefixo;
+    if (!document.getElementById('f-instrutor').value && lastRecord.instrutor)
+      document.getElementById('f-instrutor').value = lastRecord.instrutor;
+  }
+}
+
+function selectDriver(name) {
+  document.getElementById('f-nome').value = name;
+  document.getElementById('suggestions-dropdown').style.display = 'none';
+  onDriverInput();
+  onDateChange();
+}
+
+document.addEventListener('click', (e) => {
+  if (!document.getElementById('driver-suggestions').contains(e.target)) {
+    document.getElementById('suggestions-dropdown').style.display = 'none';
+  }
+});
+
+function onDateChange() {
+  tryLookup();
+  computeFields();
+}
+
+function tryLookup() {
+  if (voltaMode !== 'v2') return;
+  const nome = document.getElementById('f-nome').value.trim();
+  const data = document.getElementById('f-data').value;
+  if (!nome || !data) return;
+
+  const existing = STORE.findByNameDate(nome, data);
+  const banner = document.getElementById('lookup-banner');
+  banner.style.display = 'flex';
+
+  if (existing) {
+    linkedRecordId = existing.id;
+    const v1HasData = existing.v1_km || existing.v1_inicio;
+    const has2a = existing.v2_km || existing.v2_inicio;
+
+    // Preencher automaticamente os campos da 1ª Volta (readonly)
+    document.getElementById('f-v1-inicio').value  = existing.v1_inicio  || '';
+    document.getElementById('f-v1-fim').value     = existing.v1_fim     || '';
+    document.getElementById('f-v1-km').value      = existing.v1_km      || '';
+    document.getElementById('f-v1-litros').value  = existing.v1_litros  || '';
+    document.getElementById('f-v1-marchas').value = existing.v1_marchas || '';
+    if (existing.matricula) document.getElementById('f-matricula').value = existing.matricula;
+    if (existing.prefixo)   document.getElementById('f-prefixo').value   = existing.prefixo;
+    if (existing.instrutor) document.getElementById('f-instrutor').value = existing.instrutor;
+
+    if (has2a) {
+      banner.className = 'lookup-banner found';
+      banner.innerHTML = `
+        <span class="lb-icon">⚠️</span>
+        <div class="lb-text">
+          <strong>Registro com 2ª Volta já preenchida</strong>
+          <span>Este motorista já possui 2ª Volta registrada em ${data}. Os dados serão sobrescritos ao salvar.</span>
+        </div>`;
+      // Pré-preencher campos da 2ª Volta para edição
+      document.getElementById('f-v2-inicio').value  = existing.v2_inicio  || '';
+      document.getElementById('f-v2-fim').value     = existing.v2_fim     || '';
+      document.getElementById('f-v2-km').value      = existing.v2_km      || '';
+      document.getElementById('f-v2-litros').value  = existing.v2_litros  || '';
+      document.getElementById('f-v2-marchas').value = existing.v2_marchas || '';
+    } else {
+      banner.className = 'lookup-banner found';
+      banner.innerHTML = `
+        <span class="lb-icon">✅</span>
+        <div class="lb-text">
+          <strong>Registro encontrado — 1ª Volta carregada</strong>
+          <span>Motorista: <strong>${existing.nome}</strong> · Data: ${data} · Km/L 1ª: ${existing.v1_km && existing.v1_litros ? (existing.v1_km / existing.v1_litros).toFixed(3) : '—'}</span>
+        </div>`;
+    }
+    updateSteps(3);
+  } else {
+    linkedRecordId = null;
+    banner.className = 'lookup-banner not-found';
+    banner.innerHTML = `
+      <span class="lb-icon">⚠️</span>
+      <div class="lb-text">
+        <strong>Nenhum registro encontrado</strong>
+        <span>Não há 1ª Volta cadastrada para <strong>${nome}</strong> em <strong>${data}</strong>. Registre a 1ª Volta primeiro.</span>
+      </div>`;
+    updateSteps(2);
+  }
+  computeFields();
+}
+
+function computeFields() {
+  const d = getFormData();
+  const c = calcRecord(d);
+  const preview = document.getElementById('computed-preview');
+
+  const anyFilled = d.v1_inicio || d.v1_km || d.v2_inicio || d.v2_km;
+  preview.style.display = anyFilled ? 'grid' : 'none';
+
+  if (anyFilled) updateSteps(voltaMode === 'v2' && linkedRecordId ? 3 : 2);
+
+  function fmt(v, dec=3, suffix='') {
+    return v !== null && !isNaN(v) ? v.toFixed(dec) + suffix : '—';
+  }
+
+  const setSpan = (id, text, cls='') => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = text; el.className = cls; }
+  };
+
+  setSpan('cp-t1', minutesToHHMM(c.t1));
+  setSpan('cp-t2', minutesToHHMM(c.t2));
+
+  const difTClass = c.difTempo === null ? '' : c.difTempo < 0 ? 'positive' : c.difTempo > 0 ? 'negative' : 'neutral';
+  setSpan('cp-dt', c.difTempo !== null ? (c.difTempo > 0 ? '+' : '') + minutesToHHMM(c.difTempo) : '—', difTClass);
+
+  setSpan('cp-m1', fmt(c.m1) + ' Km/L');
+  setSpan('cp-m2', fmt(c.m2) + ' Km/L', c.m1 && c.m2 ? (c.m2 >= c.m1 ? 'positive' : 'negative') : '');
+
+  const emCls = c.evolMedia === null ? '' : c.evolMedia >= 0 ? 'positive' : 'negative';
+  setSpan('cp-em', c.evolMedia !== null ? (c.evolMedia >= 0 ? '▲ +' : '▼ ') + c.evolMedia.toFixed(2) + '%' : '—', emCls);
+
+  const dmCls = c.difMarchas === null ? '' : c.difMarchas <= 0 ? 'positive' : 'negative';
+  setSpan('cp-dm', c.difMarchas !== null ? (c.difMarchas > 0 ? '+' : '') + c.difMarchas : '—', dmCls);
+
+  const evmCls = c.evolMarchas === null ? '' : c.evolMarchas <= 0 ? 'positive' : 'negative';
+  setSpan('cp-evmarchas', c.evolMarchas !== null ? (c.evolMarchas >= 0 ? '▲ +' : '▼ ') + c.evolMarchas.toFixed(2) + '%' : '—', evmCls);
+}
+
+function getFormData() {
+  return {
+    nome:       document.getElementById('f-nome').value.trim(),
+    matricula:  document.getElementById('f-matricula').value.trim(),
+    prefixo:    document.getElementById('f-prefixo').value.trim().toUpperCase(),
+    data:       document.getElementById('f-data').value,
+    instrutor:  document.getElementById('f-instrutor').value.trim(),
+    v1_inicio:  document.getElementById('f-v1-inicio').value,
+    v1_fim:     document.getElementById('f-v1-fim').value,
+    v1_km:      parseFloat(document.getElementById('f-v1-km').value) || null,
+    v1_litros:  parseFloat(document.getElementById('f-v1-litros').value) || null,
+    v1_marchas: parseInt(document.getElementById('f-v1-marchas').value) || null,
+    v2_inicio:  document.getElementById('f-v2-inicio').value,
+    v2_fim:     document.getElementById('f-v2-fim').value,
+    v2_km:      parseFloat(document.getElementById('f-v2-km').value) || null,
+    v2_litros:  parseFloat(document.getElementById('f-v2-litros').value) || null,
+    v2_marchas: parseInt(document.getElementById('f-v2-marchas').value) || null,
+  };
+}
+
+function validateForm(d) {
+  const errs = [];
+  if (!d.nome)    errs.push('Nome do motorista é obrigatório.');
+  if (!d.prefixo) errs.push('Prefixo do veículo é obrigatório.');
+  if (!d.data)    errs.push('Data da avaliação é obrigatória.');
+
+  if (voltaMode === 'v1') {
+    if (!d.v1_inicio || !d.v1_fim)  errs.push('Horários da 1ª volta são obrigatórios.');
+    if (!d.v1_km || d.v1_km <= 0)   errs.push('KM da 1ª volta deve ser positivo.');
+    if (!d.v1_litros || d.v1_litros <= 0) errs.push('Litros da 1ª volta devem ser positivos.');
+    if (d.v1_marchas === null)       errs.push('Trocas de marcha da 1ª volta são obrigatórias.');
+  } else {
+    if (!linkedRecordId) errs.push('Nenhum registro de 1ª Volta encontrado para este motorista nesta data.');
+    if (!d.v2_inicio || !d.v2_fim)  errs.push('Horários da 2ª volta são obrigatórios.');
+    if (!d.v2_km || d.v2_km <= 0)   errs.push('KM da 2ª volta deve ser positivo.');
+    if (!d.v2_litros || d.v2_litros <= 0) errs.push('Litros da 2ª volta devem ser positivos.');
+    if (d.v2_marchas === null)       errs.push('Trocas de marcha da 2ª volta são obrigatórias.');
+  }
+  return errs;
+}
+
+function saveRecord() {
+  const d = getFormData();
+  const errs = validateForm(d);
+  if (errs.length) { showToast('⚠ ' + errs[0], 'error'); return; }
+
+  if (voltaMode === 'v1') {
+    // NOVO REGISTRO com apenas 1ª Volta
+    const calc = calcRecord(d);
+    const record = { ...d, calc, savedBy: AUTH.getUser(), savedAt: new Date().toISOString() };
+    STORE.add(record);
+    showToast('✅ 1ª Volta salva! Registre a 2ª Volta quando disponível.', 'success');
+  } else {
+    // COMPLEMENTAR registro existente com 2ª Volta
+    const fields = {
+      v2_inicio: d.v2_inicio,
+      v2_fim:    d.v2_fim,
+      v2_km:     d.v2_km,
+      v2_litros: d.v2_litros,
+      v2_marchas: d.v2_marchas,
+    };
+    const existing = STORE.getAll().find(r => r.id === linkedRecordId);
+    if (!existing) { showToast('⚠ Registro original não encontrado.', 'error'); return; }
+
+    const merged = { ...existing, ...fields };
+    const calc   = calcRecord(merged);
+    STORE.update(linkedRecordId, { ...fields, calc });
+    showToast('✅ 2ª Volta salva com sucesso! Análise comparativa disponível.', 'success');
+  }
+
+  clearForm();
+  renderDashboard();
+  renderHistorico();
+  renderRanking();
+  renderMarchas();
+  populateDriverFilter();
+  populateMarchasFilter();
+  populateIAFilters();
+  setTab('dashboard');
+}
+
+function clearV1Fields() {
+  ['f-v1-inicio','f-v1-fim','f-v1-km','f-v1-litros','f-v1-marchas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function clearV2Fields() {
+  ['f-v2-inicio','f-v2-fim','f-v2-km','f-v2-litros','f-v2-marchas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function clearForm() {
+  ['f-nome','f-matricula','f-prefixo','f-instrutor',
+   'f-v1-inicio','f-v1-fim','f-v1-km','f-v1-litros','f-v1-marchas',
+   'f-v2-inicio','f-v2-fim','f-v2-km','f-v2-litros','f-v2-marchas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('computed-preview').style.display = 'none';
+  document.getElementById('lookup-banner').style.display = 'none';
+  document.getElementById('suggestions-dropdown').style.display = 'none';
+  linkedRecordId = null;
+  updateSteps(1);
+}
+
+/* ============================================================
+   5. NAVEGAÇÃO ENTRE ABAS
+   ============================================================ */
+function setTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('ntab-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+/* ============================================================
+   6. DASHBOARD
+   ============================================================ */
+let chartConsumo = null, chartMarchas = null, chartTempo = null, chartEvolucao = null;
+
+function getFilteredData() {
+  let data = STORE.getAll();
+  const mot = document.getElementById('dash-filter-motorista')?.value || '';
+  const per = parseInt(document.getElementById('dash-filter-periodo')?.value) || 0;
+
+  if (mot) data = data.filter(r => r.nome === mot);
+  if (per) {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - per);
+    data = data.filter(r => new Date(r.data) >= cutoff);
+  }
+  return data;
+}
+
+function renderDashboard() {
+  const data = getFilteredData();
+  renderKPIs(data);
+  renderCharts(data);
+  renderAlerts(data);
+  renderDashTable(data);
+}
+
+function renderKPIs(data) {
+  const container = document.getElementById('dash-kpis');
+  if (!data.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const evolMedias = data.map(r => r.calc.evolMedia).filter(v => v !== null);
+  const mediaEvolucao = evolMedias.length ? evolMedias.reduce((a,b)=>a+b,0)/evolMedias.length : null;
+
+  const evolMarchasArr = data.map(r => r.calc.evolMarchas).filter(v => v !== null);
+  const mediaEvolMarchas = evolMarchasArr.length ? evolMarchasArr.reduce((a,b)=>a+b,0)/evolMarchasArr.length : null;
+
+  const km1s = data.map(r => r.calc.m1).filter(v => v !== null);
+  const km2s = data.map(r => r.calc.m2).filter(v => v !== null);
+  const avgKm1 = km1s.length ? km1s.reduce((a,b)=>a+b,0)/km1s.length : null;
+  const avgKm2 = km2s.length ? km2s.reduce((a,b)=>a+b,0)/km2s.length : null;
+
+  const totalMarchas1 = data.reduce((a,r) => a + (r.v1_marchas||0), 0);
+  const totalMarchas2 = data.reduce((a,r) => a + (r.v2_marchas||0), 0);
+
+  const drivers = [...new Set(data.map(r => r.nome))];
+
+  function pct(v) { return v !== null ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '—'; }
+  function kml(v) { return v !== null ? v.toFixed(3) + ' Km/L' : '—'; }
+  function cls(v) { return v > 0 ? 'green' : v < 0 ? 'red' : ''; }
+  function badge(v) { return v > 0 ? 'up' : v < 0 ? 'down' : 'neu'; }
+
+  container.innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-icon">📋</div>
+      <div class="kpi-label">Total de Avaliações</div>
+      <div class="kpi-value">${data.length}</div>
+      <div class="kpi-sub">${drivers.length} motorista(s)</div>
+    </div>
+    <div class="kpi-card ${cls(mediaEvolucao)}">
+      <div class="kpi-icon">⛽</div>
+      <div class="kpi-label">Evolução Média Km/L</div>
+      <div class="kpi-value big">${pct(mediaEvolucao)}</div>
+      <span class="kpi-badge ${badge(mediaEvolucao)}">${mediaEvolucao > 0 ? '▲ Melhora' : mediaEvolucao < 0 ? '▼ Piora' : '→ Neutro'}</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">🔵</div>
+      <div class="kpi-label">Média 1ª Volta</div>
+      <div class="kpi-value big">${kml(avgKm1)}</div>
+      <div class="kpi-sub">Antes do treinamento</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">🟢</div>
+      <div class="kpi-label">Média 2ª Volta</div>
+      <div class="kpi-value big">${kml(avgKm2)}</div>
+      <div class="kpi-sub">Após orientação</div>
+    </div>
+    <div class="kpi-card ${cls(mediaEvolMarchas * -1)}">
+      <div class="kpi-icon">🔄</div>
+      <div class="kpi-label">Evolução Trocas</div>
+      <div class="kpi-value big">${pct(mediaEvolMarchas)}</div>
+      <span class="kpi-badge ${mediaEvolMarchas < 0 ? 'up' : mediaEvolMarchas > 0 ? 'down' : 'neu'}">${mediaEvolMarchas < 0 ? '▼ Redução (Bom)' : '▲ Aumento'}</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">🔢</div>
+      <div class="kpi-label">Total Marchas 1ª</div>
+      <div class="kpi-value">${totalMarchas1.toLocaleString('pt-BR')}</div>
+      <div class="kpi-sub">vs ${totalMarchas2.toLocaleString('pt-BR')} na 2ª</div>
+    </div>
+  `;
+}
+
+/* ---- CHARTS (sem lib externa — canvas puro) ---- */
+function drawBarChart(canvasId, labels, data1, data2, label1, label2, color1, color2) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // HiDPI
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width  * dpr || 400 * dpr;
+  canvas.height = canvas.height * dpr || 200 * dpr;
+  canvas.style.width  = (canvas.width  / dpr) + 'px';
+  canvas.style.height = (canvas.height / dpr) + 'px';
+  ctx.scale(dpr, dpr);
+
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+  const PAD = { top:20, right:20, bottom:55, left:50 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top  - PAD.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const allVals = [...data1, ...data2].filter(v => v !== null && !isNaN(v));
+  if (!allVals.length) {
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '13px Segoe UI, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Sem dados suficientes', W/2, H/2);
+    return;
+  }
+
+  const maxVal = Math.max(...allVals) * 1.15;
+  const minVal = 0;
+  const range  = maxVal - minVal || 1;
+
+  const n = labels.length;
+  const groupW = chartW / n;
+  const barW   = Math.min(groupW * 0.35, 24);
+  const gap    = 4;
+
+  // Grid
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PAD.top + chartH - (i / 4) * chartH;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + chartW, y);
+    ctx.stroke();
+    const val = minVal + (i / 4) * range;
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px Segoe UI, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(1), PAD.left - 6, y + 4);
+  }
+
+  // Bars
+  labels.forEach((lbl, i) => {
+    const cx = PAD.left + i * groupW + groupW / 2;
+
+    // Bar 1
+    if (data1[i] !== null && !isNaN(data1[i])) {
+      const h = (data1[i] / range) * chartH;
+      const x = cx - barW - gap/2;
+      const y = PAD.top + chartH - h;
+      ctx.fillStyle = color1;
+      roundRect(ctx, x, y, barW, h, 3);
+      ctx.fill();
+    }
+
+    // Bar 2
+    if (data2[i] !== null && !isNaN(data2[i])) {
+      const h = (data2[i] / range) * chartH;
+      const x = cx + gap/2;
+      const y = PAD.top + chartH - h;
+      ctx.fillStyle = color2;
+      roundRect(ctx, x, y, barW, h, 3);
+      ctx.fill();
+    }
+
+    // Label
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px Segoe UI, sans-serif'; ctx.textAlign = 'center';
+    const shortLbl = lbl.length > 10 ? lbl.substring(0, 9) + '…' : lbl;
+    ctx.fillText(shortLbl, cx, PAD.top + chartH + 18);
+  });
+
+  // Axis
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, PAD.top); ctx.lineTo(PAD.left, PAD.top + chartH);
+  ctx.lineTo(PAD.left + chartW, PAD.top + chartH);
+  ctx.stroke();
+
+  // Legend
+  const ly = H - 14;
+  ctx.fillStyle = color1; ctx.fillRect(PAD.left, ly, 12, 10);
+  ctx.fillStyle = '#8b949e'; ctx.font = '11px Segoe UI, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(label1, PAD.left + 16, ly + 9);
+  const offset = PAD.left + 100;
+  ctx.fillStyle = color2; ctx.fillRect(offset, ly, 12, 10);
+  ctx.fillStyle = '#8b949e';
+  ctx.fillText(label2, offset + 16, ly + 9);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h);
+  ctx.lineTo(x, y+h);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function drawLineChart(canvasId, labels, datasets) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width  * dpr || 400 * dpr;
+  canvas.height = canvas.height * dpr;
+  canvas.style.width  = (canvas.width  / dpr) + 'px';
+  canvas.style.height = (canvas.height / dpr) + 'px';
+  ctx.scale(dpr, dpr);
+
+  const W = canvas.width/dpr, H = canvas.height/dpr;
+  const PAD = {top:20, right:20, bottom:55, left:50};
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top  - PAD.bottom;
+
+  ctx.clearRect(0,0,W,H);
+
+  const allVals = datasets.flatMap(d => d.data).filter(v => v !== null && !isNaN(v));
+  if (!allVals.length || labels.length < 2) {
+    ctx.fillStyle = '#8b949e'; ctx.font = '13px Segoe UI, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Dados insuficientes para linha', W/2, H/2);
+    return;
+  }
+
+  const maxVal = Math.max(...allVals) * 1.15;
+  const minVal = 0; const range = maxVal || 1;
+
+  for (let i=0; i<=4; i++) {
+    const y = PAD.top + cH - (i/4)*cH;
+    ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left+cW, y); ctx.stroke();
+    ctx.fillStyle='#8b949e'; ctx.font='10px Segoe UI, sans-serif'; ctx.textAlign='right';
+    ctx.fillText(((minVal + (i/4)*range)).toFixed(1), PAD.left-6, y+4);
+  }
+
+  datasets.forEach(ds => {
+    ctx.strokeStyle = ds.color; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let first = true;
+    ds.data.forEach((v, i) => {
+      if (v === null || isNaN(v)) return;
+      const x = PAD.left + (i/(labels.length-1))*cW;
+      const y = PAD.top + cH - (v/range)*cH;
+      if (first) { ctx.moveTo(x,y); first=false; } else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // Dots
+    ds.data.forEach((v, i) => {
+      if (v === null || isNaN(v)) return;
+      const x = PAD.left + (i/(labels.length-1))*cW;
+      const y = PAD.top + cH - (v/range)*cH;
+      ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+      ctx.fillStyle = ds.color; ctx.fill();
+      ctx.strokeStyle = '#161b22'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+  });
+
+  labels.forEach((lbl, i) => {
+    const x = PAD.left + (i/(Math.max(labels.length-1,1)))*cW;
+    ctx.fillStyle='#8b949e'; ctx.font='10px Segoe UI, sans-serif'; ctx.textAlign='center';
+    const s = lbl.length>8 ? lbl.substring(0,7)+'…' : lbl;
+    ctx.fillText(s, x, PAD.top+cH+18);
+  });
+
+  ctx.strokeStyle='#30363d'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(PAD.left,PAD.top); ctx.lineTo(PAD.left,PAD.top+cH);
+  ctx.lineTo(PAD.left+cW,PAD.top+cH); ctx.stroke();
+
+  // Legend
+  const ly = H - 14;
+  let lx = PAD.left;
+  datasets.forEach(ds => {
+    ctx.fillStyle=ds.color; ctx.fillRect(lx,ly,12,10);
+    ctx.fillStyle='#8b949e'; ctx.font='11px Segoe UI, sans-serif'; ctx.textAlign='left';
+    ctx.fillText(ds.label, lx+16, ly+9);
+    lx += 120;
+  });
+}
+
+function renderCharts(data) {
+  const labels = data.map(r => r.nome + ' ' + (r.data || '').substring(5));
+  const d1_kml = data.map(r => r.calc.m1);
+  const d2_kml = data.map(r => r.calc.m2);
+  const d1_m   = data.map(r => r.v1_marchas);
+  const d2_m   = data.map(r => r.v2_marchas);
+  const d1_t   = data.map(r => r.calc.t1);
+  const d2_t   = data.map(r => r.calc.t2);
+  const evolArr = data.map(r => r.calc.evolMedia);
+
+  // Resolve overlapping labels  
+  const shortLabels = labels.map((l,i) => `#${i+1}`);
+
+  drawBarChart('chart-consumo', shortLabels, d1_kml, d2_kml, '1ª Volta', '2ª Volta', '#3b82f6', '#22c55e');
+  drawBarChart('chart-marchas', shortLabels, d1_m,   d2_m,   '1ª Volta', '2ª Volta', '#3b82f6', '#f59e0b');
+  drawBarChart('chart-tempo',   shortLabels, d1_t,   d2_t,   '1ª Volta', '2ª Volta', '#3b82f6', '#8b5cf6');
+
+  if (data.length >= 2) {
+    drawLineChart('chart-evolucao', shortLabels, [
+      { label: 'Evolução Km/L (%)', data: evolArr, color: '#22c55e' }
+    ]);
+  } else {
+    const ctx = document.getElementById('chart-evolucao')?.getContext('2d');
+    if (ctx) { ctx.clearRect(0,0,9999,9999); }
+  }
+}
+
+function renderAlerts(data) {
+  const container = document.getElementById('dash-alertas');
+  if (!data.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">💡</div><p>Cadastre avaliações para gerar inteligência analítica.</p></div>';
+    return;
+  }
+
+  const alerts = [];
+
+  data.forEach(r => {
+    const c = r.calc;
+    if (c.evolMedia !== null) {
+      if (c.evolMedia >= 10) {
+        alerts.push({ type:'success', icon:'🏆', title:`Excelente desempenho: ${r.nome}`, msg:`Evolução de +${c.evolMedia.toFixed(2)}% no consumo (${c.m1?.toFixed(3)} → ${c.m2?.toFixed(3)} Km/L). Resultado acima da média.` });
+      } else if (c.evolMedia < 0) {
+        alerts.push({ type:'danger', icon:'⚠', title:`Piora no consumo: ${r.nome}`, msg:`Regressão de ${c.evolMedia.toFixed(2)}% (${c.m1?.toFixed(3)} → ${c.m2?.toFixed(3)} Km/L). Recomenda-se avaliação adicional.` });
+      } else if (c.evolMedia > 0 && c.evolMedia < 5) {
+        alerts.push({ type:'warning', icon:'📌', title:`Melhora tímida: ${r.nome}`, msg:`Evolução de apenas +${c.evolMedia.toFixed(2)}%. Potencial de melhora ainda não explorado.` });
+      }
+    }
+    if (c.difMarchas !== null && c.difMarchas > 0) {
+      alerts.push({ type:'warning', icon:'🔄', title:`Aumento de trocas: ${r.nome}`, msg:`A 2ª volta registrou ${c.difMarchas} trocas adicionais. Técnica de antecipação precisa ser reforçada.` });
+    }
+    if (c.difMarchas !== null && c.difMarchas <= -20) {
+      alerts.push({ type:'success', icon:'✅', title:`Redução significativa de trocas: ${r.nome}`, msg:`Redução de ${Math.abs(c.difMarchas)} trocas na 2ª volta. Motorista assimilou a técnica de antecipação.` });
+    }
+  });
+
+  // Análise estatística — Outliers
+  const evolMedias = data.map(r => r.calc.evolMedia).filter(v => v !== null);
+  if (evolMedias.length >= 3) {
+    const avg = evolMedias.reduce((a,b)=>a+b,0)/evolMedias.length;
+    const std = Math.sqrt(evolMedias.reduce((a,b)=>a+(b-avg)**2,0)/evolMedias.length);
+    if (std > 10) {
+      alerts.push({ type:'info', icon:'📊', title:'Alta variabilidade nos resultados', msg:`Desvio padrão de ${std.toFixed(2)}%. Resultados muito dispersos entre os motoristas — investigar condições operacionais.` });
+    }
+  }
+
+  if (!alerts.length) {
+    alerts.push({ type:'info', icon:'✅', title:'Dados dentro do esperado', msg:'Nenhum desvio crítico identificado. Continue monitorando as avaliações.' });
+  }
+
+  container.innerHTML = alerts.map(a => `
+    <div class="alert-card ${a.type}">
+      <span class="alert-icon">${a.icon}</span>
+      <div class="alert-text"><strong>${a.title}</strong>${a.msg}</div>
+    </div>
+  `).join('');
+}
+
+function renderDashTable(data) {
+  const tbody = document.getElementById('dash-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:#9ca3af; padding:30px;">Nenhum registro encontrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(r => {
+    const c = r.calc;
+    const evTag = c.evolMedia !== null
+      ? `<span class="${c.evolMedia >= 0 ? 'tag-up' : 'tag-down'}">${c.evolMedia >= 0 ? '+' : ''}${c.evolMedia.toFixed(2)}%</span>`
+      : '—';
+    const mTag = c.difMarchas !== null
+      ? `<span class="${c.difMarchas <= 0 ? 'tag-up' : 'tag-down'}">${c.difMarchas > 0 ? '+' : ''}${c.difMarchas}</span>`
+      : '—';
+    return `<tr>
+      <td><strong>${r.nome}</strong></td>
+      <td><span style="font-family:monospace;font-size:12px;background:var(--dk-surface3);padding:2px 7px;border-radius:4px;">${r.prefixo||'—'}</span></td>
+      <td>${r.data || '—'}</td>
+      <td class="td-center">${c.m1 !== null ? c.m1.toFixed(3) : '—'}</td>
+      <td class="td-center">${c.m2 !== null ? c.m2.toFixed(3) : '—'}</td>
+      <td class="td-center">${evTag}</td>
+      <td class="td-center">${r.v1_marchas ?? '—'}</td>
+      <td class="td-center">${r.v2_marchas ?? '—'}</td>
+      <td class="td-center">${mTag}</td>
+      <td class="td-center">${minutesToHHMM(c.t1)}</td>
+      <td class="td-center">${minutesToHHMM(c.t2)}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ============================================================
+   7. HISTÓRICO
+   ============================================================ */
+function renderHistorico() {
+  const data = STORE.getAll().slice().reverse();
+  const container = document.getElementById('historico-list');
+
+  if (!data.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Nenhuma avaliação cadastrada ainda.<br>Acesse <strong>Novo Registro</strong> para começar.</p></div>';
+    return;
+  }
+
+  container.innerHTML = data.map(r => {
+    const c = r.calc;
+    return `<div class="record-card">
+      <div class="record-card-header">
+        <div>
+          <div class="driver-name">👤 ${r.nome}</div>
+          <div class="record-date">📅 ${r.data || '—'} · Prefixo: <strong>${r.prefixo || '—'}</strong> · Matrícula: ${r.matricula || '—'} · Instrutor: ${r.instrutor || '—'}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-outline" onclick="registrar2aVolta('${r.nome}','${r.data}')" style="padding:6px 12px;font-size:11px;background:#1a3830;color:#3fb950;border-color:#3fb950;" ${r.v2_km ? 'title="2ª Volta já registrada"' : ''}>🟢 2ª Volta</button>
+          <button class="btn-outline" onclick="exportarHTMLSingle(${r.id})" style="padding:6px 12px;font-size:11px;">⬇ HTML</button>
+          <button class="btn-danger-outline" onclick="deleteRecord(${r.id})">🗑 Excluir</button>
+        </div>
+      </div>
+      <div class="record-card-body">
+        <div class="mini-grid">
+          <div class="mini-item"><label>KM 1ª / 2ª</label><span>${r.v1_km ?? '—'} / ${r.v2_km ?? '—'} km</span></div>
+          <div class="mini-item"><label>Litros 1ª / 2ª</label><span>${r.v1_litros ?? '—'} / ${r.v2_litros ?? '—'} L</span></div>
+          <div class="mini-item"><label>Km/L 1ª Volta</label><span>${c.m1 !== null ? c.m1.toFixed(3) : '—'}</span></div>
+          <div class="mini-item"><label>Km/L 2ª Volta</label><span>${c.m2 !== null ? c.m2.toFixed(3) : '—'}</span></div>
+          <div class="mini-item"><label>Evolução Média</label>
+            <span style="color:${c.evolMedia >= 0 ? 'var(--green-600)' : 'var(--red-600)'}">
+              ${c.evolMedia !== null ? (c.evolMedia >= 0 ? '+' : '') + c.evolMedia.toFixed(2) + '%' : '—'}
+            </span>
+          </div>
+          <div class="mini-item"><label>Marchas 1ª / 2ª</label><span>${r.v1_marchas ?? '—'} / ${r.v2_marchas ?? '—'}</span></div>
+          <div class="mini-item"><label>Dif. Marchas</label>
+            <span style="color:${c.difMarchas <= 0 ? 'var(--green-600)' : 'var(--red-600)'}">
+              ${c.difMarchas !== null ? (c.difMarchas > 0 ? '+' : '') + c.difMarchas : '—'}
+            </span>
+          </div>
+          <div class="mini-item"><label>Tempo 1ª / 2ª</label><span>${minutesToHHMM(c.t1)} / ${minutesToHHMM(c.t2)}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteRecord(id) {
+  if (!confirm('Confirma a exclusão deste registro?')) return;
+  STORE.remove(id);
+  renderHistorico();
+  renderDashboard();
+  renderRanking();
+  renderMarchas();
+  populateDriverFilter();
+  populateMarchasFilter();
+  populateIAFilters();
+  showToast('🗑 Registro excluído.', 'success');
+}
+
+function registrar2aVolta(nome, data) {
+  // Navega para aba de registro já em modo 2ª Volta com nome/data preenchidos
+  setTab('cadastro');
+  document.getElementById('f-nome').value = nome;
+  document.getElementById('f-data').value = data;
+  setVoltaMode('v2');
+  tryLookup();
+  showToast('🟢 Modo 2ª Volta ativo — verifique os dados e preencha os resultados.', 'success');
+}
+
+/* ============================================================
+   8. RANKING
+   ============================================================ */
+function renderRanking() {
+  const data = STORE.getAll();
+
+  // Agrupa por motorista — pega melhor evolução
+  const byDriver = {};
+  data.forEach(r => {
+    if (!byDriver[r.nome]) byDriver[r.nome] = [];
+    byDriver[r.nome].push(r);
+  });
+
+  const drivers = Object.entries(byDriver).map(([nome, registros]) => {
+    const evols = registros.map(r => r.calc.evolMedia).filter(v => v !== null);
+    const evolMarchas = registros.map(r => r.calc.evolMarchas).filter(v => v !== null);
+    const km1s = registros.map(r => r.calc.m1).filter(v => v !== null);
+    const km2s = registros.map(r => r.calc.m2).filter(v => v !== null);
+    const m1s = registros.map(r => r.v1_marchas).filter(v => v !== null);
+    const m2s = registros.map(r => r.v2_marchas).filter(v => v !== null);
+    return {
+      nome,
+      avgEvolMedia: evols.length ? evols.reduce((a,b)=>a+b,0)/evols.length : null,
+      avgEvolMarchas: evolMarchas.length ? evolMarchas.reduce((a,b)=>a+b,0)/evolMarchas.length : null,
+      avgKm1: km1s.length ? km1s.reduce((a,b)=>a+b,0)/km1s.length : null,
+      avgKm2: km2s.length ? km2s.reduce((a,b)=>a+b,0)/km2s.length : null,
+      avgM1: m1s.length ? m1s.reduce((a,b)=>a+b,0)/m1s.length : null,
+      avgM2: m2s.length ? m2s.reduce((a,b)=>a+b,0)/m2s.length : null,
+      count: registros.length
+    };
+  });
+
+  const byConsumo = [...drivers].sort((a,b) => (b.avgEvolMedia||0) - (a.avgEvolMedia||0));
+  const byMarchas = [...drivers].sort((a,b) => (a.avgEvolMarchas||0) - (b.avgEvolMarchas||0)); // menor = melhor
+
+  function rankBadge(i) {
+    const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'other';
+    return `<span class="rank-badge ${cls}">${i+1}</span>`;
+  }
+
+  document.getElementById('rank-consumo').innerHTML = byConsumo.map((d,i) => `
+    <tr>
+      <td>${rankBadge(i)}</td>
+      <td><strong>${d.nome}</strong></td>
+      <td>${d.avgKm1 !== null ? d.avgKm1.toFixed(3) : '—'}</td>
+      <td>${d.avgKm2 !== null ? d.avgKm2.toFixed(3) : '—'}</td>
+      <td><span class="${d.avgEvolMedia >= 0 ? 'tag-up' : 'tag-down'}">
+        ${d.avgEvolMedia !== null ? (d.avgEvolMedia >= 0 ? '+' : '') + d.avgEvolMedia.toFixed(2) + '%' : '—'}
+      </span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:20px;">Sem dados.</td></tr>';
+
+  document.getElementById('rank-marchas').innerHTML = byMarchas.map((d,i) => `
+    <tr>
+      <td>${rankBadge(i)}</td>
+      <td><strong>${d.nome}</strong></td>
+      <td>${d.avgM1 !== null ? Math.round(d.avgM1) : '—'}</td>
+      <td>${d.avgM2 !== null ? Math.round(d.avgM2) : '—'}</td>
+      <td><span class="${d.avgEvolMarchas <= 0 ? 'tag-up' : 'tag-down'}">
+        ${d.avgEvolMarchas !== null ? (d.avgEvolMarchas > 0 ? '+' : '') + d.avgEvolMarchas.toFixed(2) + '%' : '—'}
+      </span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:20px;">Sem dados.</td></tr>';
+}
+
+/* ============================================================
+   9. FILTRO DE MOTORISTA
+   ============================================================ */
+function populateDriverFilter() {
+  const sel = document.getElementById('dash-filter-motorista');
+  if (!sel) return;
+  const current = sel.value;
+  const drivers = [...new Set(STORE.getAll().map(r => r.nome))].sort();
+  sel.innerHTML = '<option value="">Todos os motoristas</option>' +
+    drivers.map(d => `<option value="${d}" ${d===current?'selected':''}>${d}</option>`).join('');
+}
+
+/* ============================================================
+   10. EXPORTAR HTML INDIVIDUAL
+   ============================================================ */
+function exportarHTMLSingle(id) {
+  const record = STORE.getAll().find(r => r.id === id);
+  if (!record) { showToast('Registro não encontrado.', 'error'); return; }
+  const html = gerarHTMLRelatorio([record]);
+  downloadHTML(html, `DI_${record.nome.replace(/\s+/g,'_')}_${record.data || 'sem_data'}.html`);
+  showToast('✅ HTML gerado com sucesso!', 'success');
+}
+
+function exportarHTML() {
+  const data = getFilteredData();
+  if (!data.length) { showToast('⚠ Nenhum dado para exportar.', 'error'); return; }
+  const html = gerarHTMLRelatorio(data);
+  downloadHTML(html, `DI_Relatorio_${new Date().toISOString().split('T')[0]}.html`);
+  showToast(`✅ Relatório com ${data.length} avaliação(ões) gerado!`, 'success');
+}
+
+function downloadHTML(html, filename) {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function gerarHTMLRelatorio(data) {
+  const now = new Date().toLocaleString('pt-BR');
+  const rows = data.map(r => {
+    const c = r.calc;
+    const evColor = c.evolMedia >= 0 ? '#15803d' : '#b91c1c';
+    const mColor  = c.difMarchas <= 0 ? '#15803d' : '#b91c1c';
+    return `
+    <div class="card" style="page-break-inside:avoid; margin-bottom:32px; border:1.5px solid #e5e7eb; border-radius:10px; overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#0d2240,#1e4fa8); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:18px;font-weight:800;">👤 ${r.nome}</div>
+          <div style="font-size:12px;opacity:.75;">Matrícula: ${r.matricula||'—'} · Data: ${r.data||'—'} · Instrutor: ${r.instrutor||'—'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;opacity:.65;">Câmbio Manual</div>
+          <div style="font-size:13px;font-weight:700;">Análise Comparativa</div>
+        </div>
+      </div>
+      <div style="padding:20px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+          <thead>
+            <tr style="background:#f3f4f6;">
+              <th style="padding:10px 14px;text-align:left;border:1px solid #e5e7eb;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;">Métrica</th>
+              <th style="padding:10px 14px;text-align:center;border:1px solid #e5e7eb;background:#dbeafe;color:#1e4fa8;font-size:11px;text-transform:uppercase;">1ª Volta (Referência)</th>
+              <th style="padding:10px 14px;text-align:center;border:1px solid #e5e7eb;background:#dcfce7;color:#15803d;font-size:11px;text-transform:uppercase;">2ª Volta (Resultado)</th>
+              <th style="padding:10px 14px;text-align:center;border:1px solid #e5e7eb;font-size:11px;text-transform:uppercase;color:#6b7280;">Diferença / Evolução</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">⏱ Horário Início</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v1_inicio||'—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v2_inicio||'—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">—</td>
+            </tr>
+            <tr style="background:#f9fafb;">
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">⏱ Horário Fim</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v1_fim||'—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v2_fim||'—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">—</td>
+            </tr>
+            <tr>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">⏱ Tempo de Condução</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${minutesToHHMM(c.t1)}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${minutesToHHMM(c.t2)}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${c.difTempo !== null ? (c.difTempo > 0 ? '+' : '') + minutesToHHMM(c.difTempo) : '—'}</td>
+            </tr>
+            <tr style="background:#f9fafb;">
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">🛣 KM Percorrido</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v1_km ?? '—'} km</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v2_km ?? '—'} km</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">—</td>
+            </tr>
+            <tr>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">⛽ Litros Consumidos</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v1_litros ?? '—'} L</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v2_litros ?? '—'} L</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">—</td>
+            </tr>
+            <tr style="background:#f9fafb;">
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">📊 Média (Km/L)</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:700;">${c.m1 !== null ? c.m1.toFixed(3) : '—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:700;color:#15803d;">${c.m2 !== null ? c.m2.toFixed(3) : '—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:800;color:${evColor};">${c.evolMedia !== null ? (c.evolMedia >= 0 ? '+' : '') + c.evolMedia.toFixed(2) + '%' : '—'}</td>
+            </tr>
+            <tr>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">🔄 Trocas de Marcha</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v1_marchas ?? '—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${r.v2_marchas ?? '—'}</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:700;color:${mColor};">${c.difMarchas !== null ? (c.difMarchas > 0 ? '+' : '') + c.difMarchas : '—'}</td>
+            </tr>
+            <tr style="background:#f9fafb;">
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">🔄 Evolução Trocas</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">—</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">—</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:700;color:${c.evolMarchas !== null && c.evolMarchas <= 0 ? '#15803d':'#b91c1c'};">
+                ${c.evolMarchas !== null ? (c.evolMarchas > 0 ? '+' : '') + c.evolMarchas.toFixed(2) + '%' : '—'}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;font-weight:600;">⏱ Trocas/hora (proj.)</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${c.m1h_v1 ?? '—'} / h · ${c.m6h_v1 ?? '—'} em 6h</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">${c.m1h_v2 ?? '—'} / h · ${c.m6h_v2 ?? '—'} em 6h</td>
+              <td style="padding:9px 14px;border:1px solid #e5e7eb;text-align:center;">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direção Inteligente 2026 — Relatório de Avaliação</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f3f4f6; color: #111827; }
+  .page { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+  .report-header { background: linear-gradient(135deg,#0a1628,#1a3a6b); color: #fff; padding: 28px 32px; border-radius: 12px; margin-bottom: 28px; display:flex; justify-content:space-between; align-items:center; }
+  .report-header h1 { font-size: 22px; font-weight: 800; }
+  .report-header p  { font-size: 12px; opacity: .7; margin-top: 4px; }
+  .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+  @media print {
+    body { background: white; }
+    .page { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="report-header">
+    <div>
+      <h1>🚗 Direção Inteligente 2026</h1>
+      <p>Análise Comparativa de Condução e Eficiência Operacional — Câmbio Manual</p>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;opacity:.65;">Gerado em</div>
+      <div style="font-size:13px;font-weight:700;">${now}</div>
+      <div style="font-size:12px;opacity:.75;">${data.length} avaliação(ões)</div>
+    </div>
+  </div>
+  ${rows}
+  <div class="footer">
+    Relatório gerado automaticamente pelo sistema Direção Inteligente 2026 — Gestão e Análise Comparativa de Condução de Motoristas.
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+/* ============================================================
+   11. TOAST
+   ============================================================ */
+let toastTimer = null;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3200);
+}
+
+/* ============================================================
+   12. ANÁLISE DE TROCAS DE MARCHAS
+   ============================================================ */
+function renderMarchas() {
+  let data = STORE.getAll();
+  const mot = document.getElementById('marchas-filter-motorista')?.value || '';
+  if (mot) data = data.filter(r => r.nome === mot);
+
+  const tbody = document.getElementById('marchas-tbody');
+  const kpisEl = document.getElementById('marchas-kpis');
+  const narrEl = document.getElementById('marchas-narrativa');
+
+  // Filter only records that have both voltas
+  const complete = data.filter(r => r.v1_marchas != null && r.v2_marchas != null && r.calc.t1 && r.calc.t2);
+
+  if (!complete.length) {
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--dk-muted);padding:30px;">Nenhum registro com 1ª e 2ª volta disponível.</td></tr>';
+    kpisEl.innerHTML = '';
+    narrEl.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><p>Sem dados suficientes para análise.</p></div>';
+    drawBarChart('chart-marchas-det', [], [], [], '1ª Volta', '2ª Volta', '#3b82f6', '#22c55e');
+    drawBarChart('chart-marchas-proj', [], [], [], 'Proj. 6h 1ª', 'Proj. 6h 2ª', '#3b82f6', '#22c55e');
+    return;
+  }
+
+  // KPIs agregados
+  const avgM1 = complete.reduce((a,r) => a + r.v1_marchas, 0) / complete.length;
+  const avgM2 = complete.reduce((a,r) => a + r.v2_marchas, 0) / complete.length;
+  const avgProj1h_v1 = complete.reduce((a,r) => a + (r.calc.m1h_v1||0), 0) / complete.length;
+  const avgProj1h_v2 = complete.reduce((a,r) => a + (r.calc.m1h_v2||0), 0) / complete.length;
+  const avgProj6h_v1 = complete.reduce((a,r) => a + (r.calc.m6h_v1||0), 0) / complete.length;
+  const avgProj6h_v2 = complete.reduce((a,r) => a + (r.calc.m6h_v2||0), 0) / complete.length;
+  const avgEvolM = complete.reduce((a,r) => a + (r.calc.evolMarchas||0), 0) / complete.length;
+  const econProj6h = Math.round(avgProj6h_v1 - avgProj6h_v2);
+
+  kpisEl.innerHTML = `
+    <div class="kpi-card"><div class="kpi-icon">🔵</div>
+      <div class="kpi-label">Média Marchas 1ª Volta</div>
+      <div class="kpi-value">${Math.round(avgM1)}</div>
+      <div class="kpi-sub">trocas por volta</div>
+    </div>
+    <div class="kpi-card ${avgM2 < avgM1 ? 'green' : 'red'}"><div class="kpi-icon">🟢</div>
+      <div class="kpi-label">Média Marchas 2ª Volta</div>
+      <div class="kpi-value">${Math.round(avgM2)}</div>
+      <div class="kpi-sub">trocas por volta</div>
+    </div>
+    <div class="kpi-card ${avgEvolM <= 0 ? 'green' : 'red'}"><div class="kpi-icon">📉</div>
+      <div class="kpi-label">Evolução Média</div>
+      <div class="kpi-value big">${avgEvolM >= 0 ? '+' : ''}${avgEvolM.toFixed(2)}%</div>
+      <span class="kpi-badge ${avgEvolM <= 0 ? 'up' : 'down'}">${avgEvolM <= 0 ? '▼ Redução (Bom)' : '▲ Aumento'}</span>
+    </div>
+    <div class="kpi-card"><div class="kpi-icon">⏱</div>
+      <div class="kpi-label">Proj. 1h — 1ª Volta</div>
+      <div class="kpi-value">${Math.round(avgProj1h_v1)}</div>
+      <div class="kpi-sub">trocas/hora projetadas</div>
+    </div>
+    <div class="kpi-card ${avgProj1h_v2 < avgProj1h_v1 ? 'green' : 'red'}"><div class="kpi-icon">⏱</div>
+      <div class="kpi-label">Proj. 1h — 2ª Volta</div>
+      <div class="kpi-value">${Math.round(avgProj1h_v2)}</div>
+      <div class="kpi-sub">trocas/hora projetadas</div>
+    </div>
+    <div class="kpi-card ${econProj6h > 0 ? 'green' : 'red'}"><div class="kpi-icon">💡</div>
+      <div class="kpi-label">Economia Proj. 6h</div>
+      <div class="kpi-value">${econProj6h > 0 ? '-' : '+'}${Math.abs(econProj6h)}</div>
+      <div class="kpi-sub">trocas economizadas em 6h</div>
+    </div>
+  `;
+
+  // Tabela
+  tbody.innerHTML = complete.map(r => {
+    const c = r.calc;
+    const evCls = (c.evolMarchas||0) <= 0 ? 'tag-up' : 'tag-down';
+    const econText = c.m6h_v1 != null && c.m6h_v2 != null
+      ? `<span class="${c.m6h_v2 < c.m6h_v1 ? 'tag-up':'tag-down'}">${(c.m6h_v1 - c.m6h_v2) > 0 ? '-' : '+'}${Math.abs(c.m6h_v1 - c.m6h_v2)}</span>`
+      : '—';
+    return `<tr>
+      <td><strong>${r.nome}</strong></td>
+      <td>${r.prefixo || '—'}</td>
+      <td>${r.data || '—'}</td>
+      <td class="td-center">${r.v1_marchas ?? '—'}</td>
+      <td class="td-center">${r.v2_marchas ?? '—'}</td>
+      <td class="td-center">${c.difMarchas !== null ? (c.difMarchas > 0 ? '+' : '') + c.difMarchas : '—'}</td>
+      <td class="td-center"><span class="${evCls}">${c.evolMarchas !== null ? (c.evolMarchas > 0 ? '+' : '') + c.evolMarchas.toFixed(2) + '%' : '—'}</span></td>
+      <td class="td-center">${c.m1h_v1 ?? '—'}</td>
+      <td class="td-center">${c.m1h_v2 ?? '—'}</td>
+      <td class="td-center">${c.m6h_v1 ?? '—'}</td>
+      <td class="td-center">${c.m6h_v2 ?? '—'}</td>
+      <td class="td-center">${econText}</td>
+    </tr>`;
+  }).join('');
+
+  // Gráficos
+  const labels = complete.map((_,i) => `#${i+1}`);
+  const m1arr  = complete.map(r => r.v1_marchas);
+  const m2arr  = complete.map(r => r.v2_marchas);
+  const p6h_v1 = complete.map(r => r.calc.m6h_v1);
+  const p6h_v2 = complete.map(r => r.calc.m6h_v2);
+  drawBarChart('chart-marchas-det',  labels, m1arr,  m2arr,  '1ª Volta', '2ª Volta', '#3b82f6', '#22c55e');
+  drawBarChart('chart-marchas-proj', labels, p6h_v1, p6h_v2, 'Proj.6h 1ª', 'Proj.6h 2ª', '#f59e0b', '#22c55e');
+
+  // Análise narrativa local (sem IA)
+  const bestRecord = complete.slice().sort((a,b) => (a.calc.evolMarchas||0) - (b.calc.evolMarchas||0))[0];
+  const worstRecord = complete.slice().sort((a,b) => (b.calc.evolMarchas||0) - (a.calc.evolMarchas||0))[0];
+  const totalMelhoram = complete.filter(r => (r.calc.evolMarchas||0) < 0).length;
+  const totalPioram   = complete.filter(r => (r.calc.evolMarchas||0) > 0).length;
+
+  narrEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
+      <div class="alert-card info">
+        <span class="alert-icon">📊</span>
+        <div class="alert-text">
+          <strong>Visão Geral</strong>
+          ${complete.length} avaliação(ões) com dados completos. ${totalMelhoram} motorista(s) reduziram trocas após orientação (${Math.round(totalMelhoram/complete.length*100)}%).
+        </div>
+      </div>
+      ${econProj6h > 0 ? `<div class="alert-card success">
+        <span class="alert-icon">💡</span>
+        <div class="alert-text">
+          <strong>Economia Operacional Projetada</strong>
+          Em 6 horas de operação, estima-se redução média de <strong>${econProj6h} trocas</strong> por motorista após o treinamento. Isso representa menor desgaste mecânico e maior economia de combustível.
+        </div>
+      </div>` : ''}
+      ${bestRecord ? `<div class="alert-card success">
+        <span class="alert-icon">🏆</span>
+        <div class="alert-text">
+          <strong>Melhor Evolução: ${bestRecord.nome}</strong>
+          Reduziu de ${bestRecord.v1_marchas} para ${bestRecord.v2_marchas} trocas (${bestRecord.calc.evolMarchas?.toFixed(2)}%). Projeção 6h: de ${bestRecord.calc.m6h_v1} para ${bestRecord.calc.m6h_v2} trocas.
+        </div>
+      </div>` : ''}
+      ${totalPioram > 0 ? `<div class="alert-card warning">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-text">
+          <strong>${totalPioram} motorista(s) com piora</strong>
+          Aumento de trocas na 2ª Volta. Recomenda-se reforço das técnicas de antecipação e uso correto da faixa de rotação.
+        </div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+/* ============================================================
+   12b. POPULATE FILTERS MARCHAS E IA
+   ============================================================ */
+function populateMarchasFilter() {
+  const sel = document.getElementById('marchas-filter-motorista');
+  if (!sel) return;
+  const cur = sel.value;
+  const drivers = [...new Set(STORE.getAll().map(r => r.nome))].sort();
+  sel.innerHTML = '<option value="">Todos os motoristas</option>' +
+    drivers.map(d => `<option value="${d}" ${d===cur?'selected':''}>${d}</option>`).join('');
+}
+
+function populateIAFilters() {
+  const sel = document.getElementById('ia-filter-motorista');
+  if (!sel) return;
+  const drivers = [...new Set(STORE.getAll().map(r => r.nome))].sort();
+  sel.innerHTML = '<option value="">Selecione um motorista</option>' +
+    drivers.map(d => `<option value="${d}">${d}</option>`).join('');
+}
+
+function populateIADates() {
+  const nome = document.getElementById('ia-filter-motorista')?.value;
+  const sel  = document.getElementById('ia-filter-data');
+  if (!sel) return;
+  if (!nome) { sel.innerHTML = '<option value="">Selecione a data</option>'; return; }
+  const records = STORE.getAll().filter(r => r.nome === nome && r.calc.m1 && r.calc.m2);
+  sel.innerHTML = '<option value="">Selecione a data</option>' +
+    records.map(r => `<option value="${r.id}">${r.data || '—'} (${r.prefixo || 'sem prefixo'}) — Km/L: ${r.calc.m1?.toFixed(3)} → ${r.calc.m2?.toFixed(3)}</option>`).join('');
+}
+
+/* ============================================================
+   12c. FEEDBACK IA — CHAMADA À API ANTHROPIC
+   ============================================================ */
+async function runIAAnalysis() {
+  const nome  = document.getElementById('ia-filter-motorista')?.value;
+  const recId = parseInt(document.getElementById('ia-filter-data')?.value);
+
+  if (!nome || !recId) {
+    showToast('⚠ Selecione motorista e avaliação.', 'error');
+    return;
+  }
+
+  const record = STORE.getAll().find(r => r.id === recId);
+  if (!record) { showToast('Registro não encontrado.', 'error'); return; }
+
+  const c = record.calc;
+
+  // Mostrar loading
+  document.getElementById('ia-empty').style.display   = 'none';
+  document.getElementById('ia-result').style.display  = 'none';
+  document.getElementById('ia-loading').style.display = 'block';
+  document.getElementById('btn-ia-analyze').disabled  = true;
+
+  // Snapshot visual
+  const snap = document.getElementById('ia-result-snapshot');
+  snap.innerHTML = `
+    <div class="dk-computed-item"><label>Motorista</label><span style="font-size:14px;color:var(--dk-text);">${record.nome}</span></div>
+    <div class="dk-computed-item"><label>Prefixo</label><span style="font-size:14px;color:var(--dk-text);">${record.prefixo||'—'}</span></div>
+    <div class="dk-computed-item"><label>Data</label><span style="font-size:14px;color:var(--dk-text);">${record.data||'—'}</span></div>
+    <div class="dk-computed-item"><label>Km/L 1ª Volta</label><span>${c.m1?.toFixed(3)||'—'}</span></div>
+    <div class="dk-computed-item"><label>Km/L 2ª Volta</label><span class="${c.m2 >= c.m1 ? 'positive' : 'negative'}">${c.m2?.toFixed(3)||'—'}</span></div>
+    <div class="dk-computed-item"><label>Evolução Km/L</label><span class="${c.evolMedia >= 0 ? 'positive' : 'negative'}">${c.evolMedia !== null ? (c.evolMedia >= 0 ? '+' : '') + c.evolMedia.toFixed(2) + '%' : '—'}</span></div>
+    <div class="dk-computed-item"><label>Marchas 1ª Volta</label><span>${record.v1_marchas??'—'}</span></div>
+    <div class="dk-computed-item"><label>Marchas 2ª Volta</label><span class="${c.difMarchas <= 0 ? 'positive' : 'negative'}">${record.v2_marchas??'—'}</span></div>
+    <div class="dk-computed-item"><label>Redução Trocas</label><span class="${c.difMarchas <= 0 ? 'positive' : 'negative'}">${c.difMarchas !== null ? (c.difMarchas > 0 ? '+' : '') + c.difMarchas : '—'}</span></div>
+    <div class="dk-computed-item"><label>Proj. 6h (1ª)</label><span>${c.m6h_v1??'—'} trocas</span></div>
+    <div class="dk-computed-item"><label>Proj. 6h (2ª)</label><span class="${(c.m6h_v2||0) < (c.m6h_v1||0) ? 'positive' : 'negative'}">${c.m6h_v2??'—'} trocas</span></div>
+    <div class="dk-computed-item"><label>Instrutor</label><span style="font-size:14px;color:var(--dk-text);">${record.instrutor||'—'}</span></div>
+  `;
+
+  // Montar prompt técnico para a IA
+  const prompt = `Você é um especialista em treinamento de motoristas profissionais e direção econômica. Analise os seguintes dados operacionais e gere um feedback completo e personalizado para o motorista.
+
+DADOS DA AVALIAÇÃO:
+- Motorista: ${record.nome}
+- Prefixo do Veículo: ${record.prefixo || 'não informado'}
+- Data: ${record.data || 'não informada'}
+- Instrutor: ${record.instrutor || 'não informado'}
+
+1ª VOLTA (REFERÊNCIA — antes da orientação):
+- Horário: ${record.v1_inicio||'—'} às ${record.v1_fim||'—'}
+- KM percorrido: ${record.v1_km ?? '—'} km
+- Litros consumidos: ${record.v1_litros ?? '—'} L
+- Consumo: ${c.m1?.toFixed(3) ?? '—'} Km/L
+- Trocas de marcha: ${record.v1_marchas ?? '—'}
+- Duração: ${minutesToHHMM(c.t1)}
+- Projeção 1h: ${c.m1h_v1 ?? '—'} trocas/h
+- Projeção 6h: ${c.m6h_v1 ?? '—'} trocas em 6h de operação
+
+2ª VOLTA (RESULTADO — após orientação técnica):
+- Horário: ${record.v2_inicio||'—'} às ${record.v2_fim||'—'}
+- KM percorrido: ${record.v2_km ?? '—'} km
+- Litros consumidos: ${record.v2_litros ?? '—'} L
+- Consumo: ${c.m2?.toFixed(3) ?? '—'} Km/L
+- Trocas de marcha: ${record.v2_marchas ?? '—'}
+- Duração: ${minutesToHHMM(c.t2)}
+- Projeção 1h: ${c.m1h_v2 ?? '—'} trocas/h
+- Projeção 6h: ${c.m6h_v2 ?? '—'} trocas em 6h de operação
+
+COMPARATIVO:
+- Evolução consumo (Km/L): ${c.evolMedia !== null ? (c.evolMedia >= 0 ? '+' : '') + c.evolMedia.toFixed(2) + '%' : '—'}
+- Diferença trocas de marcha: ${c.difMarchas !== null ? (c.difMarchas > 0 ? '+' : '') + c.difMarchas : '—'}
+- Evolução marchas: ${c.evolMarchas !== null ? (c.evolMarchas >= 0 ? '+' : '') + c.evolMarchas.toFixed(2) + '%' : '—'}
+- Economia proj. 6h: ${c.m6h_v1 != null && c.m6h_v2 != null ? c.m6h_v1 - c.m6h_v2 : '—'} trocas a menos
+
+META OPERACIONAL: 2.1500 Km/L
+
+Por favor, gere um feedback estruturado em português do Brasil contendo:
+
+1. **RESUMO DO DESEMPENHO** — Avaliação geral em 2-3 linhas destacando o ponto principal.
+2. **PONTOS POSITIVOS** — O que o motorista fez bem. Seja específico com os números.
+3. **PONTOS DE ATENÇÃO** — O que precisa melhorar. Use os dados para embasar.
+4. **ANÁLISE DAS MARCHAS** — Interprete os dados de trocas de marcha, incluindo as projeções de 1h e 6h. Explique o impacto operacional.
+5. **RECOMENDAÇÕES PRÁTICAS** — Mínimo 4 dicas concretas e aplicáveis de direção econômica (antecipação de frenagem, faixa de rotação ideal, trocas de marcha, manutenção de velocidade constante, uso do freio motor, etc).
+6. **PROJEÇÃO DE ECONOMIA** — Calcule e apresente o potencial de economia se o motorista mantiver ou melhorar o desempenho da 2ª volta em uma jornada de 6 horas.
+7. **MENSAGEM MOTIVACIONAL** — Encoraje o motorista de forma profissional e genuína.
+
+Seja analítico, objetivo e use os números para fundamentar cada ponto. Não invente dados. Tom: profissional e motivador.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.map(b => b.text || '').join('') || 'Não foi possível gerar análise.';
+
+    // Render feedback
+    document.getElementById('ia-feedback-text').textContent = text;
+    document.getElementById('ia-result-header').querySelector('h3').textContent =
+      `📄 Análise IA — ${record.nome} (${record.data || '—'})`;
+
+    // Score panel
+    renderIAScore(c);
+
+    // Show result
+    document.getElementById('ia-loading').style.display = 'none';
+    document.getElementById('ia-result').style.display  = 'block';
+
+  } catch (err) {
+    document.getElementById('ia-loading').style.display = 'none';
+    document.getElementById('ia-empty').style.display   = 'block';
+    document.getElementById('ia-empty').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p>Erro ao conectar com a IA.<br><small style="color:var(--dk-muted);">${err.message}</small></p>
+      </div>`;
+    showToast('⚠ Falha na conexão com IA.', 'error');
+  }
+
+  document.getElementById('btn-ia-analyze').disabled = false;
+}
+
+function renderIAScore(c) {
+  // Calcular scores
+  const scoreConsumo = c.evolMedia !== null
+    ? Math.min(100, Math.max(0, 50 + c.evolMedia * 5))
+    : 0;
+  const scoreMarchas = c.evolMarchas !== null
+    ? Math.min(100, Math.max(0, 50 - c.evolMarchas * 3))
+    : 0;
+  const scoreMeta = c.m2
+    ? Math.min(100, (c.m2 / 2.15) * 100)
+    : 0;
+  const scoreGeral = Math.round((scoreConsumo + scoreMarchas + scoreMeta) / 3);
+
+  function barClass(v) { return v >= 70 ? 'good' : v >= 40 ? 'warn' : 'bad'; }
+
+  document.getElementById('ia-score-panel').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:48px;font-weight:800;color:${scoreGeral>=70?'var(--dk-green)':scoreGeral>=40?'var(--dk-yellow)':'var(--dk-red)'};">${scoreGeral}</div>
+          <div style="font-size:12px;color:var(--dk-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Score Geral</div>
+          <div style="font-size:13px;color:var(--dk-text2);margin-top:4px;">${scoreGeral>=70?'✅ Bom desempenho':scoreGeral>=40?'⚠️ Em desenvolvimento':'❌ Precisa atenção'}</div>
+        </div>
+      </div>
+      <div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-label"><span>🔥 Evolução Km/L</span><span>${Math.round(scoreConsumo)}/100</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill ${barClass(scoreConsumo)}" style="width:${scoreConsumo}%;"></div></div>
+        </div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-label"><span>🔄 Eficiência de Marchas</span><span>${Math.round(scoreMarchas)}/100</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill ${barClass(scoreMarchas)}" style="width:${scoreMarchas}%;"></div></div>
+        </div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-label"><span>🎯 Aderência à Meta (2.15 Km/L)</span><span>${Math.round(scoreMeta)}/100</span></div>
+          <div class="score-bar-track"><div class="score-bar-fill ${barClass(scoreMeta)}" style="width:${scoreMeta}%;"></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   13. SISTEMA DE TEMAS DE FUNDO
+   ============================================================ */
+const THEME_KEY = 'di2026_theme';
+
+const THEMES = {
+  galaxy:   { label: 'Dark Galaxy',     emoji: '🌌' },
+  charcoal: { label: 'Carvão',          emoji: '🪨' },
+  steel:    { label: 'Aço Azul',        emoji: '🔷' },
+  nox:      { label: 'Nox Total',       emoji: '⬛' },
+  matrix:   { label: 'Verde Terminal',  emoji: '🖥' },
+  midnight: { label: 'Meia Noite',      emoji: '🌙' },
+  espresso: { label: 'Café Escuro',     emoji: '☕' },
+  slate:    { label: 'Ardósia',         emoji: '🩶' },
+};
+
+function setTheme(theme) {
+  if (!THEMES[theme]) theme = 'galaxy';
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
+
+  // Marcar opção ativa no painel
+  document.querySelectorAll('.theme-opt').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === theme);
+  });
+
+  // Feedback no botão
+  const btn = document.getElementById('theme-btn');
+  btn.textContent = THEMES[theme].emoji;
+
+  // Fechar painel após seleção
+  setTimeout(() => closeThemePanel(), 200);
+  showToast(`${THEMES[theme].emoji} Tema "${THEMES[theme].label}" aplicado.`, 'success');
+}
+
+function toggleThemePanel() {
+  const panel = document.getElementById('theme-panel');
+  panel.classList.toggle('open');
+}
+
+function closeThemePanel() {
+  document.getElementById('theme-panel').classList.remove('open');
+}
+
+// Fechar ao clicar fora
+document.addEventListener('click', (e) => {
+  const trigger = document.getElementById('theme-trigger');
+  if (trigger && !trigger.contains(e.target)) closeThemePanel();
+});
+
+// Inicializa tema salvo (ou padrão)
+(function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY) || 'galaxy';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.querySelectorAll('.theme-opt').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === saved);
+  });
+  const btn = document.getElementById('theme-btn');
+  if (btn && THEMES[saved]) btn.textContent = THEMES[saved].emoji;
+})();
+
+/* ============================================================
+   13. DADOS DEMO (pré-carregados da planilha)
+   ============================================================ */
+(function seedDemo() {
+  if (STORE.getAll().length > 0) return; // Não sobrescreve dados existentes
+  const demo = [
+    {
+      nome:'Lorena', matricula:'MAT-001', prefixo:'BUS-042', data:'2024-04-23', instrutor:'Supervisor DI',
+      v1_inicio:'15:30', v1_fim:'15:45',
+      v1_km:5, v1_litros:2, v1_marchas:200,
+      v2_inicio:'16:30', v2_fim:'16:44',
+      v2_km:5, v2_litros:1.8, v2_marchas:190,
+    }
+  ];
+  demo.forEach(d => {
+    const calc = calcRecord(d);
+    STORE.add({ ...d, calc, savedBy:'SISTEMA', savedAt: new Date().toISOString() });
+  });
+})();
+
+</script>
+
+<script>
+/* Auto-login ao abrir dentro do Portal (iframe): abre direto, sem pedir senha */
+(function(){
+  var emb; try{ emb=(window.self!==window.top); }catch(e){ emb=true; }
+  if(!emb) return;
+  function entrar(){
+    var u=document.getElementById('login-user'), p=document.getElementById('login-pass');
+    if(u&&p&&typeof doLogin==='function'){ u.value='lorena'; p.value='8586'; try{ doLogin(); }catch(e){} }
+    else { setTimeout(entrar, 120); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', entrar); else entrar();
+})();
+</script>
+<script>
+/* ☁ Receptor do painel Drive do Redentor Hub */
+window.addEventListener("message",function(ev){
+  try{
+    var d=ev.data;
+    if(!(d&&d.hubDrive==="import"&&d.buf))return;
+    var f=new File([d.buf],d.nome||"planilha.xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var inp=document.querySelector("input[type=file][accept*=xls i]")||document.querySelector("input[type=file][accept*=sheet i]")||document.querySelector("input[type=file]");
+    if(inp){
+      try{
+        var dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files;
+        try{ev.source.postMessage({hubDrive:"ok"},"*");}catch(e){}
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+        return;
+      }catch(e){}
+    }
+    /* sem importador nativo: o Hub mostra o aviso adequado */
+  }catch(e){}
+});
+</script>
+</body>
+</html>

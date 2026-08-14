@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamados & Novidades</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2230;--border:#21262d;--text:#e6edf3;--text2:#adbac7;--muted:#8b949e;--blue:#3b82f6;--green:#10b981;--amber:#f59e0b;--red:#ef4444;--orange:#f97316;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+button{font-family:inherit;cursor:pointer;}
+#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0d14,#0f1117,#111827);z-index:100;padding:16px;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;width:100%;max-width:360px;}
+.login-card h1{font-size:20px;margin-bottom:4px;text-align:center;}
+.login-card .sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:22px;}
+.login-card label{display:block;font-size:12px;color:var(--text2);margin:12px 0 5px;}
+.login-card input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:13px;outline:none;}
+.login-card button{width:100%;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;margin-top:18px;}
+#login-error{color:var(--red);font-size:12px;text-align:center;margin-top:10px;min-height:16px;}
+#app{display:none;min-height:100vh;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;flex-wrap:wrap;gap:10px;}
+.topbar h1{font-size:17px;}
+.btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s;}
+.btn:hover{border-color:var(--orange);}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:#fff;}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff;}
+.btn.sm{padding:4px 9px;font-size:12px;}
+.btn.ghost{background:transparent;}
+.wrap{max-width:1300px;margin:0 auto;padding:22px;}
+.tabs-nav{display:flex;gap:8px;margin-bottom:20px;}
+.tabbtn{background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;}
+.tabbtn.active{background:var(--orange);border-color:var(--orange);color:#fff;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.stat .v{font-size:24px;font-weight:700;line-height:1;}
+.stat .l{font-size:11px;color:var(--muted);margin-top:6px;}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.toolbar input,.toolbar select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;outline:none;}
+.toolbar .search{flex:1;min-width:170px;}
+.tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.tbl-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--surface2);text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text2);}
+tr:hover td{background:#ffffff05;}
+td.ml{white-space:pre-line;max-width:260px;font-size:12px;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.b-open{background:#3b82f622;color:#60a5fa;}
+.b-run{background:#f59e0b22;color:#fbbf24;}
+.b-done{background:#10b98122;color:#34d399;}
+.b-late{background:#ef444422;color:#f87171;}
+.tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;margin:1px 2px 1px 0;}
+.empty{text-align:center;padding:36px;color:var(--muted);}
+.overlay{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:600px;max-height:92vh;overflow:auto;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);}
+.modal-head h3{font-size:16px;}
+.modal-head .x{background:none;border:none;color:var(--muted);font-size:22px;}
+.modal-body{padding:20px;}
+.fld{margin-bottom:13px;}
+.fld label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;}
+.fld input,.fld textarea,.fld select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;}
+.fld textarea{min-height:64px;resize:vertical;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border);}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;z-index:200;opacity:0;transition:.3s;pointer-events:none;}
+.toast.show{opacity:1;bottom:30px;}
+.nitem{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.nitem:last-child{border-bottom:none;}
+.nitem .nd{min-width:86px;color:var(--muted);font-size:12px;font-weight:600;}
+.nitem .nb .ns{font-size:12px;color:var(--orange);font-weight:600;margin-bottom:3px;}
+.nitem .nb .nt{font-size:13px;color:var(--text2);line-height:1.5;}
+</style>
+</head>
+<body>
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🛠 Chamados</h1>
+    <div class="sub">Área do administrador</div>
+    <label>Usuário</label><input id="login-user" onkeydown="if(event.key==='Enter')doLogin()">
+    <label>Senha</label><input type="password" id="login-pass" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <h1>🛠 Chamados <span style="color:var(--muted);font-weight:400;font-size:13px">&amp; Novidades</span></h1>
+    <div style="display:flex;gap:10px">
+      <button class="btn primary" id="btnNovo" onclick="openModal()">+ Abrir Chamado</button>
+      <button class="btn ghost" onclick="exportCSV()">⬇ CSV</button>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="tabs-nav">
+      <button class="tabbtn active" id="tb-ch" onclick="switchTab('ch',this)">🛠 Chamados</button>
+      <button class="tabbtn" id="tb-nv" onclick="switchTab('nv',this)">🔔 Novidades</button>
+    </div>
+
+    <div id="tab-ch">
+      <div class="stats" id="statsBox"></div>
+      <div class="toolbar">
+        <input class="search" id="q" placeholder="🔎 Buscar chamado, pessoa..." oninput="render()">
+        <select id="fStatus" onchange="render()">
+          <option value="ativos">Em aberto (Aberto + Em andamento)</option>
+          <option value="">Todos</option>
+          <option value="Aberto">Aberto</option>
+          <option value="Em andamento">Em andamento</option>
+          <option value="Concluído">Concluído</option>
+        </select>
+        <select id="fSis" onchange="render()"><option value="">Todos os sistemas</option></select>
+      </div>
+      <div class="tbl-card"><div class="tbl-scroll">
+        <table>
+          <thead><tr><th>#</th><th>Título</th><th>Sistema</th><th>Tipo</th><th>Descrição / Melhoria</th><th>Aberto por</th><th>Envolvidos</th><th>Prazo</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <div id="tab-nv" style="display:none">
+      <div class="tbl-card" style="padding:6px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;color:var(--text2)">Histórico de atualizações e melhorias de cada sistema.</div>
+          <button class="btn sm" onclick="novaNovidade()">+ Nova atualização</button>
+        </div>
+        <div id="nvList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="mTitle">Abrir Chamado</h3><button class="x" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="fld"><label>Título *</label><input id="mTit" placeholder="Resumo curto do chamado"></div>
+      <div class="grid2">
+        <div class="fld"><label>Sistema (ícone) *</label><select id="mSis"></select></div>
+        <div class="fld"><label>Tipo</label><select id="mTipo"><option>Melhoria</option><option>Alteração</option><option>Erro / Correção</option><option>Novo recurso</option></select></div>
+      </div>
+      <div class="fld"><label>Descrição — qual alteração/melhoria *</label><textarea id="mDesc" placeholder="Descreva o que precisa ser feito"></textarea></div>
+      <div class="grid2">
+        <div class="fld"><label>Aberto por *</label><input id="mAb" placeholder="Quem está abrindo"></div>
+        <div class="fld"><label>Envolvidos</label><input id="mEnv" placeholder="Nomes separados por vírgula"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>Prazo</label><input type="date" id="mPrazo"></div>
+        <div class="fld"><label>Status</label><select id="mSt"><option>Aberto</option><option>Em andamento</option><option>Concluído</option></select></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveItem()">Salvar</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var CH_KEY='chamados_v1', NV_KEY='novidades_v1';
+var SISTEMAS=['🌐 Portal','⛽ Abastecimento','🧭 Direção Inteligente','🚌 Biarticulado','🎓 LNT','📅 Agenda das Salas','🎯 Plano de Ação','🔐 Segurança','Outro'];
+var NV_SEED=[{"data": "2026-07-02", "sistema": "🎯 Plano de Ação", "texto": "Dashboard de pendências: gráfico de status, pendências por responsável, lista das mais paradas com botão Concluir rápido, abas Dashboard/Atividades."}, {"data": "2026-07-02", "sistema": "🌐 Portal", "texto": "Trilha de auditoria completa em Configurações: quem entrou, quais sistemas abriu e quais dados alterou (com filtro por usuário). Logout automático após 30 min de inatividade. Backup completo em JSON."}, {"data": "2026-07-02", "sistema": "🔐 Segurança", "texto": "Dados e anexos passaram a exigir login; limite de 5 tentativas no código 2FA; timeout de 15s nas chamadas; sincronização inteligente (só envia o que mudou) com indicador 🟢/🔴 no topo."}, {"data": "2026-07-02", "sistema": "🌐 Portal", "texto": "Novo sistema: Plano de Ação (Projetos IA) com as 47 atividades da planilha, custos, % de conclusão e exportação CSV."}, {"data": "2026-07-02", "sistema": "📱 Portal", "texto": "Portal instalável no celular (PWA) com ícone próprio; bloqueio de login após 5 senhas erradas (15 min); log de acessos para o admin."}, {"data": "2026-07-01", "sistema": "🌐 Portal", "texto": "Novo sistema: Agenda das Salas — reservas salvas no banco, abre sem segundo login."}, {"data": "2026-07-01", "sistema": "🏠 Tela inicial", "texto": "Busca de sistemas, mural de avisos (admin), atalhos de teclado 1-9, indicadores rápidos, selo de último acesso e saudação com sol/lua."}, {"data": "2026-07-01", "sistema": "⚡ Otimização", "texto": "Todos os sistemas abrem direto após o login do portal (sem segunda senha); ícones revisados; compressão GZIP e cache; visual mais suave."}, {"data": "2026-06-30", "sistema": "🔐 Segurança", "texto": "Autenticação em 2 etapas (Google Authenticator) obrigatória, com QR Code, códigos de backup e reset pelo admin."}, {"data": "2026-06-30", "sistema": "🌐 Portal", "texto": "Login, dados e PDFs migrados para o banco MySQL (auth.php, dados.php, anexos.php) — informações disponíveis em qualquer computador."}, {"data": "2026-06-30", "sistema": "🎓 LNT", "texto": "LNT embutido no portal com aba 📎 Anexos: anexar, visualizar, baixar e remover PDFs vinculados a cada registro, gravados no banco."}, {"data": "2026-06-30", "sistema": "🚌 Biarticulado", "texto": "Versão v3 instalada; datas do Excel corrigidas (fim do Invalid Date/NaN); colunas da tabela alinhadas."}, {"data": "2026-07-02", "sistema": "🛠 Chamados", "texto": "Novo sistema (só admin): abertura de chamados completos — quem abriu, envolvidos, sistema, tipo, prazo com alerta de vencido, status e CSV — mais a aba 🔔 Novidades com o histórico de atualizações."}, {"data": "2026-07-02", "sistema": "🔑 Login", "texto": "Login simplificado: agora basta digitar o usuário e o código do Google Authenticator. A senha só é pedida uma única vez, no primeiro acesso, para cadastrar o autenticador com segurança."}, {"data": "2026-07-03", "sistema": "📅 Agenda das Salas", "texto": "Quem criou a reserva agora pode editar (✎) e cancelar (×); os demais só visualizam. Visual mais amplo, edição completa com verificação de conflito e responsável preenchido automaticamente."}, {"data": "2026-07-03", "sistema": "🏠 Tela inicial", "texto": "Cards das salas com a cor de cada uma (🟠 Laranja / 🟢 Verde) listando as agendas de hoje: horário, evento e responsável — sincronizado para todos."}, {"data": "2026-07-03", "sistema": "📱 WhatsApp (n8n)", "texto": "Integração com o n8n: URL do webhook configurável em Configurações, teste com diagnóstico detalhado e convite automático disparado a cada reserva de sala."}, {"data": "2026-07-03", "sistema": "🔗 Convites", "texto": "Convite por link: o admin gera um link (validade 7 dias, uso único) e a pessoa cria sozinha o login, a senha e o autenticador — sem trabalho para o admin."}, {"data": "2026-07-03", "sistema": "📆 Minha Agenda", "texto": "Novo sistema: agenda individual por login, sincronizada no banco. Reservas de sala entram automaticamente na agenda de quem criou (e acompanham edição/cancelamento)."}, {"data": "2026-07-03", "sistema": "📆 Tela inicial", "texto": "Calendário mensal interativo logo após o login: hoje em laranja, dias com compromisso marcados, feriados nacionais em vermelho com legenda, e clique no dia para ver todos os horários."}, {"data": "2026-07-03", "sistema": "⚙ Configurações", "texto": "Novas seções: 📇 Contatos do WhatsApp (nome + número, com teste por contato) e 📢 Comunicado em massa — escreva uma mensagem e envie via n8n para todos os contatos ou um específico."}, {"data": "2026-07-03", "sistema": "⚙ Configurações", "texto": "Identidade do portal (trocar nome e logo pela própria Config), tempo de logout por inatividade configurável (15 min a 2 h) e modelo editável da mensagem do convite de sala no WhatsApp."}, {"data": "2026-07-03", "sistema": "⚙ Configurações", "texto": "Manutenção: painel com o tamanho dos dados de cada sistema, exportação da auditoria em CSV e ♻️ restauração de backup (JSON) com confirmação dupla."}, {"data": "2026-07-03", "sistema": "📆 Minha Agenda", "texto": "Convide pessoas da plataforma para um compromisso: o sistema mostra a disponibilidade de cada convidado no dia (com alerta de conflito), envia notificação com som e popup para aceitar ou recusar, e o aceite entra direto na agenda da pessoa. Status ⏳/✔/✕ visível no compromisso."}, {"data": "2026-07-03", "sistema": "📅 Agendamento de Salas", "texto": "Salas renomeadas: 🟠 Sala João Gulin (laranja) e 🟢 Sala Angelo Gulin (verde). O sistema passa a se chamar Agendamento de Salas de Treinamento."}, {"data": "2026-07-03", "sistema": "📩 Convites de agenda", "texto": "Notificação do convite direto na plataforma, muito mais rápida: verificação a cada 20 segundos e na hora em que a pessoa volta à janela do portal — com som, popup para aceitar ou recusar e o botão 📩 no topo. Proteção contra perda de convites em envios simultâneos."}, {"data": "2026-07-06", "sistema": "🎨 Redentor Hub", "texto": "Nova identidade: o portal agora é o Redentor Hub! Tela inicial redesenhada — visual claro, cabeçalho azul-marinho, cards compactos em grade (cabem mais sistemas na tela) e a agenda pessoal reposicionada logo abaixo do acesso rápido."}, {"data": "2026-07-06", "sistema": "🎨 Redentor Hub", "texto": "Tela de login redesenhada no padrão Redentor Hub: visual claro, logo em destaque, campos com ícones, botão ENTRAR azul-marinho e link Esqueci minha senha."}, {"data": "2026-07-06", "sistema": "📆 Calendário", "texto": "Calendário da tela inicial repaginado no padrão Hub: dia atual destacado em azul-marinho com anel dourado, legenda por cores (feriado/comemorativa, meu compromisso, convite), painel do dia com Dia livre! e botão de agendar, lista PRÓXIMOS e todas as datas comemorativas brasileiras — incluindo Dia das Mães/Pais, Dia do Professor e a padroeira de Curitiba."}, {"data": "2026-07-06", "sistema": "🎨 Redentor Hub", "texto": "Tema claro ou escuro à sua escolha: novo botão 🌙/☀️ no topo da tela inicial. A preferência fica salva por usuário no servidor — entre de qualquer computador e o Hub abre com o seu tema."}, {"data": "2026-07-06", "sistema": "🚀 Desempenho", "texto": "O Hub ficou até 9x mais leve: os 8 sistemas foram separados em arquivos próprios e agora carregam sob demanda, só quando você abre — a tela inicial ficou muito mais rápida, principalmente no celular."}, {"data": "2026-07-06", "sistema": "🤖 Rotinas automáticas", "texto": "Backup automático diário do banco (guarda os últimos 14) e lembrete diário no WhatsApp com os compromissos do dia de cada pessoa — direto do servidor, sem depender de ninguém lembrar."}, {"data": "2026-07-06", "sistema": "✍️ Revisão geral", "texto": "Revisão ortográfica em todo o Hub: acentuação corrigida nos textos, mensagens e feriados, e o calendário deixou de exibir “TerÇa-Feira” — os dias e meses agora aparecem no padrão correto (Terça-feira, 07 de julho)."}, {"data": "2026-07-06", "sistema": "⛽ Abastecimento", "texto": "Importação turbinada: os meses novos da planilha agora aparecem em TODAS as abas na hora (Visão Geral, Grupos, Categorias, Chassis, Veículos, projeções...), os filtros de período ganham os novos meses e trimestres automaticamente, e reimportar não duplica — cada equipamento+mês é atualizado, nunca repetido. Nova área de importação com botão “Escolher arquivo” e download do modelo de planilha pronto para preencher. A importação lista os meses encontrados no arquivo (pede confirmação se houver mais de um) e dá para apagar um mês importado específico sem perder os demais."}, {"data": "2026-07-06", "sistema": "⛽ Abastecimento", "texto": "Filtros de período agora com ANO: opções como Junho 2025 e Dezembro 2025, trimestres por ano (T2 2025, T2 2026...) e ordem cronológica correta. A base original foi identificada como 2025, o ano é lido da planilha (datas e formatos como junho/2025 ou 06/26) ou perguntado uma única vez — e dados de anos diferentes nunca se misturam nem se duplicam."}, {"data": "2026-07-06", "sistema": "💬 Chat interno", "texto": "Novo chat embutido no Hub: veja quem está online (bolinha verde), abra conversas individuais e troque mensagens em tempo real. Ícone 💬 no topo com contador de não lidas, notificação push ao receber mensagem e status online/offline atualizado automaticamente."}, {"data": "2026-07-07", "sistema": "🧩 Gerenciar Sistemas", "texto": "Agora dá para adicionar novos sistemas ao menu sem editar código: em Configurações → Gerenciar Sistemas, envie o arquivo HTML pelo próprio Hub, escolha nome, emoji, cor e quem acessa — o card aparece para todos na hora. Editar e remover também, tudo pela tela."}, {"data": "2026-07-07", "sistema": "📊 Fontes de Dados", "texto": "Dados via planilha na nuvem: em Configurações → Fontes de Dados, ligue cada sistema a uma planilha publicada do Google. Atualizou a planilha, o sistema lê os dados novos sozinho — com cache de 5 minutos no servidor e a URL protegida no banco. Os apps leem com parent.hubPlanilha('nome')."}, {"data": "2026-07-07", "sistema": "⛽ Abastecimento + 📊 Nuvem", "texto": "O Controle Posto de Abastecimento agora sincroniza sozinho com a planilha na nuvem: cadastre a fonte 'fuel' em Configurações → Fontes de Dados e, ao abrir o sistema, os dados da planilha entram automaticamente (sem duplicar, com aviso de quantos registros vieram). Atualizou a planilha no Google, todo mundo vê os números novos."}, {"data": "2026-07-08", "sistema": "🚨 Novos sistemas", "texto": "Dois novos cards no Acesso Rápido: IAK · Índice de Acidentes por Km (indicador por quilômetro rodado) e Painel de Acidentes (gestão e análise dos acidentes da operação). Liberados para todos os usuários."}, {"data": "2026-07-09", "sistema": "🎨 Cards personalizáveis", "texto": "Visual do menu padronizado (cards com altura uniforme e ícones com as cores certas nos dois temas) e agora TODO card pode ser editado em Configurações → Gerenciar Sistemas → Personalizar sistemas padrão: mude nome, emoji, descrição e cor de qualquer sistema — vale para todos os usuários, com opção de restaurar o padrão."}, {"data": "2026-07-09", "sistema": "⛽ Abastecimento + ☁ Drive", "texto": "O Controle Posto de Abastecimento agora busca as planilhas direto do Google Drive: na aba Dados, cole o link da pasta (uma vez), clique em Buscar arquivos e veja as planilhas na nuvem — as já importadas ficam marcadas para não duplicar. Importar o mês novo é um clique, e todos os painéis (Visão Geral, Por Grupo, Mensal etc.) atualizam automaticamente com o mês correspondente."}, {"data": "2026-07-09", "sistema": "☁ Drive no Abastecimento", "texto": "Melhorias na busca do Google Drive: os arquivos NOVOS (ainda não importados) aparecem destacados no topo da lista, separados dos já importados, e cada planilha ganhou o botão 🔗 Abrir — clique e vá direto para ela no Drive."}, {"data": "2026-07-09", "sistema": "🔄 Abastecimento sincronizado", "texto": "Os dados do Controle Posto de Abastecimento agora ficam salvos no banco do Hub e sincronizados entre todos os usuários: quem importar o mês novo compartilha automaticamente — os demais recebem os registros ao abrir o sistema, com a Visão Geral consolidada (veículos, km, litros, médias). Campos que vierem incompletos na planilha são respeitados, com as médias derivadas de km/litros quando faltarem, e o selo 'Consolidado às' passa a mostrar quem consolidou e quando, para todos."}, {"data": "2026-07-09", "sistema": "⛽ Importação fiel à planilha", "texto": "Correção importante no Abastecimento: a leitura da planilha agora respeita exatamente os valores como estão nela — números no formato brasileiro (2.640 / 1,579 / 9.117.322) são somados corretamente, e os nomes das colunas são reconhecidos mesmo com variações (maiúsculas, espaços, acentos). Após importar, aparece a Conferência do arquivo com veículos, km e litros somados por mês — para você comparar com a planilha e confirmar que bateu."}, {"data": "2026-07-09", "sistema": "⛽ Conferência antes de importar", "texto": "Blindagem final na importação do Abastecimento: a leitura agora prioriza o nome exato da coluna (a coluna Km nunca é confundida com Média Km/L ou Km/Dia) e, antes de gravar, aparece a CONFERÊNCIA — total de veículos, km e litros somados do arquivo, mais a lista de qual coluna da planilha foi usada em cada campo. Se os números não baterem com a sua planilha, é só cancelar e nada é importado."}, {"data": "2026-07-09", "sistema": "⛽ Substituição total do mês", "texto": "Ao importar um mês no Abastecimento, o período agora é limpo por completo antes de receber a planilha — importações antigas com valores errados saem inteiras e o mês fica com EXATAMENTE as linhas do arquivo. A sincronização entre usuários segue a mesma regra: o período recebido do servidor substitui o local por inteiro. Reimporte o mês e confira: Km Total da Visão Geral = soma da coluna Km da planilha."}, {"data": "2026-07-09", "sistema": "⛽ Planilha diária suportada", "texto": "Descoberta a causa real da divergência do Km Total: a planilha de abastecimento é DIÁRIA (cada linha é um abastecimento, o mesmo veículo aparece várias vezes no mês) e o importador guardava só uma linha por veículo. Agora ele AGREGA por veículo+mês — soma todos os km e litros de cada veículo — e o Km Total fica exatamente igual à soma da coluna Km da planilha. O ano também é detectado sozinho pela Data do Abastecimento, e a conferência mostra veículos × abastecimentos antes de gravar."}, {"data": "2026-07-09", "sistema": "⛽ Autocorreção ao abrir", "texto": "O Abastecimento agora se corrige sozinho: ao abrir o sistema, ele baixa a planilha cadastrada na nuvem, agrega os abastecimentos diários por veículo e substitui o mês inteiro pelos dados fiéis — descartando de vez importações antigas com valores errados (inclusive as sincronizadas). O selo 'motor v47' no topo confirma a versão em execução."}, {"data": "2026-07-09", "sistema": "⛽ Junho unificado", "texto": "Correção da data serial do Excel no Abastecimento: as datas exportadas pelo Google (número 46174 = 01/06/2026) agora são convertidas corretamente, então o mês fica UM só — Junho 2026 — com a somatória de todas as colunas junta (km, litros, previstos, médias). Os períodos inválidos que apareceram (Junho 4617–4620) são removidos automaticamente ao abrir o sistema."}, {"data": "2026-07-09", "sistema": "⛽ Importação automática do Drive", "texto": "O Abastecimento agora importa sozinho ao abrir: usando o link do Google Drive salvo na aba Dados, ele baixa a planilha, agrega os abastecimentos do mês e substitui o período pelos números fiéis — sem nenhum clique. O selo 'motor v49' confirma a versão."}, {"data": "2026-07-09", "sistema": "☁ Drive em todos os sistemas", "texto": "O painel ☁ Drive agora é universal: dentro de QUALQUER sistema (incluindo os cards novos que você criar), o botão ☁ Drive no topo abre o painel para colar e salvar o link da pasta do Google Drive daquele sistema, buscar os arquivos na nuvem, abrir cada um com 🔗 e importar planilhas com ⬇. Cada sistema tem seu próprio link, salvo no banco para todos os usuários. A importação automática já funciona no Abastecimento — para habilitar nos demais (LNT, Biart, Direção...), é só pedir informando a planilha de cada um."}, {"data": "2026-07-09", "sistema": "☁ Drive ativo em TODOS os sistemas", "texto": "O receptor do painel ☁ Drive foi instalado em todos os 11 sistemas do menu: ao clicar ⬇ Importar no painel, o arquivo baixado da nuvem é entregue diretamente ao importador nativo de cada sistema (quando ele possui um) — respeitando as regras e o formato de cada aplicação. Sistemas sem importador próprio mostram o aviso e podem ser habilitados sob demanda."}, {"data": "2026-07-09", "sistema": "⚖️ Novo sistema", "texto": "Novo card no Acesso Rápido: Comparativo Empresa — painel de combustível comparativo entre empresas. Liberado para todos, com painel ☁ Drive e personalização pela Config já incluídos."}, {"data": "2026-07-09", "sistema": "🔐 Segurança reforçada", "texto": "Pacote de segurança do Hub: todas as comunicações (chat, planilhas na nuvem, Google Drive, notificações e envio de sistemas) agora exigem um token de sessão gerado no login — encerrando o acesso externo aos serviços do portal. O logout invalida o token na hora. Se aparecer 'Sessão inválida', basta sair e entrar novamente uma vez."}, {"data": "2026-07-09", "sistema": "📁 Pastas de organização", "texto": "Organize o menu como quiser: em Configurações → Gerenciar Sistemas → Pastas de organização, crie pastas (ex.: 📚 Treinamento, ⛽ Frota) e coloque sistemas dentro — basta editar o card (✏️) e escolher a pasta. No menu, a pasta vira um card tracejado que mostra quantos sistemas tem dentro; clique para abrir, e a busca continua encontrando tudo, mesmo dentro das pastas."}, {"data": "2026-07-09", "sistema": "💬 Chat corrigido", "texto": "Três melhorias no chat interno: (1) o erro 'Sessão inválida' foi eliminado — o chat renova o token sozinho e reenvia, sem precisar sair e entrar; (2) ao abrir uma conversa, ela já aparece na última mensagem com o campo de digitação pronto (sem rolar manualmente); (3) com isso, o envio para a pessoa selecionada volta a funcionar normalmente."}, {"data": "2026-07-09", "sistema": "👤 Perfil, ⭐ Favoritos e permissões completas", "texto": "Três novidades grandes: (1) Meu Perfil — clique no seu nome no topo para colocar sua foto (aparece no chat e no menu), cadastrar telefone e TROCAR SUA PRÓPRIA SENHA, sem depender do admin; (2) Favoritos — clique na estrela ⭐ de um card: seus sistemas preferidos ficam fixados no topo, na sua ordem, em qualquer dispositivo; (3) Permissões completas — ao editar um usuário, o admin agora vê TODOS os sistemas do menu (incluindo os novos e os criados pela Config) para liberar ou bloquear um a um."}, {"data": "2026-07-09", "sistema": "🎨 Novo visual corporativo", "texto": "O Hub ganhou identidade visual profissional: os emojis dos cards deram lugar a ícones vetoriais desenhados, cards com acabamento sóbrio (bordas finas, hover com elevação e seta 'Abrir sistema'), entrada animada em cascata, transição suave entre menu e sistemas, avisos discretos com barra de tempo e detalhes refinados em botões, campos e barra superior. Cards personalizados com emoji pela Config continuam respeitando a sua escolha."}, {"data": "2026-07-10", "sistema": "📈 Novo sistema", "texto": "Novo card no menu: Programado × Realizado — painel de aderência da operação (programado versus realizado). Liberado para todos, com ☁ Drive, personalização, pastas e permissões automáticas já inclusos."}, {"data": "2026-07-10", "sistema": "📩 Convites de agenda", "texto": "Fluxo de resposta polido: ao aceitar ou recusar, o convite sai da lista com animação suave e, quando o último for respondido, aparece a confirmação ✔ Tudo respondido! e a janela fecha sozinha — sem mais caixa vazia na tela. Os aceitos continuam entrando direto na sua agenda."}, {"data": "2026-07-10", "sistema": "📆 Minha Agenda", "texto": "Ao criar ou editar um compromisso, a data agora é escolhida num calendário do mês inteiro dentro da janela: navegue entre meses com ‹ ›, veja o dia de hoje destacado, clique no dia desejado e pronto — com botão Hoje e o dia selecionado por extenso logo abaixo."}, {"data": "2026-07-10", "sistema": "📆 Agenda blindada contra o passado", "texto": "A Minha Agenda não deixa mais marcar compromisso no passado: dias anteriores aparecem riscados no calendário (sem clique), a navegação não volta antes do mês atual e, se o compromisso for hoje, o horário de início não pode ser anterior a agora — com ajuste automático para o próximo horário e aviso. O término também precisa ser depois do início. Compromissos antigos continuam podendo ser editados (título, observações) sem travar."}, {"data": "2026-07-10", "sistema": "🖥 Painel de porta das salas", "texto": "Novidade para os monitores nas portas das salas de treinamento: cada sala ganhou um painel próprio (link dedicado, sem login) em formato vertical, mostrando relógio, selo EM USO/LIVRE, o evento EM ANDAMENTO com barra de tempo restante, o PRÓXIMO compromisso com contagem para começar e a agenda completa do dia (já realizados riscados). Atualiza sozinho a cada 45 segundos e mantém a tela acesa — reservou pelo Hub, aparece na porta."}, {"data": "2026-07-10", "sistema": "🖥 Painel de porta em tempo real", "texto": "Reservou, apareceu: o Agendamento de Salas agora envia a reserva ao servidor imediatamente ao salvar (sem esperar o ciclo de 1 minuto), e os painéis das portas passaram a verificar novidades a cada 20 segundos — com o selo 'Atualizado às HH:MM:SS' no rodapé mostrando a última sincronização. Da reserva à porta em menos de meio minuto."}];
+var chamados=[], novidades=[], editId=null;
+
+function load(){
+  try{ var c=localStorage.getItem(CH_KEY); chamados=c?JSON.parse(c):[]; }catch(e){ chamados=[]; }
+  try{ var n=localStorage.getItem(NV_KEY); novidades=n?JSON.parse(n):null; }catch(e){ novidades=null; }
+  if(!novidades || !Array.isArray(novidades)) novidades=[];
+  /* mescla: adiciona novidades do seed que ainda nao existem */
+  var _have={}; novidades.forEach(function(x){ _have[(x.data||'')+'|'+(x.texto||'')]=1; });
+  var _add=false;
+  NV_SEED.forEach(function(x){ if(!_have[(x.data||'')+'|'+(x.texto||'')]){ novidades.push(x); _add=true; } });
+  if(_add) saveNv();
+}
+function saveCh(){ try{ localStorage.setItem(CH_KEY, JSON.stringify(chamados)); }catch(e){} }
+function saveNv(){ try{ localStorage.setItem(NV_KEY, JSON.stringify(novidades)); }catch(e){} }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fdate(d){ if(!d)return '—'; var x=new Date(d+'T00:00:00'); return isNaN(x)?'—':x.toLocaleDateString('pt-BR'); }
+function hoje(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+function vencido(c){ return c.prazo && c.status!=='Concluído' && c.prazo<hoje(); }
+
+function switchTab(t,btn){
+  document.getElementById('tab-ch').style.display=(t==='ch')?'block':'none';
+  document.getElementById('tab-nv').style.display=(t==='nv')?'block':'none';
+  document.getElementById('btnNovo').style.display=(t==='ch')?'':'none';
+  document.querySelectorAll('.tabbtn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  if(t==='nv')renderNv();
+}
+function stats(){
+  var ab=chamados.filter(function(c){return c.status==='Aberto';}).length;
+  var an=chamados.filter(function(c){return c.status==='Em andamento';}).length;
+  var vc=chamados.filter(vencido).length;
+  var cc=chamados.filter(function(c){return c.status==='Concluído';}).length;
+  var s=[{v:ab,l:'Abertos',c:'#60a5fa'},{v:an,l:'Em andamento',c:'#fbbf24'},{v:vc,l:'Prazo vencido',c:'#f87171'},{v:cc,l:'Concluídos',c:'#34d399'}];
+  document.getElementById('statsBox').innerHTML=s.map(function(x){return '<div class="stat"><div class="v" style="color:'+x.c+'">'+x.v+'</div><div class="l">'+x.l+'</div></div>';}).join('');
+}
+function fillSisSelects(){
+  var opts=SISTEMAS.map(function(s){return '<option>'+s+'</option>';}).join('');
+  document.getElementById('mSis').innerHTML=opts;
+  var f=document.getElementById('fSis');
+  if(f.options.length<=1) f.innerHTML='<option value="">Todos os sistemas</option>'+opts;
+}
+function badge(c){
+  if(vencido(c)) return '<span class="badge b-late">⏰ Vencido</span>';
+  if(c.status==='Concluído') return '<span class="badge b-done">✔ Concluído</span>';
+  if(c.status==='Em andamento') return '<span class="badge b-run">◐ Em andamento</span>';
+  return '<span class="badge b-open">● Aberto</span>';
+}
+function render(){
+  stats(); fillSisSelects();
+  var q=(document.getElementById('q').value||'').toLowerCase();
+  var fs=document.getElementById('fStatus').value;
+  var fsis=document.getElementById('fSis').value;
+  var rows=chamados.slice().sort(function(a,b){
+    var va=vencido(a)?0:1, vb=vencido(b)?0:1;
+    if(va!==vb)return va-vb;
+    var oa=a.status==='Concluído'?1:0, ob=b.status==='Concluído'?1:0;
+    if(oa!==ob)return oa-ob;
+    return (a.prazo||'9999')<(b.prazo||'9999')?-1:1;
+  });
+  var html=rows.filter(function(c){
+    if(fs==='ativos' && c.status==='Concluído')return false;
+    if(fs && fs!=='ativos' && c.status!==fs)return false;
+    if(fsis && c.sistema!==fsis)return false;
+    if(!q)return true;
+    return (c.titulo+' '+c.desc+' '+c.abertoPor+' '+c.envolvidos+' '+c.sistema).toLowerCase().indexOf(q)>=0;
+  }).map(function(c){
+    var env=(c.envolvidos||'').split(',').map(function(e){e=e.trim();return e?'<span class="tag">'+esc(e)+'</span>':'';}).join('');
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--orange)">'+c.id+'</td>'+
+      '<td style="color:var(--text);font-weight:500;min-width:140px">'+esc(c.titulo)+'</td>'+
+      '<td style="white-space:nowrap">'+esc(c.sistema)+'</td>'+
+      '<td><span class="tag">'+esc(c.tipo)+'</span></td>'+
+      '<td class="ml">'+esc(c.desc)+'</td>'+
+      '<td>'+esc(c.abertoPor)+'</td>'+
+      '<td style="min-width:120px">'+(env||'—')+'</td>'+
+      '<td style="white-space:nowrap;'+(vencido(c)?'color:#f87171;font-weight:600':'')+'">'+fdate(c.prazo)+'</td>'+
+      '<td>'+badge(c)+'</td>'+
+      '<td style="white-space:nowrap">'+
+        (c.status!=='Concluído'?'<button class="btn sm green" onclick="concluir('+c.id+')">✔</button> ':'')+
+        '<button class="btn sm ghost" onclick="openModal('+c.id+')">✎</button> '+
+        '<button class="btn sm ghost" style="color:var(--red)" onclick="delItem('+c.id+')">✕</button></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('tbody').innerHTML=html||'<tr><td colspan="10"><div class="empty">Nenhum chamado. Clique em "+ Abrir Chamado".</div></td></tr>';
+}
+function openModal(id){
+  editId=id||null;
+  var c=id?chamados.find(function(x){return x.id===id;}):null;
+  fillSisSelects();
+  document.getElementById('mTitle').textContent=id?('Editar Chamado #'+id):'Abrir Chamado';
+  document.getElementById('mTit').value=c?c.titulo:'';
+  document.getElementById('mSis').value=c?c.sistema:SISTEMAS[0];
+  document.getElementById('mTipo').value=c?c.tipo:'Melhoria';
+  document.getElementById('mDesc').value=c?c.desc:'';
+  document.getElementById('mAb').value=c?c.abertoPor:(window.__usuarioPortal||'');
+  document.getElementById('mEnv').value=c?c.envolvidos:'';
+  document.getElementById('mPrazo').value=c?(c.prazo||''):'';
+  document.getElementById('mSt').value=c?c.status:'Aberto';
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+function saveItem(){
+  var t=document.getElementById('mTit').value.trim();
+  var d=document.getElementById('mDesc').value.trim();
+  var ab=document.getElementById('mAb').value.trim();
+  if(!t||!d||!ab){ toast('⚠ Preencha título, descrição e quem abriu.'); return; }
+  var obj={titulo:t,sistema:document.getElementById('mSis').value,tipo:document.getElementById('mTipo').value,
+    desc:d,abertoPor:ab,envolvidos:document.getElementById('mEnv').value.trim(),
+    prazo:document.getElementById('mPrazo').value||'',status:document.getElementById('mSt').value,
+    atualizadoEm:hoje()};
+  if(editId){ var c=chamados.find(function(x){return x.id===editId;}); Object.assign(c,obj); }
+  else { obj.id=chamados.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1; obj.criadoEm=hoje(); chamados.push(obj); }
+  saveCh(); render(); closeModal(); toast('✅ Chamado salvo!');
+}
+function concluir(id){ var c=chamados.find(function(x){return x.id===id;}); if(!c)return; if(!confirm('Concluir o chamado #'+id+' — '+c.titulo+'?'))return; c.status='Concluído'; c.atualizadoEm=hoje(); saveCh(); render(); toast('✔ Chamado concluído!'); }
+function delItem(id){ if(!confirm('Excluir o chamado #'+id+'?'))return; chamados=chamados.filter(function(x){return x.id!==id;}); saveCh(); render(); toast('🗑 Excluído.'); }
+function exportCSV(){
+  var head=['#','Título','Sistema','Tipo','Descrição','Aberto por','Envolvidos','Prazo','Status','Criado em'];
+  var rows=chamados.map(function(c){return [c.id,c.titulo,c.sistema,c.tipo,c.desc,c.abertoPor,c.envolvidos,c.prazo,c.status,c.criadoEm]
+    .map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""').replace(/\n/g,' ')+'"';}).join(';');});
+  var blob=new Blob(['\uFEFF'+head.join(';')+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='chamados.csv';a.click();
+  toast('⬇ CSV exportado.');
+}
+function renderNv(){
+  var el=document.getElementById('nvList');
+  var arr=novidades.slice().sort(function(a,b){return (b.data||'')<(a.data||'')?-1:1;});
+  el.innerHTML=arr.map(function(n){
+    return '<div class="nitem"><div class="nd">'+fdate(n.data)+'</div><div class="nb"><div class="ns">'+esc(n.sistema)+'</div><div class="nt">'+esc(n.texto)+'</div></div></div>';
+  }).join('')||'<div class="empty">Nenhuma novidade.</div>';
+}
+function novaNovidade(){
+  var sis=prompt('Sistema (ex.: 🌐 Portal, 🎓 LNT):',SISTEMAS[0]); if(sis===null)return;
+  var txt=prompt('Descreva a atualização/melhoria:'); if(txt===null||!txt.trim())return;
+  novidades.push({data:hoje(),sistema:sis.trim()||'🌐 Portal',texto:txt.trim()});
+  saveNv(); renderNv(); toast('🔔 Novidade publicada!');
+}
+var toastT;
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove('show');},2600); }
+function doLogin(){
+  var u=(document.getElementById('login-user').value||'').trim().toLowerCase();
+  var p=(document.getElementById('login-pass').value||'').trim();
+  if(u==='lorena'&&p==='8586'){ entrar(); } else { document.getElementById('login-error').textContent='Usuário ou senha inválidos.'; }
+}
+function entrar(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  load(); render();
+}
+(function(){
+  var emb; try{ emb=(window.self!==window.top); }catch(e){ emb=true; }
+  if(!emb) return;
+  try{ if(window.parent&&window.parent.currentSession) window.__usuarioPortal=window.parent.currentSession.name||''; }catch(e){}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',entrar); else entrar();
+})();
+</script>
+<script>
+/* ☁ Receptor do painel Drive do Redentor Hub */
+window.addEventListener("message",function(ev){
+  try{
+    var d=ev.data;
+    if(!(d&&d.hubDrive==="import"&&d.buf))return;
+    var f=new File([d.buf],d.nome||"planilha.xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var inp=document.querySelector("input[type=file][accept*=xls i]")||document.querySelector("input[type=file][accept*=sheet i]")||document.querySelector("input[type=file]");
+    if(inp){
+      try{
+        var dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files;
+        try{ev.source.postMessage({hubDrive:"ok"},"*");}catch(e){}
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+        return;
+      }catch(e){}
+    }
+    /* sem importador nativo: o Hub mostra o aviso adequado */
+  }catch(e){}
+});
+</script>
+</body>
+</html>

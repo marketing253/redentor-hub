@@ -1,0 +1,2606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Treinamento — Biarticulado</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2230;
+    --border: #21262d;
+    --border2: #30363d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #58a6ff;
+    --accent: #1f6feb;
+    --accent2: #388bfd;
+    --green: #3fb950;
+    --green-bg: rgba(63,185,80,0.1);
+    --yellow: #d29922;
+    --yellow-bg: rgba(210,153,34,0.1);
+    --red: #f85149;
+    --red-bg: rgba(248,81,73,0.1);
+    --blue: #58a6ff;
+    --blue-bg: rgba(88,166,255,0.1);
+    --purple: #bc8cff;
+    --radius: 8px;
+    --radius2: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* LOGIN */
+  #login-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; z-index: 9999;
+  }
+  .login-box {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius2); padding: 48px 40px; width: 360px;
+    box-shadow: var(--shadow);
+  }
+  .login-logo { text-align: center; margin-bottom: 32px; }
+  .login-logo .icon { font-size: 48px; margin-bottom: 12px; }
+  .login-logo h1 { font-size: 18px; font-weight: 700; color: var(--text); }
+  .login-logo p { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .login-field { margin-bottom: 16px; }
+  .login-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .login-field input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 10px 12px; color: var(--text);
+    font-size: 14px; outline: none; transition: border 0.2s;
+  }
+  .login-field input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%; background: var(--accent); border: none; border-radius: var(--radius);
+    padding: 11px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+    margin-top: 8px; transition: background 0.2s;
+  }
+  .login-btn:hover { background: var(--accent2); }
+  .login-error { color: var(--red); font-size: 12px; text-align: center; margin-top: 10px; display: none; }
+
+  /* APP SHELL */
+  #app { display: none; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
+    background: var(--surface); border-right: 1px solid var(--border);
+    padding: 0; display: flex; flex-direction: column; z-index: 100;
+  }
+  .sidebar-header { padding: 20px 18px; border-bottom: 1px solid var(--border); }
+  .sidebar-header .brand { font-size: 13px; font-weight: 700; color: var(--text); }
+  .sidebar-header .brand span { color: var(--blue); }
+  .sidebar-header .sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .nav-group { padding: 12px 10px 4px; }
+  .nav-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; padding: 0 8px; margin-bottom: 4px; font-weight: 600; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: var(--radius); cursor: pointer; color: var(--text2);
+    font-size: 13px; transition: all 0.15s; margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--blue-bg); color: var(--blue); }
+  .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+  .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid var(--border); }
+  .user-chip { display: flex; align-items: center; gap: 8px; }
+  .user-avatar { width: 28px; height: 28px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .user-name { font-size: 12px; color: var(--text); font-weight: 600; }
+  .user-role { font-size: 10px; color: var(--text2); }
+  .logout-btn { margin-left: auto; background: none; border: none; color: var(--text2); cursor: pointer; font-size: 16px; }
+  .logout-btn:hover { color: var(--red); }
+
+  /* MAIN */
+  .main { margin-left: 220px; min-height: 100vh; }
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .page-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .page-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+    border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer;
+    border: none; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text2); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .btn-danger:hover { background: rgba(248,81,73,0.2); }
+  .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .btn-success:hover { background: rgba(63,185,80,0.2); }
+
+  .content { padding: 24px 28px; }
+
+  /* TABS (page sections) */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius2); padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.yellow::before { background: var(--yellow); }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-card.blue::before { background: var(--blue); }
+  .kpi-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .kpi-value { font-size: 32px; font-weight: 800; margin: 6px 0 4px; line-height: 1; }
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.yellow .kpi-value { color: var(--yellow); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+  .kpi-desc { font-size: 11px; color: var(--text2); }
+
+  /* CHARTS GRID */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius2); padding: 20px;
+  }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+  .chart-wrap { position: relative; height: 200px; }
+  canvas { display: block; }
+
+  /* TABLE */
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius2); overflow: hidden;
+  }
+  .table-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .table-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 7px 12px; min-width: 200px;
+  }
+  .search-box input { background: none; border: none; color: var(--text); font-size: 13px; outline: none; width: 100%; }
+  .search-box span { color: var(--text2); }
+  .filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filter-select {
+    background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 7px 10px; color: var(--text); font-size: 12px; outline: none; cursor: pointer;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--surface2); padding: 10px 14px; text-align: left;
+    font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase;
+    letter-spacing: 0.4px; border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 11px 14px; font-size: 13px; color: var(--text); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .badge.concluded { background: var(--green-bg); color: var(--green); }
+  .badge.inprogress { background: var(--blue-bg); color: var(--blue); }
+  .badge.expired { background: var(--red-bg); color: var(--red); }
+  .badge.afastado { background: var(--yellow-bg); color: var(--yellow); }
+  .table-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .pagination { display: flex; gap: 4px; }
+  .pg-btn {
+    background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+    padding: 5px 10px; border-radius: var(--radius); font-size: 12px; cursor: pointer;
+  }
+  .pg-btn:hover, .pg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .row-count { font-size: 12px; color: var(--text2); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 500; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius2); padding: 28px; width: 480px;
+    max-width: 95vw; box-shadow: var(--shadow);
+  }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .modal-close { background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; }
+  .modal-close:hover { color: var(--text); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-field.full { grid-column: span 2; }
+  .form-field label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+  .form-field input, .form-field select {
+    background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 9px 12px; color: var(--text); font-size: 13px; outline: none; transition: border 0.2s;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+  .form-field select option { background: var(--surface2); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+  /* ALERT BANNER */
+  .alert-banner {
+    background: var(--red-bg); border: 1px solid rgba(248,81,73,0.3);
+    border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px; font-size: 13px;
+  }
+  .alert-banner.warning { background: var(--yellow-bg); border-color: rgba(210,153,34,0.3); color: var(--yellow); }
+  .alert-list { list-style: none; }
+  .alert-list li { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .alert-list li:last-child { border-bottom: none; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9000;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 12px 18px; font-size: 13px;
+    box-shadow: var(--shadow); display: none; max-width: 300px;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text2); }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .charts-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+
+  /* SECTION CARD */
+  .section-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius2); padding: 20px; margin-bottom: 20px;
+  }
+  .section-card h3 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+
+  /* PIE CHART SVG */
+  .pie-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .progress-bar { height: 6px; background: var(--border2); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+  /* PRINT STYLES */
+  @media print {
+    #login-screen, .sidebar, .topbar, .topbar-actions,
+    .btn, .filter-row, .search-box, .pagination,
+    .modal-overlay, #toast, .alert-banner,
+    .nav-item, .logout-btn { display: none !important; }
+    .main { margin-left: 0 !important; }
+    body { background: #fff !important; color: #000 !important; }
+    .page { display: block !important; }
+    .page:not(.active) { display: none !important; }
+    .page.print-target { display: block !important; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; font-size: 11px; color: #000 !important; }
+    thead th { background: #eee !important; color: #000 !important; }
+    .badge { border: 1px solid #ccc; background: none !important; color: #000 !important; }
+    .print-header { display: block !important; }
+    .kpi-card, .chart-card, .section-card { display: none !important; }
+    .kpi-card.print-show, .table-card { display: block !important; box-shadow: none; border: 1px solid #ccc; }
+    .print-only { display: block !important; }
+    .no-print { display: none !important; }
+    .checkbox-col { display: none !important; }
+  }
+  .print-only { display: none; }
+  .print-header { display: none; }
+
+  /* CHECKBOX COL */
+  .checkbox-col input[type=checkbox] { cursor: pointer; width: 15px; height: 15px; }
+  .select-actions {
+    display: flex; align-items: center; gap: 8px; padding: 8px 20px;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--text2);
+  }
+  .select-count { font-weight: 600; color: var(--blue); }
+
+  /* TOTAL CARD */
+  .total-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius2); padding: 14px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .total-card-left { display: flex; align-items: center; gap: 12px; }
+  .total-card-icon { font-size: 22px; }
+  .total-card-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .total-card-value { font-size: 28px; font-weight: 800; color: var(--green); line-height: 1; }
+  .total-card-right { display: flex; gap: 8px; }
+
+
+  /* IMPORTAÇÃO */
+  .import-tabs { display:flex; gap:4px; margin-bottom:20px; flex-wrap:wrap; }
+  .import-tab {
+    padding:8px 16px; border-radius:var(--radius); font-size:12px; font-weight:600;
+    cursor:pointer; border:1px solid var(--border2); background:var(--surface2);
+    color:var(--text2); transition:all 0.15s;
+  }
+  .import-tab:hover { color:var(--text); border-color:var(--text2); }
+  .import-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .import-tab .tab-icon { margin-right:5px; }
+
+  .import-panel { display:none; }
+  .import-panel.active { display:block; }
+
+  .drop-zone {
+    border:2px dashed var(--border2); border-radius:var(--radius2);
+    padding:40px 24px; text-align:center; cursor:pointer;
+    transition:all 0.2s; background:var(--surface2); margin-bottom:16px;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color:var(--accent); background:var(--blue-bg); }
+  .drop-zone .dz-icon { font-size:36px; margin-bottom:10px; }
+  .drop-zone .dz-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .drop-zone .dz-sub { font-size:12px; color:var(--text2); }
+  .drop-zone input[type=file] { display:none; }
+
+  .import-preview {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius2); overflow:hidden; margin-bottom:16px; display:none;
+  }
+  .import-preview-header {
+    padding:12px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .import-preview-title { font-size:13px; font-weight:700; color:var(--text); }
+  .import-preview-meta { font-size:11px; color:var(--text2); }
+  .preview-table-wrap { overflow-x:auto; max-height:320px; overflow-y:auto; }
+  .preview-table-wrap table thead th { position:sticky; top:0; z-index:2; }
+
+  .import-field-map {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius2); padding:16px; margin-bottom:16px; display:none;
+  }
+  .import-field-map h4 { font-size:12px; font-weight:700; color:var(--text); margin-bottom:14px; text-transform:uppercase; letter-spacing:0.5px; }
+  .field-map-grid { display:grid; grid-template-columns:1fr 32px 1fr; gap:10px 8px; align-items:center; }
+  .field-map-label { font-size:12px; color:var(--text2); font-weight:600; }
+  .field-map-arrow { text-align:center; color:var(--accent); font-size:14px; }
+  .field-map-select {
+    background:var(--bg); border:1px solid var(--border2); border-radius:var(--radius);
+    padding:7px 10px; color:var(--text); font-size:12px; outline:none; width:100%;
+  }
+  .field-map-target { font-size:12px; color:var(--green); font-weight:600; }
+
+  .import-options {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius2); padding:16px; margin-bottom:16px; display:none;
+  }
+  .import-options h4 { font-size:12px; font-weight:700; color:var(--text); margin-bottom:14px; text-transform:uppercase; letter-spacing:0.5px; }
+  .opt-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .opt-item { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text2); cursor:pointer; }
+  .opt-item input[type=checkbox] { width:14px; height:14px; cursor:pointer; accent-color:var(--accent); }
+
+  .import-log {
+    background:var(--bg); border:1px solid var(--border);
+    border-radius:var(--radius); padding:12px 14px; font-size:11px;
+    font-family:monospace; max-height:180px; overflow-y:auto; display:none;
+    margin-bottom:16px; line-height:1.7;
+  }
+  .log-ok { color:var(--green); }
+  .log-warn { color:var(--yellow); }
+  .log-err { color:var(--red); }
+  .log-info { color:var(--blue); }
+
+  .import-summary {
+    display:none; background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius2); padding:16px; margin-bottom:16px;
+  }
+  .import-summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .sum-card { text-align:center; }
+  .sum-val { font-size:22px; font-weight:800; line-height:1; margin-bottom:2px; }
+  .sum-lbl { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:0.4px; }
+
+  .api-field { margin-bottom:14px; }
+  .api-field label { display:block; font-size:11px; color:var(--text2); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px; }
+  .api-field input, .api-field select, .api-field textarea {
+    width:100%; background:var(--bg); border:1px solid var(--border2);
+    border-radius:var(--radius); padding:9px 12px; color:var(--text);
+    font-size:13px; outline:none; transition:border 0.2s;
+  }
+  .api-field input:focus, .api-field select:focus, .api-field textarea:focus { border-color:var(--accent); }
+  .api-field textarea { resize:vertical; min-height:80px; font-family:monospace; font-size:12px; }
+  .api-status { display:flex; align-items:center; gap:8px; font-size:12px; padding:8px 12px;
+    border-radius:var(--radius); margin-bottom:12px; }
+  .api-status.ok { background:var(--green-bg); color:var(--green); border:1px solid rgba(63,185,80,0.3); }
+  .api-status.err { background:var(--red-bg); color:var(--red); border:1px solid rgba(248,81,73,0.3); }
+  .api-status.loading { background:var(--blue-bg); color:var(--blue); border:1px solid rgba(88,166,255,0.3); }
+  .api-schedule-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .hist-import {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius2); overflow:hidden;
+  }
+  .hist-import-header { padding:12px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; }
+  .hist-import-title { font-size:13px; font-weight:700; color:var(--text); }
+  .hist-import-body { max-height:240px; overflow-y:auto; }
+  .hist-import-row {
+    padding:10px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:10px; font-size:12px;
+  }
+  .hist-import-row:last-child { border-bottom:none; }
+  .hist-import-icon { font-size:15px; flex-shrink:0; }
+  .hist-import-info { flex:1; }
+  .hist-import-name { color:var(--text); font-weight:600; }
+  .hist-import-meta { color:var(--text2); font-size:11px; margin-top:1px; }
+  .hist-import-badge { flex-shrink:0; }
+
+  .step-indicator {
+    display:flex; align-items:center; gap:0; margin-bottom:20px;
+  }
+  .step { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); }
+  .step.active { color:var(--blue); }
+  .step.done { color:var(--green); }
+  .step-num {
+    width:22px; height:22px; border-radius:50%; border:1px solid var(--border2);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;
+    flex-shrink:0;
+  }
+  .step.active .step-num { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .step.done .step-num { background:var(--green); border-color:var(--green); color:#fff; }
+  .step-line { flex:1; height:1px; background:var(--border); min-width:20px; }
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">🚌</div>
+      <h1>Treinamento Biarticulado</h1>
+      <p>Sistema de Controle e Gestão</p>
+    </div>
+    <div class="login-field">
+      <label>Usuário</label>
+      <input type="text" id="login-user" placeholder="Digite seu usuário" autocomplete="off">
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="login-pass" placeholder="Digite sua senha">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">Treinamento <span>Biarticulado</span></div>
+      <div class="sub">Gestão de Eventos</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('eventos', this)">
+        <span class="icon">📋</span> Eventos
+      </div>
+      <div class="nav-item" onclick="showPage('alertas', this)">
+        <span class="icon">🔔</span> Alertas
+        <span id="alert-badge" style="margin-left:auto;background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;"></span>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Análise</div>
+      <div class="nav-item" onclick="showPage('relatorios', this)">
+        <span class="icon">📈</span> Relatórios
+      </div>
+      <div class="nav-item" onclick="showPage('historico', this)">
+        <span class="icon">🗂️</span> Histórico
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Dados</div>
+      <div class="nav-item" onclick="showPage('importacao', this)">
+        <span class="icon">⬆️</span> Importação
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar">L</div>
+        <div>
+          <div class="user-name">Lorena</div>
+          <div class="user-role">Administrador</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Sair">⏻</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="page-sub" id="page-sub">Visão geral dos treinamentos</div>
+      </div>
+      <div class="topbar-actions">
+        <span style="font-size:12px;color:var(--text2)" id="current-date"></span>
+        <button class="btn btn-primary" onclick="openModal()">+ Novo Cadastro</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD PAGE -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-grid">
+          <div class="kpi-card blue">
+            <div class="kpi-label">Total de Eventos</div>
+            <div class="kpi-value" id="kpi-total">0</div>
+            <div class="kpi-desc">Registros no sistema</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label">Processo Concluído</div>
+            <div class="kpi-value" id="kpi-concluded">0</div>
+            <div class="kpi-desc">Ficha arquivada</div>
+          </div>
+          <div class="kpi-card yellow">
+            <div class="kpi-label">Dentro do Prazo</div>
+            <div class="kpi-value" id="kpi-ontime">0</div>
+            <div class="kpi-desc">Em andamento — ≤ 30 dias</div>
+          </div>
+          <div class="kpi-card red">
+            <div class="kpi-label">Prazo Vencido</div>
+            <div class="kpi-value" id="kpi-expired">0</div>
+            <div class="kpi-desc">Requer ação imediata</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">Distribuição por Status</div>
+            <div style="display:flex;align-items:center;gap:24px;">
+              <canvas id="pie-chart" width="110" height="110" style="max-width:110px;max-height:110px;flex-shrink:0;"></canvas>
+              <div class="pie-legend" id="pie-legend"></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Eventos por Mês</div>
+            <div class="chart-wrap"><canvas id="bar-chart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">Distribuição por Sexo</div>
+            <div style="display:flex;align-items:center;gap:24px;">
+              <canvas id="gender-chart" width="110" height="110" style="max-width:110px;max-height:110px;flex-shrink:0;"></canvas>
+              <div class="pie-legend" id="gender-legend"></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Taxa de Conclusão (%)</div>
+            <div id="progress-summary" style="padding:8px 0;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EVENTOS PAGE -->
+      <div class="page" id="page-eventos">
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">Colaboradores Registrados</div>
+            <div class="filter-row">
+              <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="search-input" placeholder="Buscar colaborador ou CPD..." oninput="renderTable()">
+              </div>
+              <select class="filter-select" id="filter-status" onchange="renderTable()">
+                <option value="">Todos os status</option>
+                <option value="Processo Concluído">Processo Concluído</option>
+                <option value="Dentro do prazo">Dentro do Prazo</option>
+                <option value="Prazo Vencido!">Prazo Vencido</option>
+                <option value="Afastado">Afastado</option>
+              </select>
+              <select class="filter-select" id="filter-sexo" onchange="renderTable()">
+                <option value="">Todos</option>
+                <option value="Mas.">Masculino</option>
+                <option value="Fem.">Feminino</option>
+              </select>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="checkbox-col"></th>
+                  <th>CPD</th>
+                  <th>Nome</th>
+                  <th>Sexo</th>
+                  <th>Data Cadastro</th>
+                  <th>Dias Decorridos</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="row-count" id="row-count"></div>
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALERTAS PAGE -->
+      <div class="page" id="page-alertas">
+        <div class="alert-banner warning">
+          <span>⚠️</span>
+          <span>Registros abaixo requerem atenção imediata ou ação de encerramento.</span>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">🔴 Prazo Vencido — Pendências</div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>CPD</th>
+                  <th>Nome</th>
+                  <th>Sexo</th>
+                  <th>Data Cadastro</th>
+                  <th>Dias Vencidos</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="alert-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="height:20px;"></div>
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">🟡 Em Andamento — Dentro do Prazo</div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>CPD</th>
+                  <th>Nome</th>
+                  <th>Data Cadastro</th>
+                  <th>Dias Restantes</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="ontime-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALERTAS: FINALIZADOS -->
+      <div style="height:20px;"></div>
+      <div class="total-card" id="alertas-final-card">
+        <div class="total-card-left">
+          <div class="total-card-icon">✅</div>
+          <div>
+            <div class="total-card-label">Registros Finalizados — Processo Concluído</div>
+            <div class="total-card-value" id="alertas-final-count">0</div>
+          </div>
+        </div>
+        <div class="total-card-right">
+          <button class="btn btn-ghost no-print" onclick="printAlertasFinalSelected()">🖨️ Imprimir Selecionados</button>
+          <button class="btn btn-ghost no-print" onclick="printAlertasFinalAll()">🖨️ Imprimir Todos</button>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">✅ Processos Concluídos — Ficha Arquivada</div>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="alertas-final-search" placeholder="Buscar..." oninput="renderAlertasFinalizados()">
+          </div>
+        </div>
+        <div id="alertas-final-select-bar" class="select-actions" style="display:none;">
+          <span class="select-count" id="alertas-final-sel-count">0 selecionados</span>
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="clearAlertasSelection()">✕ Limpar seleção</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th class="checkbox-col"><input type="checkbox" id="afinal-select-all" onclick="toggleSelectAll('afinal')" title="Selecionar todos"></th>
+                <th>CPD</th>
+                <th>Nome</th>
+                <th>Sexo</th>
+                <th>Data Cadastro</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="alertas-final-body"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <div class="row-count" id="alertas-final-footer">0 registros finalizados</div>
+        </div>
+      </div>
+
+      <!-- RELATÓRIOS PAGE -->
+      <div class="page" id="page-relatorios">
+        <div class="kpi-grid">
+          <div class="kpi-card blue">
+            <div class="kpi-label">Total Geral</div>
+            <div class="kpi-value" id="r-total">0</div>
+            <div class="kpi-desc">Eventos cadastrados</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label">Concluídos</div>
+            <div class="kpi-value" id="r-concluded">0</div>
+            <div class="kpi-desc" id="r-concluded-pct"></div>
+          </div>
+          <div class="kpi-card red">
+            <div class="kpi-label">Vencidos</div>
+            <div class="kpi-value" id="r-expired">0</div>
+            <div class="kpi-desc" id="r-expired-pct"></div>
+          </div>
+          <div class="kpi-card yellow">
+            <div class="kpi-label">Em Andamento</div>
+            <div class="kpi-value" id="r-inprogress">0</div>
+            <div class="kpi-desc" id="r-inprogress-pct"></div>
+          </div>
+        </div>
+        <div class="chart-card" style="margin-bottom:20px;">
+          <div class="chart-title">Eventos Cadastrados por Mês/Ano</div>
+          <div class="chart-wrap"><canvas id="monthly-chart"></canvas></div>
+        </div>
+        <div class="section-card">
+          <h3>Exportar Relatório de Pendências</h3>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Gera um relatório com todos os registros com prazo vencido ou em andamento.</p>
+          <button class="btn btn-primary" onclick="exportCSV()">⬇ Exportar CSV</button>
+          <button class="btn btn-ghost" onclick="window.print()" style="margin-left:8px;">🖨️ Imprimir</button>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO PAGE -->
+      <div class="page" id="page-historico">
+        <div class="total-card">
+          <div class="total-card-left">
+            <div class="total-card-icon">🗂️</div>
+            <div>
+              <div class="total-card-label">Total de Registros Finalizados</div>
+              <div class="total-card-value" id="hist-total-card">0</div>
+            </div>
+          </div>
+          <div class="total-card-right">
+            <button class="btn btn-ghost no-print" onclick="printHistSelected()">🖨️ Imprimir Selecionados</button>
+            <button class="btn btn-ghost no-print" onclick="printHistAll()">🖨️ Imprimir Todos</button>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">Histórico — Processos Concluídos</div>
+            <div class="search-box">
+              <span>🔍</span>
+              <input type="text" id="hist-search" placeholder="Buscar..." oninput="renderHistorico()">
+            </div>
+          </div>
+          <div id="hist-select-bar" class="select-actions" style="display:none;">
+            <span class="select-count" id="hist-sel-count">0 selecionados</span>
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="clearHistSelection()">✕ Limpar seleção</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="checkbox-col"><input type="checkbox" id="hist-select-all" onclick="toggleSelectAll('hist')" title="Selecionar todos"></th>
+                  <th>CPD</th>
+                  <th>Nome</th>
+                  <th>Sexo</th>
+                  <th>Data Cadastro</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="hist-body"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="row-count" id="hist-count"></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- IMPORTAÇÃO PAGE -->
+      <div class="page" id="page-importacao">
+
+        <!-- TABS DE FORMATO -->
+        <div class="import-tabs">
+          <div class="import-tab active" onclick="switchImportTab('csv',this)"><span class="tab-icon">📄</span>CSV / TSV</div>
+          <div class="import-tab" onclick="switchImportTab('excel',this)"><span class="tab-icon">📊</span>Excel (.xlsx / .xls)</div>
+          <div class="import-tab" onclick="switchImportTab('pdf',this)"><span class="tab-icon">📕</span>PDF</div>
+          <div class="import-tab" onclick="switchImportTab('xml',this)"><span class="tab-icon">🗂️</span>XML</div>
+          <div class="import-tab" onclick="switchImportTab('api',this)"><span class="tab-icon">🔗</span>API em Tempo Real</div>
+        </div>
+
+        <!-- ─── CSV / TSV ─── -->
+        <div class="import-panel active" id="imp-csv">
+          <div class="section-card">
+            <h3>📄 Importar CSV / TSV</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:16px">Arraste um arquivo CSV ou TSV, ou clique para selecionar. O sistema detecta automaticamente o delimitador e mapeia as colunas.</p>
+            <div class="step-indicator">
+              <div class="step active" id="csv-step1"><div class="step-num">1</div><span>Selecionar arquivo</span></div>
+              <div class="step-line"></div>
+              <div class="step" id="csv-step2"><div class="step-num">2</div><span>Mapear colunas</span></div>
+              <div class="step-line"></div>
+              <div class="step" id="csv-step3"><div class="step-num">3</div><span>Confirmar importação</span></div>
+            </div>
+            <div class="drop-zone" id="csv-drop" onclick="document.getElementById('csv-file').click()" ondragover="dzOver(event,'csv-drop')" ondragleave="dzLeave('csv-drop')" ondrop="dzDrop(event,'csv')">
+              <input type="file" id="csv-file" accept=".csv,.tsv,.txt" onchange="handleCSV(this.files[0])">
+              <div class="dz-icon">📄</div>
+              <div class="dz-title">Arraste o arquivo CSV/TSV aqui</div>
+              <div class="dz-sub">ou clique para abrir o seletor de arquivos</div>
+            </div>
+            <div class="import-field-map" id="csv-map">
+              <h4>Mapeamento de Colunas</h4>
+              <div class="field-map-grid" id="csv-map-grid"></div>
+              <div class="import-options" id="csv-opts" style="display:block;margin-top:14px">
+                <h4>Opções de Importação</h4>
+                <div class="opt-grid">
+                  <label class="opt-item"><input type="checkbox" id="csv-skip-dup" checked> Ignorar duplicatas (mesmo CPD)</label>
+                  <label class="opt-item"><input type="checkbox" id="csv-update-existing"> Atualizar registros existentes</label>
+                  <label class="opt-item"><input type="checkbox" id="csv-has-header" checked> Primeira linha é cabeçalho</label>
+                  <label class="opt-item"><input type="checkbox" id="csv-preview-only"> Apenas pré-visualizar (não salvar)</label>
+                </div>
+              </div>
+            </div>
+            <div class="import-preview" id="csv-preview">
+              <div class="import-preview-header">
+                <div>
+                  <div class="import-preview-title">Pré-visualização dos Dados</div>
+                  <div class="import-preview-meta" id="csv-preview-meta"></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-ghost" onclick="resetImport('csv')">✕ Cancelar</button>
+                  <button class="btn btn-primary" onclick="confirmImport('csv')">✅ Confirmar Importação</button>
+                </div>
+              </div>
+              <div class="preview-table-wrap"><table id="csv-preview-table"></table></div>
+            </div>
+            <div class="import-log" id="csv-log"></div>
+            <div class="import-summary" id="csv-summary">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px">Resultado da Importação</div>
+              <div class="import-summary-grid">
+                <div class="sum-card"><div class="sum-val" id="csv-s-total" style="color:var(--blue)">0</div><div class="sum-lbl">Lidos</div></div>
+                <div class="sum-card"><div class="sum-val" id="csv-s-new" style="color:var(--green)">0</div><div class="sum-lbl">Inseridos</div></div>
+                <div class="sum-card"><div class="sum-val" id="csv-s-upd" style="color:var(--yellow)">0</div><div class="sum-lbl">Atualizados</div></div>
+                <div class="sum-card"><div class="sum-val" id="csv-s-skip" style="color:var(--red)">0</div><div class="sum-lbl">Ignorados</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── EXCEL ─── -->
+        <div class="import-panel" id="imp-excel">
+          <div class="section-card">
+            <h3>📊 Importar Excel (.xlsx / .xls)</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:16px">Selecione um arquivo Excel. O sistema lê a primeira planilha automaticamente e permite mapear as colunas antes de importar.</p>
+            <div class="step-indicator">
+              <div class="step active" id="xl-step1"><div class="step-num">1</div><span>Selecionar arquivo</span></div>
+              <div class="step-line"></div>
+              <div class="step" id="xl-step2"><div class="step-num">2</div><span>Mapear colunas</span></div>
+              <div class="step-line"></div>
+              <div class="step" id="xl-step3"><div class="step-num">3</div><span>Confirmar importação</span></div>
+            </div>
+            <div class="drop-zone" id="xl-drop" onclick="document.getElementById('xl-file').click()" ondragover="dzOver(event,'xl-drop')" ondragleave="dzLeave('xl-drop')" ondrop="dzDrop(event,'excel')">
+              <input type="file" id="xl-file" accept=".xlsx,.xls,.ods" onchange="handleExcel(this.files[0])">
+              <div class="dz-icon">📊</div>
+              <div class="dz-title">Arraste o arquivo Excel aqui</div>
+              <div class="dz-sub">.xlsx, .xls ou .ods — lê a primeira aba automaticamente</div>
+            </div>
+            <div class="import-field-map" id="xl-map">
+              <h4>Mapeamento de Colunas</h4>
+              <div class="field-map-grid" id="xl-map-grid"></div>
+              <div class="import-options" id="xl-opts" style="display:block;margin-top:14px">
+                <h4>Opções</h4>
+                <div class="opt-grid">
+                  <label class="opt-item"><input type="checkbox" id="xl-skip-dup" checked> Ignorar duplicatas (mesmo CPD)</label>
+                  <label class="opt-item"><input type="checkbox" id="xl-update-existing"> Atualizar registros existentes</label>
+                </div>
+              </div>
+            </div>
+            <div class="import-preview" id="xl-preview">
+              <div class="import-preview-header">
+                <div>
+                  <div class="import-preview-title">Pré-visualização — Excel</div>
+                  <div class="import-preview-meta" id="xl-preview-meta"></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-ghost" onclick="resetImport('excel')">✕ Cancelar</button>
+                  <button class="btn btn-primary" onclick="confirmImport('excel')">✅ Confirmar Importação</button>
+                </div>
+              </div>
+              <div class="preview-table-wrap"><table id="xl-preview-table"></table></div>
+            </div>
+            <div class="import-log" id="xl-log"></div>
+            <div class="import-summary" id="xl-summary">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px">Resultado da Importação</div>
+              <div class="import-summary-grid">
+                <div class="sum-card"><div class="sum-val" id="xl-s-total" style="color:var(--blue)">0</div><div class="sum-lbl">Lidos</div></div>
+                <div class="sum-card"><div class="sum-val" id="xl-s-new" style="color:var(--green)">0</div><div class="sum-lbl">Inseridos</div></div>
+                <div class="sum-card"><div class="sum-val" id="xl-s-upd" style="color:var(--yellow)">0</div><div class="sum-lbl">Atualizados</div></div>
+                <div class="sum-card"><div class="sum-val" id="xl-s-skip" style="color:var(--red)">0</div><div class="sum-lbl">Ignorados</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── PDF ─── -->
+        <div class="import-panel" id="imp-pdf">
+          <div class="section-card">
+            <h3>📕 Importar PDF</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:16px">Importe PDF com tabelas de dados (CPD, Nome, etc.). O sistema extrai o texto e tenta identificar colunas automaticamente. PDFs escaneados não são suportados nesta versão.</p>
+            <div class="drop-zone" id="pdf-drop" onclick="document.getElementById('pdf-file').click()" ondragover="dzOver(event,'pdf-drop')" ondragleave="dzLeave('pdf-drop')" ondrop="dzDrop(event,'pdf')">
+              <input type="file" id="pdf-file" accept=".pdf" onchange="handlePDF(this.files[0])">
+              <div class="dz-icon">📕</div>
+              <div class="dz-title">Arraste o arquivo PDF aqui</div>
+              <div class="dz-sub">Apenas PDFs com texto selecionável (não escaneados)</div>
+            </div>
+            <div class="import-preview" id="pdf-preview">
+              <div class="import-preview-header">
+                <div>
+                  <div class="import-preview-title">Registros Extraídos do PDF</div>
+                  <div class="import-preview-meta" id="pdf-preview-meta"></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-ghost" onclick="resetImport('pdf')">✕ Cancelar</button>
+                  <button class="btn btn-primary" onclick="confirmImport('pdf')">✅ Confirmar Importação</button>
+                </div>
+              </div>
+              <div class="preview-table-wrap"><table id="pdf-preview-table"></table></div>
+            </div>
+            <div class="import-log" id="pdf-log"></div>
+            <div class="import-summary" id="pdf-summary">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px">Resultado da Importação</div>
+              <div class="import-summary-grid">
+                <div class="sum-card"><div class="sum-val" id="pdf-s-total" style="color:var(--blue)">0</div><div class="sum-lbl">Lidos</div></div>
+                <div class="sum-card"><div class="sum-val" id="pdf-s-new" style="color:var(--green)">0</div><div class="sum-lbl">Inseridos</div></div>
+                <div class="sum-card"><div class="sum-val" id="pdf-s-upd" style="color:var(--yellow)">0</div><div class="sum-lbl">Atualizados</div></div>
+                <div class="sum-card"><div class="sum-val" id="pdf-s-skip" style="color:var(--red)">0</div><div class="sum-lbl">Ignorados</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── XML ─── -->
+        <div class="import-panel" id="imp-xml">
+          <div class="section-card">
+            <h3>🗂️ Importar XML</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:16px">Importe dados estruturados em XML. O sistema detecta os nós automaticamente e mapeia os campos para CPD, Nome, Sexo, Data e Status.</p>
+            <div class="drop-zone" id="xml-drop" onclick="document.getElementById('xml-file').click()" ondragover="dzOver(event,'xml-drop')" ondragleave="dzLeave('xml-drop')" ondrop="dzDrop(event,'xml')">
+              <input type="file" id="xml-file" accept=".xml,.txt" onchange="handleXML(this.files[0])">
+              <div class="dz-icon">🗂️</div>
+              <div class="dz-title">Arraste o arquivo XML aqui</div>
+              <div class="dz-sub">Estruturas &lt;registro&gt;, &lt;colaborador&gt; ou &lt;row&gt; são detectadas automaticamente</div>
+            </div>
+            <div class="import-field-map" id="xml-map" style="display:none;">
+              <h4>Mapeamento de Nós XML</h4>
+              <div class="field-map-grid" id="xml-map-grid"></div>
+            </div>
+            <div class="import-preview" id="xml-preview">
+              <div class="import-preview-header">
+                <div>
+                  <div class="import-preview-title">Dados Extraídos do XML</div>
+                  <div class="import-preview-meta" id="xml-preview-meta"></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-ghost" onclick="resetImport('xml')">✕ Cancelar</button>
+                  <button class="btn btn-primary" onclick="confirmImport('xml')">✅ Confirmar Importação</button>
+                </div>
+              </div>
+              <div class="preview-table-wrap"><table id="xml-preview-table"></table></div>
+            </div>
+            <div class="import-log" id="xml-log"></div>
+            <div class="import-summary" id="xml-summary">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px">Resultado da Importação</div>
+              <div class="import-summary-grid">
+                <div class="sum-card"><div class="sum-val" id="xml-s-total" style="color:var(--blue)">0</div><div class="sum-lbl">Lidos</div></div>
+                <div class="sum-card"><div class="sum-val" id="xml-s-new" style="color:var(--green)">0</div><div class="sum-lbl">Inseridos</div></div>
+                <div class="sum-card"><div class="sum-val" id="xml-s-upd" style="color:var(--yellow)">0</div><div class="sum-lbl">Atualizados</div></div>
+                <div class="sum-card"><div class="sum-val" id="xml-s-skip" style="color:var(--red)">0</div><div class="sum-lbl">Ignorados</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── API TEMPO REAL ─── -->
+        <div class="import-panel" id="imp-api">
+          <div class="section-card">
+            <h3>🔗 API em Tempo Real</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:16px">Configure um endpoint REST para sincronizar dados automaticamente. Suporta autenticação via Bearer Token, Basic Auth ou API Key.</p>
+            <div class="api-field">
+              <label>URL do Endpoint</label>
+              <input type="url" id="api-url" placeholder="https://api.exemplo.com/colaboradores" autocomplete="off">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div class="api-field">
+                <label>Método HTTP</label>
+                <select id="api-method">
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                </select>
+              </div>
+              <div class="api-field">
+                <label>Tipo de Autenticação</label>
+                <select id="api-auth-type" onchange="toggleApiAuth()">
+                  <option value="none">Sem autenticação</option>
+                  <option value="bearer">Bearer Token</option>
+                  <option value="basic">Basic Auth (usuário:senha)</option>
+                  <option value="apikey">API Key (header)</option>
+                </select>
+              </div>
+            </div>
+            <div id="api-auth-fields" style="display:none">
+              <div class="api-field">
+                <label id="api-auth-label">Token / Credencial</label>
+                <input type="text" id="api-auth-value" placeholder="Cole aqui o token ou credencial" autocomplete="off">
+              </div>
+              <div class="api-field" id="api-key-name-wrap" style="display:none">
+                <label>Nome do Header (ex: X-API-Key)</label>
+                <input type="text" id="api-key-name" placeholder="X-API-Key" value="X-API-Key">
+              </div>
+            </div>
+            <div class="api-field">
+              <label>Caminho JSON para lista de registros (opcional)</label>
+              <input type="text" id="api-json-path" placeholder="Ex: data.colaboradores — deixe vazio se a raiz for o array">
+            </div>
+            <div class="api-field">
+              <label>Headers Personalizados (JSON, opcional)</label>
+              <textarea id="api-headers" placeholder='{ "Accept": "application/json" }'></textarea>
+            </div>
+            <div id="api-status-bar" style="display:none" class="api-status"></div>
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+              <button class="btn btn-ghost" onclick="testApiConnection()">🔍 Testar Conexão</button>
+              <button class="btn btn-primary" onclick="fetchApiNow()">⬇ Importar Agora</button>
+              <button class="btn btn-ghost" id="api-sched-toggle" onclick="toggleApiSchedule()">⏱ Configurar Agendamento</button>
+            </div>
+            <div id="api-schedule-panel" style="display:none;margin-bottom:16px">
+              <div class="import-field-map" style="display:block">
+                <h4>Sincronização Automática</h4>
+                <div class="api-schedule-grid">
+                  <div class="api-field">
+                    <label>Frequência</label>
+                    <select id="api-freq">
+                      <option value="0">Desativado</option>
+                      <option value="60000">A cada 1 minuto</option>
+                      <option value="300000">A cada 5 minutos</option>
+                      <option value="600000">A cada 10 minutos</option>
+                      <option value="1800000">A cada 30 minutos</option>
+                      <option value="3600000">A cada 1 hora</option>
+                    </select>
+                  </div>
+                  <div class="api-field">
+                    <label>Status</label>
+                    <div id="api-sched-status" style="padding:9px 12px;font-size:12px;color:var(--text2);background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius)">⏸ Desativado</div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-primary" onclick="startApiSchedule()">▶ Ativar Agendamento</button>
+                  <button class="btn btn-danger" onclick="stopApiSchedule()">⏹ Parar</button>
+                </div>
+              </div>
+            </div>
+            <div class="import-preview" id="api-preview">
+              <div class="import-preview-header">
+                <div>
+                  <div class="import-preview-title">Dados Recebidos da API</div>
+                  <div class="import-preview-meta" id="api-preview-meta"></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-ghost" onclick="resetImport('api')">✕ Cancelar</button>
+                  <button class="btn btn-primary" onclick="confirmImport('api')">✅ Confirmar Importação</button>
+                </div>
+              </div>
+              <div class="preview-table-wrap"><table id="api-preview-table"></table></div>
+            </div>
+            <div class="import-log" id="api-log"></div>
+            <div class="import-summary" id="api-summary">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px">Resultado da Sincronização</div>
+              <div class="import-summary-grid">
+                <div class="sum-card"><div class="sum-val" id="api-s-total" style="color:var(--blue)">0</div><div class="sum-lbl">Recebidos</div></div>
+                <div class="sum-card"><div class="sum-val" id="api-s-new" style="color:var(--green)">0</div><div class="sum-lbl">Inseridos</div></div>
+                <div class="sum-card"><div class="sum-val" id="api-s-upd" style="color:var(--yellow)">0</div><div class="sum-lbl">Atualizados</div></div>
+                <div class="sum-card"><div class="sum-val" id="api-s-skip" style="color:var(--red)">0</div><div class="sum-lbl">Ignorados</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTÓRICO DE IMPORTAÇÕES -->
+        <div class="section-card" style="margin-top:4px">
+          <h3>📋 Histórico de Importações</h3>
+          <div class="hist-import" id="import-history-wrap">
+            <div class="hist-import-header">
+              <div class="hist-import-title">Últimas operações de importação</div>
+              <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="clearImportHistory()">🗑 Limpar histórico</button>
+            </div>
+            <div class="hist-import-body" id="import-history-body">
+              <div class="hist-import-row"><span style="font-size:12px;color:var(--text2)">Nenhuma importação realizada ainda.</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-importacao -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL CADASTRO -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Novo Cadastro</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label>CPD *</label>
+        <input type="text" id="f-cpd" placeholder="Ex: 78033" maxlength="10">
+      </div>
+      <div class="form-field">
+        <label>Sexo *</label>
+        <select id="f-sexo">
+          <option value="">Selecione</option>
+          <option value="Mas.">Masculino</option>
+          <option value="Fem.">Feminino</option>
+        </select>
+      </div>
+      <div class="form-field full">
+        <label>Nome do Colaborador *</label>
+        <input type="text" id="f-nome" placeholder="Nome completo ou apelido">
+      </div>
+      <div class="form-field">
+        <label>Data de Cadastro *</label>
+        <input type="date" id="f-data">
+      </div>
+      <div class="form-field">
+        <label>Status da Autorização</label>
+        <select id="f-autorizacao">
+          <option value="Em andamento">Em andamento</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Não concluíu">Não concluíu</option>
+          <option value="Afastado">Afastado</option>
+        </select>
+      </div>
+      <div class="form-field full">
+        <label>Status do Processo</label>
+        <select id="f-processo">
+          <option value="">— Calculado automaticamente —</option>
+          <option value="Processo Concluído">Processo Concluído (Ficha Arquivada)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveRecord()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const SEED = [
+  {cpd:'78033',nome:'Marina',sexo:'Fem.',data:'2024-04-17',autorizacao:'Afastado',processo:''},
+  {cpd:'78008',nome:'Anderson',sexo:'Mas.',data:'2024-03-27',autorizacao:'Não concluíu',processo:''},
+  {cpd:'78015',nome:'C. Luiz',sexo:'Mas.',data:'2024-03-27',autorizacao:'Não concluíu',processo:''},
+  {cpd:'78030',nome:'J. Gomes',sexo:'Mas.',data:'2024-03-27',autorizacao:'Não concluíu',processo:''},
+  {cpd:'78031',nome:'J. Lopes',sexo:'Mas.',data:'2024-03-27',autorizacao:'Não concluíu',processo:''},
+  {cpd:'78060',nome:'Polli',sexo:'Mas.',data:'2024-12-08',autorizacao:'Não concluíu',processo:''},
+  {cpd:'78061',nome:'Roderlei',sexo:'Mas.',data:'2024-03-27',autorizacao:'Afastado',processo:''},
+  {cpd:'78327',nome:'C. Borges',sexo:'Mas.',data:'2024-09-15',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78330',nome:'J. Santos',sexo:'Mas.',data:'2024-03-27',autorizacao:'Em andamento',processo:''},
+  {cpd:'78157',nome:'Luis Martins',sexo:'Mas.',data:'2024-01-13',autorizacao:'Em andamento',processo:''},
+  {cpd:'78340',nome:'Marcia',sexo:'Fem.',data:'2024-04-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'76499',nome:'Rosenilda',sexo:'Fem.',data:'2024-03-16',autorizacao:'Em andamento',processo:''},
+  {cpd:'77774',nome:'Ademar',sexo:'Mas.',data:'2024-03-16',autorizacao:'Em andamento',processo:''},
+  {cpd:'73300',nome:'Douglas',sexo:'Mas.',data:'2024-03-16',autorizacao:'Em andamento',processo:''},
+  {cpd:'78024',nome:'Dinarte',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78032',nome:'Medina',sexo:'Mas.',data:'2024-03-27',autorizacao:'Em andamento',processo:''},
+  {cpd:'78093',nome:'S. Cintia',sexo:'Fem.',data:'2024-03-27',autorizacao:'Em andamento',processo:''},
+  {cpd:'78563',nome:'Da Silva',sexo:'Mas.',data:'2024-10-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78561',nome:'Diniz',sexo:'Mas.',data:'2024-10-11',autorizacao:'Em andamento',processo:''},
+  {cpd:'78565',nome:'Furman',sexo:'Mas.',data:'2024-10-11',autorizacao:'Em andamento',processo:''},
+  {cpd:'78564',nome:'T. Luiz',sexo:'Mas.',data:'2024-10-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78566',nome:'M. Fabio',sexo:'Mas.',data:'2024-10-11',autorizacao:'Em andamento',processo:''},
+  {cpd:'78149',nome:'D. OIiveira',sexo:'Mas.',data:'2023-12-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78244',nome:'D.Silva',sexo:'Mas.',data:'2023-09-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78525',nome:'Delcide',sexo:'Mas.',data:'2024-08-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'74558',nome:'Denizete',sexo:'Mas.',data:'2024-05-10',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78414',nome:'E. Rodrigo',sexo:'Mas.',data:'2024-03-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78208',nome:'Elizeu',sexo:'Mas.',data:'2023-08-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78230',nome:'Eneias',sexo:'Mas.',data:'2023-08-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78209',nome:'F. Josue',sexo:'Mas.',data:'2023-08-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78229',nome:'Fabio',sexo:'Mas.',data:'2023-08-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78170',nome:'G. Fabiano',sexo:'Mas.',data:'2023-04-05',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78233',nome:'G. Marcos',sexo:'Mas.',data:'2023-08-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78434',nome:'Gelson',sexo:'Mas.',data:'2024-04-23',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78162',nome:'Gomes',sexo:'Mas.',data:'2023-03-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78346',nome:'Guilherme',sexo:'Mas.',data:'2024-04-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78447',nome:'Horokoski',sexo:'Mas.',data:'2024-05-10',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78177',nome:'Jeferson',sexo:'Mas.',data:'2023-05-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78210',nome:'João',sexo:'Mas.',data:'2023-08-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78139',nome:'Joilson',sexo:'Mas.',data:'2023-10-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78185',nome:'Josenei',sexo:'Mas.',data:'2023-05-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78366',nome:'Jucimara',sexo:'Fem.',data:'2024-06-13',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78231',nome:'Juscimar',sexo:'Mas.',data:'2023-08-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78424',nome:'Juvande',sexo:'Mas.',data:'2024-04-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78406',nome:'L. Luiz',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78196',nome:'Leandro',sexo:'Mas.',data:'2024-06-13',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78184',nome:'Liebert',sexo:'Mas.',data:'2023-05-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78457',nome:'Lins',sexo:'Fem.',data:'2024-09-07',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78241',nome:'Lira',sexo:'Mas.',data:'2023-09-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78190',nome:'Luth',sexo:'Mas.',data:'2023-06-24',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78396',nome:'M. Bueno',sexo:'Mas.',data:'2024-03-17',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78232',nome:'M. Osni',sexo:'Mas.',data:'2023-08-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78173',nome:'M. Rafael',sexo:'Mas.',data:'2023-05-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78144',nome:'M. José',sexo:'Mas.',data:'2023-10-28',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78212',nome:'Marcio',sexo:'Mas.',data:'2023-08-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78137',nome:'Matioli',sexo:'Mas.',data:'2023-10-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78174',nome:'N. Daniel',sexo:'Mas.',data:'2023-05-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78342',nome:'N.Daniel',sexo:'Mas.',data:'2024-04-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78426',nome:'Natal',sexo:'Mas.',data:'2024-04-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78145',nome:'Neto',sexo:'Mas.',data:'2023-10-28',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78133',nome:'Oscar',sexo:'Mas.',data:'2023-10-07',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78331',nome:'P. Henrique',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78147',nome:'P. Marcos',sexo:'Mas.',data:'2023-12-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78143',nome:'Pereira',sexo:'Mas.',data:'2023-10-28',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78136',nome:'Platini',sexo:'Mas.',data:'2023-10-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78146',nome:'Pruchaki',sexo:'Mas.',data:'2023-10-28',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78286',nome:'R. Marcos',sexo:'Mas.',data:'2024-01-13',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77399',nome:'R.Gabriel',sexo:'Mas.',data:'2024-05-10',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78131',nome:'R. Martins',sexo:'Mas.',data:'2023-10-07',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78328',nome:'Reges',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78171',nome:'Richter',sexo:'Mas.',data:'2023-05-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78284',nome:'Roque',sexo:'Mas.',data:'2024-01-13',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78271',nome:'Ruan',sexo:'Mas.',data:'2023-11-17',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78152',nome:'Rubens',sexo:'Mas.',data:'2023-12-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78250',nome:'S. Bernardino',sexo:'Mas.',data:'2023-09-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78437',nome:'S. David',sexo:'Mas.',data:'2024-06-17',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78150',nome:'S. Fabio',sexo:'Mas.',data:'2023-12-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78138',nome:'S. Ferreira',sexo:'Mas.',data:'2023-10-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78248',nome:'Schott',sexo:'Mas.',data:'2023-09-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78418',nome:'Silmar',sexo:'Mas.',data:'2024-03-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78142',nome:'Sousa',sexo:'Mas.',data:'2023-10-28',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78151',nome:'Tardoski',sexo:'Mas.',data:'2023-12-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78417',nome:'Tiago II',sexo:'Mas.',data:'2024-03-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78243',nome:'Torres',sexo:'Mas.',data:'2023-09-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78134',nome:'Urias',sexo:'Mas.',data:'2023-10-07',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78269',nome:'Valdemir',sexo:'Mas.',data:'2023-11-17',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78206',nome:'Vieira',sexo:'Mas.',data:'2023-08-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78264',nome:'Wanessa',sexo:'Fem.',data:'2024-04-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78132',nome:'Weslley',sexo:'Mas.',data:'2023-10-07',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78390',nome:'S. Clayton',sexo:'Mas.',data:'2024-09-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'76474',nome:'Adriane',sexo:'Fem.',data:'2024-04-23',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78003',nome:'A. Àvila',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78009',nome:'C. Cordeiro',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78018',nome:'Cassiane',sexo:'Fem.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78021',nome:'Cris',sexo:'Fem.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78029',nome:'Arlindo',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78547',nome:'Maxuel',sexo:'Mas.',data:'2024-09-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78423',nome:'Claudeir',sexo:'Mas.',data:'2024-09-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78247',nome:'A. Luiz',sexo:'Mas.',data:'2023-09-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78182',nome:'Abel',sexo:'Mas.',data:'2023-05-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78205',nome:'Afonso',sexo:'Mas.',data:'2023-08-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78326',nome:'Alves',sexo:'Mas.',data:'2024-03-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78193',nome:'Ananias',sexo:'Mas.',data:'2023-07-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78191',nome:'Aparecido',sexo:'Mas.',data:'2023-06-24',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78161',nome:'Bruniere',sexo:'Mas.',data:'2023-03-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78172',nome:'C. Amarildo',sexo:'Mas.',data:'2023-05-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78526',nome:'C. Edson',sexo:'Mas.',data:'2024-08-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78234',nome:'C. Pinheiro',sexo:'Mas.',data:'2023-08-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78192',nome:'Cavalcante',sexo:'Mas.',data:'2023-07-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78273',nome:'Claudeci',sexo:'Mas.',data:'2023-11-17',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78228',nome:'Cleuson',sexo:'Mas.',data:'2023-08-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78343',nome:'Crevelim',sexo:'Mas.',data:'2024-04-25',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78175',nome:'D. Edilson',sexo:'Mas.',data:'2023-05-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78240',nome:'Inácio',sexo:'Mas.',data:'2023-09-21',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'76862',nome:'André',sexo:'Mas.',data:'2023-07-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'76855',nome:'Heverson',sexo:'Mas.',data:'2023-07-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77575',nome:'Centanini',sexo:'Mas.',data:'2023-07-04',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'74235',nome:'Sabino',sexo:'Mas.',data:'2024-03-16',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'76060',nome:'Julian',sexo:'Mas.',data:'2024-03-16',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77601',nome:'Oliveira',sexo:'Mas.',data:'2024-03-16',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78140',nome:'Maximino',sexo:'Mas.',data:'2023-10-28',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78178',nome:'Meira',sexo:'Mas.',data:'2023-05-11',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78532',nome:'Morali',sexo:'Mas.',data:'2024-08-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78153',nome:'D. Eliel',sexo:'Mas.',data:'2023-12-01',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78249',nome:'J. Barboza',sexo:'Mas.',data:'2023-09-27',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78183',nome:'J. Rodrigues',sexo:'Mas.',data:'2023-05-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77525',nome:'F. Márcio',sexo:'Mas.',data:'2023-07-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'75871',nome:'Michele',sexo:'Fem.',data:'2023-07-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77137',nome:'Berijohn',sexo:'Mas.',data:'2023-07-04',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77509',nome:'S. Alexandre',sexo:'Mas.',data:'2023-07-04',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77250',nome:'Mirian Rose',sexo:'Fem.',data:'2023-07-04',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'77244',nome:'Alex',sexo:'Mas.',data:'2024-03-16',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78448',nome:'Cleumiro',sexo:'Mas.',data:'2024-10-18',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78578',nome:'Everson',sexo:'Mas.',data:'2024-10-20',autorizacao:'Em andamento',processo:''},
+  {cpd:'78333',nome:'Silas',sexo:'Mas.',data:'2024-10-22',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78416',nome:'Anderlei',sexo:'Mas.',data:'2024-10-23',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78775',nome:'S. Rodrigues',sexo:'Mas.',data:'2025-09-22',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78555',nome:'Alisson',sexo:'Mas.',data:'2024-09-03',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78710',nome:'Graciano',sexo:'Mas.',data:'2025-04-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78768',nome:'Mike da Silva',sexo:'Mas.',data:'2025-09-09',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78759',nome:'Lenon',sexo:'Mas.',data:'2025-08-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78757',nome:'S. Jean',sexo:'Mas.',data:'2025-08-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78770',nome:'C. Roberto',sexo:'Mas.',data:'2025-09-09',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78538',nome:'Marci',sexo:'Fem.',data:'2025-03-31',autorizacao:'Concluído',processo:'Processo Concluído'},
+  {cpd:'78755',nome:'Eleandro',sexo:'Mas.',data:'2025-08-29',autorizacao:'Concluído',processo:'Processo Concluído'},
+];
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+const DB_KEY = 'treinamento_biarticulado_v1';
+let records = [];
+
+function loadData() {
+  const saved = localStorage.getItem(DB_KEY);
+  if (saved) {
+    records = JSON.parse(saved);
+    // cura datas em formato antigo/Excel para 'YYYY-MM-DD'
+    let _fixed = false;
+    records.forEach(r => { const iso = toISODate(r.data); if (iso && iso !== r.data) { r.data = iso; _fixed = true; } });
+    if (_fixed) saveData();
+  } else {
+    records = SEED.map((r,i) => ({...r, id: i+1, data: toISODate(r.data) || r.data}));
+    saveData();
+  }
+}
+function saveData() { localStorage.setItem(DB_KEY, JSON.stringify(records)); }
+
+// ─── STATUS LOGIC ─────────────────────────────────────────────────────────────
+function computeStatus(r) {
+  if (r.processo === 'Processo Concluído') return 'Processo Concluído';
+  const iso = toISODate(r.data);
+  if (!iso) return 'Dentro do prazo';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(iso+'T00:00:00'); d.setHours(0,0,0,0);
+  const diff = Math.floor((today - d) / 86400000);
+  if (diff >= 31) return 'Prazo Vencido!';
+  return 'Dentro do prazo';
+}
+function daysElapsed(r) {
+  const iso = toISODate(r.data);
+  if (!iso) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(iso+'T00:00:00'); d.setHours(0,0,0,0);
+  return Math.floor((today - d) / 86400000);
+}
+
+// Retorna texto dinâmico: "X dias" se < 1 mês completo, "X meses" se >= 1 mês
+function formatElapsed(totalDays, fromDate) {
+  if (totalDays < 0) return '0 dias';
+  const _iso = toISODate(fromDate);
+  if (!_iso) return '—';
+  const start = new Date(_iso + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  // Calcular meses completos exatos usando calendário real
+  let totalMonths = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+  if (today.getDate() < start.getDate()) totalMonths--;
+  if (totalMonths < 0) totalMonths = 0;
+  // < 1 mês → exibe em dias
+  if (totalMonths === 0) {
+    return totalDays === 1 ? '1 dia' : totalDays + ' dias';
+  }
+  // Entre 1 e 12 meses → exibe em meses
+  if (totalMonths < 12) {
+    return totalMonths === 1 ? '1 mês' : totalMonths + ' meses';
+  }
+  // >= 12 meses → exibe anos + meses restantes
+  const years = Math.floor(totalMonths / 12);
+  const remMonths = totalMonths % 12;
+  const yLabel = years === 1 ? '1 ano' : years + ' anos';
+  if (remMonths === 0) return yLabel;
+  const mLabel = remMonths === 1 ? '1 mês' : remMonths + ' meses';
+  return yLabel + ' e ' + mLabel;
+}
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  if (u.toLowerCase() === 'lorena' && p === '8586') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+function doLogout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+const pageTitles = {
+  dashboard: ['Dashboard','Visão geral dos treinamentos'],
+  eventos: ['Eventos','Gestão de colaboradores cadastrados'],
+  alertas: ['Alertas','Pendências e vencimentos'],
+  relatorios: ['Relatórios','Análise e exportação de dados'],
+  historico: ['Histórico','Registros finalizados'],
+  importacao: ['Importação de Dados','Carregue dados via arquivo, API em tempo real ou XML'],
+};
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const t = pageTitles[id];
+  document.getElementById('page-title').textContent = t[0];
+  document.getElementById('page-sub').textContent = t[1];
+  if(id==='eventos') renderTable();
+  if(id==='dashboard') refreshDashboard();
+  if(id==='alertas') renderAlertas();
+  if(id==='relatorios') renderRelatorios();
+  if(id==='historico') renderHistorico();
+  if(id==='importacao') renderImportHistorico();
+}
+
+// ─── KPI ──────────────────────────────────────────────────────────────────────
+function getStats() {
+  const concluded = records.filter(r => computeStatus(r) === 'Processo Concluído').length;
+  const expired = records.filter(r => computeStatus(r) === 'Prazo Vencido!').length;
+  const ontime = records.filter(r => computeStatus(r) === 'Dentro do prazo').length;
+  return { total: records.length, concluded, expired, ontime };
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+let pieChart, barChart, genderChart, monthlyChart;
+function refreshDashboard() {
+  const s = getStats();
+  document.getElementById('kpi-total').textContent = s.total;
+  document.getElementById('kpi-concluded').textContent = s.concluded;
+  document.getElementById('kpi-ontime').textContent = s.ontime;
+  document.getElementById('kpi-expired').textContent = s.expired;
+  updateAlertBadge(s.expired);
+  drawPie(s);
+  drawBar();
+  drawGender();
+  drawProgress(s);
+}
+function updateAlertBadge(n) {
+  const b = document.getElementById('alert-badge');
+  b.textContent = n > 0 ? n : '';
+}
+function drawPie(s) {
+  const ctx = document.getElementById('pie-chart').getContext('2d');
+  if(pieChart) pieChart.destroy();
+  const data = [s.concluded, s.ontime, s.expired];
+  const labels = ['Concluído','Dentro do Prazo','Prazo Vencido'];
+  const colors = ['#3fb950','#58a6ff','#f85149'];
+  pieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
+    options: { plugins: { legend: { display: false } }, cutout: '65%' }
+  });
+  const legend = document.getElementById('pie-legend');
+  legend.innerHTML = labels.map((l,i) => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[i]}"></div>
+      <span>${l}: <strong style="color:${colors[i]}">${data[i]}</strong></span>
+    </div>`).join('');
+}
+function drawBar() {
+  const ctx = document.getElementById('bar-chart').getContext('2d');
+  if(barChart) barChart.destroy();
+  const months = {};
+  records.forEach(r => {
+    const d = new Date(r.data);
+    const k = d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+    months[k] = (months[k]||0)+1;
+  });
+  const sorted = Object.entries(months).sort((a,b)=>new Date(a[0])-new Date(b[0]));
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(x=>x[0]),
+      datasets: [{ data: sorted.map(x=>x[1]), backgroundColor:'#1f6feb', borderRadius:4 }]
+    },
+    options: {
+      plugins: { legend: { display:false } },
+      scales: {
+        x: { grid:{color:'#21262d'}, ticks:{color:'#8b949e',font:{size:10}} },
+        y: { grid:{color:'#21262d'}, ticks:{color:'#8b949e',stepSize:1} }
+      }
+    }
+  });
+}
+function drawGender() {
+  const ctx = document.getElementById('gender-chart').getContext('2d');
+  if(genderChart) genderChart.destroy();
+  const masc = records.filter(r=>r.sexo==='Mas.').length;
+  const fem = records.filter(r=>r.sexo==='Fem.').length;
+  genderChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels:['Masculino','Feminino'], datasets:[{ data:[masc,fem], backgroundColor:['#58a6ff','#bc8cff'], borderWidth:0 }] },
+    options: { plugins:{ legend:{display:false} }, cutout:'65%' }
+  });
+  const legend = document.getElementById('gender-legend');
+  const colors=['#58a6ff','#bc8cff'];
+  legend.innerHTML = [['Masculino',masc],['Feminino',fem]].map((item,i)=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[i]}"></div>
+      <span>${item[0]}: <strong style="color:${colors[i]}">${item[1]}</strong></span>
+    </div>`).join('');
+}
+function drawProgress(s) {
+  const el = document.getElementById('progress-summary');
+  const pct = s.total > 0 ? Math.round(s.concluded/s.total*100) : 0;
+  const expPct = s.total > 0 ? Math.round(s.expired/s.total*100) : 0;
+  const onPct = s.total > 0 ? Math.round(s.ontime/s.total*100) : 0;
+  el.innerHTML = `
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;color:var(--text2)">✅ Processo Concluído</span>
+        <span style="font-size:12px;color:var(--green);font-weight:700">${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--green)"></div></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;color:var(--text2)">⏰ Dentro do Prazo</span>
+        <span style="font-size:12px;color:var(--blue);font-weight:700">${onPct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${onPct}%;background:var(--blue)"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;color:var(--text2)">🔴 Prazo Vencido</span>
+        <span style="font-size:12px;color:var(--red);font-weight:700">${expPct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${expPct}%;background:var(--red)"></div></div>
+    </div>`;
+}
+
+// ─── TABLE ────────────────────────────────────────────────────────────────────
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let evtSelected = new Set();
+function onEvtCheck(cb) {
+  const id = parseInt(cb.dataset.id);
+  if(cb.checked) evtSelected.add(id); else evtSelected.delete(id);
+  updateEvtSelectBar();
+}
+function updateEvtSelectBar() {
+  let bar = document.getElementById('evt-select-bar');
+  if(!bar) {
+    bar = document.createElement('div');
+    bar.id = 'evt-select-bar';
+    bar.className = 'select-actions no-print';
+    bar.innerHTML = '<span class="select-count" id="evt-sel-count">0 selecionados</span>'
+      + '<button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="clearEvtSelection()">✕ Limpar</button>'
+      + '<button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="printEvtSelected()">🖨️ Imprimir Selecionados</button>';
+    const tableCard = document.querySelector('#page-eventos .table-card');
+    if(tableCard) {
+      const tableHeader = tableCard.querySelector('.table-header');
+      tableHeader.insertAdjacentElement('afterend', bar);
+    }
+  }
+  if(evtSelected.size > 0) { bar.style.display='flex'; document.getElementById('evt-sel-count').textContent=evtSelected.size+' selecionado(s)'; }
+  else { bar.style.display='none'; }
+}
+function clearEvtSelection() { evtSelected.clear(); renderTable(); }
+function printEvtSelected() {
+  if(!evtSelected.size) { showToast('⚠️ Selecione ao menos um registro.','var(--yellow)'); return; }
+  const sel = records.filter(r => evtSelected.has(r.id));
+  doPrintList('Eventos — Selecionados', sel);
+}
+function printEvtAll() {
+  doPrintList('Eventos — Lista Completa', records);
+}
+function getFiltered() {
+  const q = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const fs = document.getElementById('filter-status')?.value||'';
+  const fg = document.getElementById('filter-sexo')?.value||'';
+  return records.filter(r => {
+    const status = computeStatus(r);
+    const matchQ = !q || r.nome.toLowerCase().includes(q) || r.cpd.includes(q);
+    const matchS = !fs || status === fs;
+    const matchG = !fg || r.sexo === fg;
+    return matchQ && matchS && matchG;
+  });
+}
+function renderTable() {
+  const filtered = getFiltered();
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (currentPage > totalPages) currentPage = 1;
+  const slice = filtered.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+  const tbody = document.getElementById('table-body');
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="icon">📭</div><p>Nenhum registro encontrado.</p></div></td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map(r => {
+      const status = computeStatus(r);
+      const days = daysElapsed(r);
+      const badge = statusBadge(status);
+      return `<tr>
+        <td class="checkbox-col"><input type="checkbox" class="evt-cb" data-id="${r.id}" onchange="onEvtCheck(this)" ${evtSelected.has(r.id)?'checked':''}></td>
+        <td><strong style="color:var(--blue)">${r.cpd}</strong></td>
+        <td>${r.nome}</td>
+        <td>${r.sexo === 'Mas.' ? '♂ Masc.' : '♀ Fem.'}</td>
+        <td>${formatDate(r.data)}</td>
+        <td style="color:${days>30&&status!=='Processo Concluído'?'var(--red)':'var(--text2)'}">${formatElapsed(days, r.data)}</td>
+        <td>${badge}</td>
+        <td class="no-print">
+          ${status !== 'Processo Concluído' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:11px" onclick="concludeRecord(${r.id})">✓ Concluir</button>` : ''}
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;margin-left:4px" onclick="editRecord(${r.id})">✎</button>
+          <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;margin-left:4px" onclick="deleteRecord(${r.id})">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  updateEvtSelectBar();
+  document.getElementById('row-count').textContent = `${total} registros`;
+  // pagination
+  const pg = document.getElementById('pagination');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  let html = '';
+  for(let i=1;i<=totalPages;i++) {
+    html += `<button class="pg-btn ${i===currentPage?'active':''}" onclick="gotoPage(${i})">${i}</button>`;
+  }
+  pg.innerHTML = html;
+}
+function gotoPage(n) { currentPage = n; renderTable(); }
+function statusBadge(s) {
+  if (s === 'Processo Concluído') return `<span class="badge concluded">✅ Processo Concluído</span>`;
+  if (s === 'Dentro do prazo') return `<span class="badge inprogress">⏰ Dentro do Prazo</span>`;
+  if (s === 'Prazo Vencido!') return `<span class="badge expired">🔴 Prazo Vencido</span>`;
+  return `<span class="badge afastado">⚠️ ${s}</span>`;
+}
+function formatDate(d) {
+  if(!d) return '—';
+  const iso = toISODate(d);
+  if(!iso) return '—';
+  const dt = new Date(iso+'T00:00:00');
+  return dt.toLocaleDateString('pt-BR');
+}
+
+// ─── ALERTAS ─────────────────────────────────────────────────────────────────
+function renderAlertas() {
+  const expired = records.filter(r => computeStatus(r) === 'Prazo Vencido!');
+  const ontime = records.filter(r => computeStatus(r) === 'Dentro do prazo');
+  document.getElementById('alert-body').innerHTML = expired.length ? expired.map(r => {
+    const days = daysElapsed(r);
+    return `<tr>
+      <td><strong style="color:var(--blue)">${r.cpd}</strong></td>
+      <td>${r.nome}</td>
+      <td>${r.sexo === 'Mas.' ? '♂' : '♀'} ${r.sexo === 'Mas.' ? 'Masc.' : 'Fem.'}</td>
+      <td>${formatDate(r.data)}</td>
+      <td style="color:var(--red);font-weight:700">${formatElapsed(days, r.data)} vencido</td>
+      <td><button class="btn btn-success" style="padding:4px 10px;font-size:11px" onclick="concludeRecord(${r.id})">✓ Encerrar</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6"><div class="empty"><div class="icon">🎉</div><p>Nenhum prazo vencido!</p></div></td></tr>`;
+
+  document.getElementById('ontime-body').innerHTML = ontime.length ? ontime.map(r => {
+    const days = daysElapsed(r);
+    const rem = 30 - days;
+    return `<tr>
+      <td><strong style="color:var(--blue)">${r.cpd}</strong></td>
+      <td>${r.nome}</td>
+      <td>${formatDate(r.data)}</td>
+      <td style="color:var(--yellow);font-weight:600">${rem === 1 ? "1 dia restante" : rem + " dias restantes"}</td>
+      <td><span class="badge inprogress">⏰ Em andamento</span></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5"><div class="empty"><p>Nenhum registro em andamento.</p></div></td></tr>`;
+  renderAlertasFinalizados();
+}
+
+// ─── ALERTAS FINALIZADOS ──────────────────────────────────────────────────────
+let afinalSelected = new Set();
+function renderAlertasFinalizados() {
+  const q = (document.getElementById('alertas-final-search')?.value||'').toLowerCase();
+  const fin = records.filter(r => computeStatus(r)==='Processo Concluído' && (!q || r.nome.toLowerCase().includes(q) || r.cpd.includes(q)));
+  const totalFin = records.filter(r => computeStatus(r)==='Processo Concluído').length;
+  document.getElementById('alertas-final-count').textContent = totalFin;
+  document.getElementById('alertas-final-footer').textContent = `${fin.length} registros finalizados`;
+  if(fin.length) {
+    document.getElementById('alertas-final-body').innerHTML = fin.map(r => `<tr>
+      <td class="checkbox-col"><input type="checkbox" class="afinal-cb" data-id="${r.id}" onchange="onAfinalCheck(this)" ${afinalSelected.has(r.id)?'checked':''}></td>
+      <td><strong style="color:var(--blue)">${r.cpd}</strong></td>
+      <td>${r.nome}</td>
+      <td>${r.sexo==='Mas.'?'♂ Masc.':'♀ Fem.'}</td>
+      <td>${formatDate(r.data)}</td>
+      <td><span class="badge concluded">✅ Processo Concluído</span></td>
+    </tr>`).join('');
+  } else {
+    document.getElementById('alertas-final-body').innerHTML = `<tr><td colspan="6"><div class="empty"><p>Nenhum registro finalizado.</p></div></td></tr>`;
+  }
+  updateAfinalSelectBar();
+}
+function onAfinalCheck(cb) {
+  const id = parseInt(cb.dataset.id);
+  if(cb.checked) afinalSelected.add(id); else afinalSelected.delete(id);
+  updateAfinalSelectBar();
+}
+function updateAfinalSelectBar() {
+  const bar = document.getElementById('alertas-final-select-bar');
+  const cnt = document.getElementById('alertas-final-sel-count');
+  if(afinalSelected.size > 0) { bar.style.display='flex'; cnt.textContent=afinalSelected.size+' selecionado(s)'; }
+  else { bar.style.display='none'; }
+}
+function clearAlertasSelection() { afinalSelected.clear(); renderAlertasFinalizados(); }
+function printAlertasFinalAll() {
+  const fin = records.filter(r => computeStatus(r)==='Processo Concluído');
+  doPrintList('Alertas — Registros Finalizados', fin);
+}
+function printAlertasFinalSelected() {
+  if(!afinalSelected.size) { showToast('⚠️ Selecione ao menos um registro.','var(--yellow)'); return; }
+  const fin = records.filter(r => afinalSelected.has(r.id));
+  doPrintList('Alertas — Finalizados Selecionados', fin);
+}
+
+// ─── RELATÓRIOS ──────────────────────────────────────────────────────────────
+function renderRelatorios() {
+  const s = getStats();
+  document.getElementById('r-total').textContent = s.total;
+  document.getElementById('r-concluded').textContent = s.concluded;
+  document.getElementById('r-expired').textContent = s.expired;
+  document.getElementById('r-inprogress').textContent = s.ontime;
+  document.getElementById('r-concluded-pct').textContent = `${Math.round(s.concluded/s.total*100)||0}% do total`;
+  document.getElementById('r-expired-pct').textContent = `${Math.round(s.expired/s.total*100)||0}% do total`;
+  document.getElementById('r-inprogress-pct').textContent = `${Math.round(s.ontime/s.total*100)||0}% do total`;
+  drawMonthly();
+}
+function drawMonthly() {
+  const ctx = document.getElementById('monthly-chart').getContext('2d');
+  if(monthlyChart) monthlyChart.destroy();
+  const months = {};
+  records.forEach(r => {
+    const d = new Date(r.data);
+    const k = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    if(!months[k]) months[k]={total:0,concluded:0,expired:0};
+    months[k].total++;
+    const st = computeStatus(r);
+    if(st==='Processo Concluído') months[k].concluded++;
+    else if(st==='Prazo Vencido!') months[k].expired++;
+  });
+  const keys = Object.keys(months).sort();
+  monthlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: keys,
+      datasets: [
+        { label:'Concluídos', data:keys.map(k=>months[k].concluded), backgroundColor:'#3fb950', borderRadius:3 },
+        { label:'Vencidos', data:keys.map(k=>months[k].expired), backgroundColor:'#f85149', borderRadius:3 },
+      ]
+    },
+    options: {
+      scales: {
+        x: { stacked:true, grid:{color:'#21262d'}, ticks:{color:'#8b949e',font:{size:10}} },
+        y: { stacked:true, grid:{color:'#21262d'}, ticks:{color:'#8b949e',stepSize:5} }
+      },
+      plugins: { legend:{ labels:{color:'#8b949e',font:{size:11}} } }
+    }
+  });
+}
+
+// ─── HISTÓRICO ───────────────────────────────────────────────────────────────
+let histSelected = new Set();
+function renderHistorico() {
+  const q = (document.getElementById('hist-search')?.value||'').toLowerCase();
+  const hist = records.filter(r => computeStatus(r)==='Processo Concluído' && (!q || r.nome.toLowerCase().includes(q) || r.cpd.includes(q)));
+  const total = records.filter(r => computeStatus(r)==='Processo Concluído').length;
+  document.getElementById('hist-total-card').textContent = total;
+  document.getElementById('hist-count').textContent = `${hist.length} registros concluídos`;
+  if(hist.length) {
+    document.getElementById('hist-body').innerHTML = hist.map(r => `<tr>
+      <td class="checkbox-col"><input type="checkbox" class="hist-cb" data-id="${r.id}" onchange="onHistCheck(this)" ${histSelected.has(r.id)?'checked':''}></td>
+      <td><strong style="color:var(--blue)">${r.cpd}</strong></td>
+      <td>${r.nome}</td>
+      <td>${r.sexo==='Mas.'?'♂ Masc.':'♀ Fem.'}</td>
+      <td>${formatDate(r.data)}</td>
+      <td><span class="badge concluded">✅ Processo Concluído</span></td>
+    </tr>`).join('');
+  } else {
+    document.getElementById('hist-body').innerHTML = `<tr><td colspan="6"><div class="empty"><p>Nenhum registro.</p></div></td></tr>`;
+  }
+  updateHistSelectBar();
+}
+function onHistCheck(cb) {
+  const id = parseInt(cb.dataset.id);
+  if(cb.checked) histSelected.add(id); else histSelected.delete(id);
+  updateHistSelectBar();
+}
+function updateHistSelectBar() {
+  const bar = document.getElementById('hist-select-bar');
+  const cnt = document.getElementById('hist-sel-count');
+  if(histSelected.size > 0) { bar.style.display='flex'; cnt.textContent=histSelected.size+' selecionado(s)'; }
+  else { bar.style.display='none'; }
+}
+function clearHistSelection() { histSelected.clear(); renderHistorico(); }
+function printHistAll() {
+  const hist = records.filter(r => computeStatus(r)==='Processo Concluído');
+  doPrintList('Histórico — Processos Concluídos', hist);
+}
+function printHistSelected() {
+  if(!histSelected.size) { showToast('⚠️ Selecione ao menos um registro.','var(--yellow)'); return; }
+  const hist = records.filter(r => histSelected.has(r.id));
+  doPrintList('Histórico — Selecionados', hist);
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+let editingId = null;
+function openModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Novo Cadastro';
+  document.getElementById('f-cpd').value = '';
+  document.getElementById('f-nome').value = '';
+  document.getElementById('f-sexo').value = '';
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-autorizacao').value = 'Em andamento';
+  document.getElementById('f-processo').value = '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function editRecord(id) {
+  const r = records.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Editar Registro';
+  document.getElementById('f-cpd').value = r.cpd;
+  document.getElementById('f-nome').value = r.nome;
+  document.getElementById('f-sexo').value = r.sexo;
+  document.getElementById('f-data').value = r.data;
+  document.getElementById('f-autorizacao').value = r.autorizacao;
+  document.getElementById('f-processo').value = r.processo||'';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function saveRecord() {
+  const cpd = document.getElementById('f-cpd').value.trim();
+  const nome = document.getElementById('f-nome').value.trim();
+  const sexo = document.getElementById('f-sexo').value;
+  const data = document.getElementById('f-data').value;
+  const autorizacao = document.getElementById('f-autorizacao').value;
+  const processo = document.getElementById('f-processo').value;
+  if(!cpd||!nome||!sexo||!data) { showToast('⚠️ Preencha todos os campos obrigatórios.','var(--yellow)'); return; }
+  if(editingId) {
+    const idx = records.findIndex(r=>r.id===editingId);
+    records[idx] = {...records[idx], cpd, nome, sexo, data, autorizacao, processo};
+    showToast('✅ Registro atualizado com sucesso!');
+  } else {
+    const newId = records.length ? Math.max(...records.map(r=>r.id))+1 : 1;
+    records.push({id:newId, cpd, nome, sexo, data, autorizacao, processo});
+    showToast('✅ Cadastro realizado com sucesso!');
+  }
+  saveData(); closeModal(); renderTable(); refreshDashboard();
+}
+function concludeRecord(id) {
+  const r = records.find(x=>x.id===id);
+  if(!r) return;
+  if(confirm(`Marcar "${r.nome}" como Processo Concluído (Ficha Arquivada)?`)) {
+    r.autorizacao = 'Concluído'; r.processo = 'Processo Concluído';
+    saveData(); renderTable(); renderAlertas(); refreshDashboard();
+    showToast(`✅ ${r.nome} marcado como Processo Concluído.`);
+  }
+}
+function deleteRecord(id) {
+  const r = records.find(x=>x.id===id);
+  if(!r) return;
+  if(confirm(`Excluir o registro de "${r.nome}"? Esta ação não pode ser desfeita.`)) {
+    records = records.filter(x=>x.id!==id);
+    saveData(); renderTable(); refreshDashboard();
+    showToast('🗑️ Registro excluído.','var(--red)');
+  }
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const header = 'CPD;Nome;Sexo;Data Cadastro;Status;Dias Decorridos';
+  const rows = records.map(r => {
+    const st = computeStatus(r);
+    const days = daysElapsed(r);
+    return `${r.cpd};${r.nome};${r.sexo};${formatDate(r.data)};${st};${days}`;
+  });
+  const csv = [header,...rows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `treinamento_biarticulado_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('⬇ CSV exportado com sucesso!');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg, color='var(--green)') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block'; t.style.borderLeftColor = color;
+  t.style.borderLeft = `3px solid ${color}`;
+  clearTimeout(t._to); t._to = setTimeout(()=>{ t.style.display='none'; }, 3000);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MÓDULO DE IMPORTAÇÃO
+// ═══════════════════════════════════════════════════════════════════════════════
+const IMP_HIST_KEY = 'treinamento_import_history_v1';
+const IMP_API_CFG_KEY = 'treinamento_api_cfg_v1';
+let importParsedData = {}; // { csv: [], excel: [], pdf: [], xml: [], api: [] }
+let apiScheduleTimer = null;
+
+// ─── DRAG & DROP ──────────────────────────────────────────────────────────────
+function dzOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
+function dzLeave(id) { document.getElementById(id).classList.remove('dragover'); }
+function dzDrop(e, type) {
+  e.preventDefault();
+  const id = type === 'excel' ? 'xl-drop' : type+'-drop';
+  dzLeave(id);
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (type === 'csv') handleCSV(file);
+  else if (type === 'excel') handleExcel(file);
+  else if (type === 'pdf') handlePDF(file);
+  else if (type === 'xml') handleXML(file);
+}
+
+// ─── IMPORT TABS ──────────────────────────────────────────────────────────────
+function switchImportTab(id, el) {
+  document.querySelectorAll('.import-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.import-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('imp-' + id).classList.add('active');
+}
+
+// ─── LOG HELPER ───────────────────────────────────────────────────────────────
+function impLog(prefix, msg, type = 'info') {
+  const el = document.getElementById(prefix + '-log');
+  if (!el) return;
+  el.style.display = 'block';
+  const cls = { ok: 'log-ok', warn: 'log-warn', err: 'log-err', info: 'log-info' }[type] || 'log-info';
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  el.innerHTML += `<div class="${cls}">[${ts}] ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearImpLog(prefix) {
+  const el = document.getElementById(prefix + '-log');
+  if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+  const s = document.getElementById(prefix + '-summary');
+  if (s) s.style.display = 'none';
+}
+
+// ─── ADVANCE STEP ─────────────────────────────────────────────────────────────
+function advStep(prefix, n) {
+  for (let i = 1; i <= 3; i++) {
+    const s = document.getElementById(prefix + '-step' + i);
+    if (!s) continue;
+    s.classList.remove('active', 'done');
+    if (i < n) s.classList.add('done');
+    else if (i === n) s.classList.add('active');
+  }
+}
+
+// ─── PREVIEW TABLE BUILDER ────────────────────────────────────────────────────
+function buildPreviewTable(data, tableId, metaId, previewId, maxRows = 50) {
+  if (!data || !data.length) return;
+  const fields = ['cpd', 'nome', 'sexo', 'data', 'autorizacao'];
+  const labels = ['CPD', 'Nome', 'Sexo', 'Data', 'Autorização'];
+  const preview = data.slice(0, maxRows);
+  const thead = '<thead><tr>' + labels.map(l => `<th>${l}</th>`).join('') + '<th>Status</th></tr></thead>';
+  const tbody = '<tbody>' + preview.map(r => {
+    const isValid = r.cpd && r.nome;
+    return `<tr style="${!isValid ? 'opacity:0.5' : ''}">
+      <td>${r.cpd || '<em style="color:var(--red)">vazio</em>'}</td>
+      <td>${r.nome || '<em style="color:var(--red)">vazio</em>'}</td>
+      <td>${r.sexo || '—'}</td>
+      <td>${r.data || '—'}</td>
+      <td>${r.autorizacao || 'Em andamento'}</td>
+      <td>${isValid ? '<span style="color:var(--green)">✓ Válido</span>' : '<span style="color:var(--red)">✗ Inválido</span>'}</td>
+    </tr>`;
+  }).join('') + '</tbody>';
+  document.getElementById(tableId).innerHTML = thead + tbody;
+  document.getElementById(metaId).textContent = `${data.length} registros encontrados${data.length > maxRows ? ' (mostrando primeiros '+maxRows+')' : ''}`;
+  const pEl = document.getElementById(previewId);
+  pEl.style.display = 'block';
+}
+
+// ─── FIELD MAPPING BUILDER ────────────────────────────────────────────────────
+const TARGET_FIELDS = ['cpd', 'nome', 'sexo', 'data', 'autorizacao', 'processo'];
+const TARGET_LABELS = { cpd:'CPD *', nome:'Nome *', sexo:'Sexo', data:'Data Cadastro', autorizacao:'Autorização', processo:'Processo' };
+function buildFieldMap(prefix, sourceColumns) {
+  const gridId = prefix + '-map-grid';
+  const mapEl = document.getElementById(prefix + '-map');
+  if (!mapEl || !sourceColumns.length) return;
+  const guessMap = {};
+  sourceColumns.forEach(col => {
+    const c = col.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!guessMap.cpd && (c.includes('cpd') || c.includes('matricula') || c.includes('cod'))) guessMap.cpd = col;
+    if (!guessMap.nome && (c.includes('nome') || c.includes('name') || c.includes('colabor'))) guessMap.nome = col;
+    if (!guessMap.sexo && (c.includes('sexo') || c.includes('genero') || c.includes('gender'))) guessMap.sexo = col;
+    if (!guessMap.data && (c.includes('data') || c.includes('date') || c.includes('dt'))) guessMap.data = col;
+    if (!guessMap.autorizacao && (c.includes('autor') || c.includes('status') || c.includes('situac'))) guessMap.autorizacao = col;
+    if (!guessMap.processo && (c.includes('processo') || c.includes('process'))) guessMap.processo = col;
+  });
+  const opts = ['<option value="">— não mapear —</option>',
+    ...sourceColumns.map(c => `<option value="${c}">${c}</option>`)].join('');
+  const rows = TARGET_FIELDS.map(f => {
+    const selOpts = opts.replace(`value="${guessMap[f] || ''}"`, `value="${guessMap[f] || ''}" selected`);
+    return `<div class="field-map-target">${TARGET_LABELS[f]}</div>
+      <div class="field-map-arrow">←</div>
+      <select class="field-map-select" id="${prefix}-map-${f}">${selOpts}</select>`;
+  }).join('');
+  document.getElementById(gridId).innerHTML = rows;
+  mapEl.style.display = 'block';
+}
+
+// ─── APPLY FIELD MAP ──────────────────────────────────────────────────────────
+function applyFieldMap(prefix, rawRows) {
+  return rawRows.map(row => {
+    const out = {};
+    TARGET_FIELDS.forEach(f => {
+      const sel = document.getElementById(prefix + '-map-' + f);
+      const srcCol = sel ? sel.value : '';
+      if (srcCol && row[srcCol] !== undefined) out[f] = String(row[srcCol]).trim();
+    });
+    // normalize sexo
+    if (out.sexo) {
+      const s = out.sexo.toLowerCase();
+      if (s.startsWith('m') || s === 'masc' || s === 'masculino') out.sexo = 'Mas.';
+      else if (s.startsWith('f') || s === 'fem' || s === 'feminino') out.sexo = 'Fem.';
+    }
+    // normalize date
+    if (out.data) {
+      const d = parseImportDate(out.data);
+      if (d) out.data = d;
+    }
+    if (!out.autorizacao) out.autorizacao = 'Em andamento';
+    return out;
+  });
+}
+
+function _p2(n){ n = String(n); return n.length < 2 ? ('0'+n) : n; }
+function _isoLocal(d){ return d.getFullYear()+'-'+_p2(d.getMonth()+1)+'-'+_p2(d.getDate()); }
+// Converte QUALQUER formato comum (ISO, dd/mm/aaaa, d/m/aa, serial do Excel, Date) para 'YYYY-MM-DD'
+function toISODate(v){
+  if (v === null || v === undefined || v === '') return null;
+  if (v instanceof Date){ return isNaN(v) ? null : _isoLocal(v); }
+  var s = String(v).trim();
+  if (!s) return null;
+  // ISO (com hora opcional)
+  var iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return iso[1]+'-'+_p2(iso[2])+'-'+_p2(iso[3]);
+  // dd/mm/aaaa, dd-mm-aaaa, dd.mm.aa (1-2 dígitos; ano 2-4 dígitos)
+  var br = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (br){
+    var a = parseInt(br[1],10), b = parseInt(br[2],10), y = parseInt(br[3],10);
+    if (y < 100) y += 2000;
+    var dia, mes;
+    if (a > 12){ dia = a; mes = b; }        // só pode ser dia/mês
+    else if (b > 12){ dia = b; mes = a; }   // só pode ser mês/dia
+    else { dia = a; mes = b; }              // ambíguo -> assume dd/mm (padrão BR)
+    if (mes >= 1 && mes <= 12 && dia >= 1 && dia <= 31) return y+'-'+_p2(mes)+'-'+_p2(dia);
+  }
+  // Serial do Excel (dias desde 1899-12-30)
+  var num = Number(s.replace(',', '.'));
+  if (!isNaN(num) && num > 20000 && num < 60000){
+    var d = new Date(Date.UTC(1899, 11, 30) + Math.round(num) * 86400000);
+    return d.getUTCFullYear()+'-'+_p2(d.getUTCMonth()+1)+'-'+_p2(d.getUTCDate());
+  }
+  // Último recurso
+  var dd = new Date(s);
+  if (!isNaN(dd)) return _isoLocal(dd);
+  return null;
+}
+function parseImportDate(s){ return toISODate(s); }
+
+// ─── CSV HANDLER ──────────────────────────────────────────────────────────────
+function handleCSV(file) {
+  if (!file) return;
+  clearImpLog('csv');
+  advStep('csv', 2);
+  impLog('csv', `📄 Arquivo: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (!lines.length) { impLog('csv', 'Arquivo vazio.', 'err'); return; }
+      // detect delimiter
+      const delimiters = [';', ',', '\t', '|'];
+      const counts = delimiters.map(d => (lines[0].match(new RegExp('\\' + d, 'g')) || []).length);
+      const delim = delimiters[counts.indexOf(Math.max(...counts))];
+      impLog('csv', `Delimitador detectado: "${delim === '\t' ? 'TAB' : delim}"`, 'ok');
+      const hasHeader = document.getElementById('csv-has-header')?.checked !== false;
+      const headers = hasHeader ? lines[0].split(delim).map(h => h.trim().replace(/^["']|["']$/g,'')) : lines[0].split(delim).map((_,i) => 'Coluna'+(i+1));
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+      const rawRows = dataLines.filter(l => l.trim()).map(line => {
+        const vals = line.split(delim).map(v => v.trim().replace(/^["']|["']$/g,''));
+        const obj = {};
+        headers.forEach((h,i) => { obj[h] = vals[i] || ''; });
+        return obj;
+      });
+      impLog('csv', `${rawRows.length} linhas lidas, ${headers.length} colunas.`, 'ok');
+      buildFieldMap('csv', headers);
+      importParsedData.csv = rawRows;
+      const mapped = applyFieldMap('csv', rawRows);
+      buildPreviewTable(mapped, 'csv-preview-table', 'csv-preview-meta', 'csv-preview');
+      advStep('csv', 3);
+    } catch(err) { impLog('csv', 'Erro ao processar: ' + err.message, 'err'); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ─── EXCEL HANDLER (via SheetJS from CDN) ────────────────────────────────────
+function handleExcel(file) {
+  if (!file) return;
+  clearImpLog('excel');
+  advStep('xl', 2);
+  impLog('excel', `📊 Arquivo: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      if (typeof XLSX === 'undefined') {
+        impLog('excel', 'Biblioteca SheetJS não carregada. Aguarde e tente novamente.', 'err');
+        return;
+      }
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      const sheetName = wb.SheetNames[0];
+      impLog('excel', `Planilha: "${sheetName}" (${wb.SheetNames.length} aba(s) total)`, 'ok');
+      const ws = wb.Sheets[sheetName];
+      const rawRows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+      impLog('excel', `${rawRows.length} registros lidos.`, 'ok');
+      importParsedData.excel = rawRows;
+      const headers = rawRows.length ? Object.keys(rawRows[0]) : [];
+      buildFieldMap('xl', headers);
+      document.getElementById('xl-map').style.display = 'block';
+      const mapped = applyFieldMap('xl', rawRows);
+      buildPreviewTable(mapped, 'xl-preview-table', 'xl-preview-meta', 'xl-preview');
+      advStep('xl', 3);
+    } catch(err) { impLog('excel', 'Erro ao processar: ' + err.message, 'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── PDF HANDLER (via pdf.js CDN) ────────────────────────────────────────────
+function handlePDF(file) {
+  if (!file) return;
+  clearImpLog('pdf');
+  impLog('pdf', `📕 Arquivo: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      if (typeof pdfjsLib === 'undefined') {
+        impLog('pdf', 'Biblioteca PDF.js não carregada.', 'err');
+        return;
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdfData = new Uint8Array(e.target.result);
+      const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+      impLog('pdf', `PDF carregado: ${pdf.numPages} página(s).`, 'ok');
+      let allText = '';
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        allText += content.items.map(i => i.str).join(' ') + '\n';
+      }
+      // Try to extract rows: look for CPD pattern (5-digit numbers) followed by name
+      const rows = [];
+      const lines = allText.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+      lines.forEach(line => {
+        const m = line.match(/(\d{5,6})\s+([A-ZÀ-Ú][a-zA-ZÀ-ú .]+)/);
+        if (m) {
+          const sexoM = line.match(/\b(Mas\.?|Masc\.?|Masculino|Fem\.?|Feminino)\b/i);
+          const dateM = line.match(/(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})/);
+          rows.push({
+            cpd: m[1],
+            nome: m[2].trim(),
+            sexo: sexoM ? (sexoM[1].toLowerCase().startsWith('m') ? 'Mas.' : 'Fem.') : '',
+            data: dateM ? parseImportDate(dateM[1]) || dateM[1] : '',
+            autorizacao: 'Em andamento'
+          });
+        }
+      });
+      if (!rows.length) {
+        impLog('pdf', 'Nenhum registro reconhecido. O PDF pode ser escaneado ou ter formato não suportado.', 'warn');
+        impLog('pdf', 'Dica: exporte a planilha como CSV ou Excel para melhor compatibilidade.', 'info');
+        return;
+      }
+      impLog('pdf', `${rows.length} registros extraídos.`, 'ok');
+      importParsedData.pdf = rows;
+      buildPreviewTable(rows, 'pdf-preview-table', 'pdf-preview-meta', 'pdf-preview');
+    } catch(err) { impLog('pdf', 'Erro ao processar: ' + err.message, 'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── XML HANDLER ──────────────────────────────────────────────────────────────
+function handleXML(file) {
+  if (!file) return;
+  clearImpLog('xml');
+  impLog('xml', `🗂️ Arquivo: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(e.target.result, 'text/xml');
+      const parseErr = doc.querySelector('parsererror');
+      if (parseErr) { impLog('xml', 'XML inválido: ' + parseErr.textContent.substring(0,100), 'err'); return; }
+      // Try common node names
+      const nodeNames = ['registro', 'colaborador', 'row', 'record', 'item', 'employee', 'funcionario'];
+      let nodes = [];
+      for (const name of nodeNames) {
+        nodes = Array.from(doc.querySelectorAll(name));
+        if (nodes.length) { impLog('xml', `Nó detectado: <${name}> (${nodes.length} registros)`, 'ok'); break; }
+      }
+      if (!nodes.length) {
+        // try children of root
+        const root = doc.documentElement;
+        nodes = Array.from(root.children);
+        if (nodes.length) impLog('xml', `Usando filhos de <${root.tagName}> (${nodes.length} nós)`, 'warn');
+      }
+      if (!nodes.length) { impLog('xml', 'Nenhum nó de dados encontrado no XML.', 'err'); return; }
+      // Build raw rows from attributes + child elements
+      const rawRows = nodes.map(node => {
+        const row = {};
+        // from attributes
+        Array.from(node.attributes).forEach(a => { row[a.name] = a.value; });
+        // from child elements
+        Array.from(node.children).forEach(c => { row[c.tagName] = c.textContent.trim(); });
+        return row;
+      });
+      const headers = rawRows.length ? [...new Set(rawRows.flatMap(r => Object.keys(r)))] : [];
+      impLog('xml', `Campos detectados: ${headers.join(', ')}`, 'info');
+      importParsedData.xml = rawRows;
+      buildFieldMap('xml', headers);
+      document.getElementById('xml-map').style.display = 'block';
+      const mapped = applyFieldMap('xml', rawRows);
+      buildPreviewTable(mapped, 'xml-preview-table', 'xml-preview-meta', 'xml-preview');
+    } catch(err) { impLog('xml', 'Erro ao processar: ' + err.message, 'err'); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ─── API HANDLERS ─────────────────────────────────────────────────────────────
+function toggleApiAuth() {
+  const type = document.getElementById('api-auth-type').value;
+  const wrap = document.getElementById('api-auth-fields');
+  const label = document.getElementById('api-auth-label');
+  const keyNameWrap = document.getElementById('api-key-name-wrap');
+  if (type === 'none') { wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+  keyNameWrap.style.display = type === 'apikey' ? 'block' : 'none';
+  label.textContent = type === 'bearer' ? 'Bearer Token' : type === 'basic' ? 'Usuário:Senha (user:pass)' : 'Valor do API Key';
+}
+function toggleApiSchedule() {
+  const p = document.getElementById('api-schedule-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+function buildApiHeaders() {
+  const type = document.getElementById('api-auth-type').value;
+  const val = document.getElementById('api-auth-value')?.value.trim() || '';
+  const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+  try { Object.assign(headers, JSON.parse(document.getElementById('api-headers').value || '{}')); } catch(e) {}
+  if (type === 'bearer' && val) headers['Authorization'] = 'Bearer ' + val;
+  if (type === 'basic' && val) headers['Authorization'] = 'Basic ' + btoa(val);
+  if (type === 'apikey' && val) { const kn = document.getElementById('api-key-name')?.value.trim() || 'X-API-Key'; headers[kn] = val; }
+  return headers;
+}
+function getApiJsonPath(data) {
+  const path = document.getElementById('api-json-path')?.value.trim();
+  if (!path) return Array.isArray(data) ? data : null;
+  const parts = path.split('.');
+  let cur = data;
+  for (const p of parts) { if (cur && typeof cur === 'object') cur = cur[p]; else return null; }
+  return Array.isArray(cur) ? cur : null;
+}
+function setApiStatus(msg, type) {
+  const el = document.getElementById('api-status-bar');
+  el.style.display = 'flex';
+  el.className = 'api-status ' + type;
+  el.innerHTML = msg;
+}
+async function testApiConnection() {
+  const url = document.getElementById('api-url').value.trim();
+  if (!url) { setApiStatus('⚠️ Informe a URL do endpoint.', 'err'); return; }
+  setApiStatus('⏳ Testando conexão…', 'loading');
+  try {
+    const res = await fetch(url, { method: 'HEAD', headers: buildApiHeaders() });
+    setApiStatus(`✅ Conexão OK — HTTP ${res.status} ${res.statusText}`, 'ok');
+    impLog('api', `Teste HEAD → ${res.status} ${res.statusText}`, 'ok');
+  } catch(err) {
+    try {
+      const res2 = await fetch(url, { method: 'GET', headers: buildApiHeaders() });
+      const data = await res2.json();
+      const rows = getApiJsonPath(data);
+      setApiStatus(`✅ Conexão OK — ${rows ? rows.length + ' registros' : 'dados recebidos'}`, 'ok');
+    } catch(err2) {
+      setApiStatus('❌ Falha: ' + err2.message, 'err');
+      impLog('api', 'Erro de conexão: ' + err2.message, 'err');
+    }
+  }
+}
+async function fetchApiNow() {
+  const url = document.getElementById('api-url').value.trim();
+  if (!url) { setApiStatus('⚠️ Informe a URL do endpoint.', 'err'); return; }
+  clearImpLog('api');
+  setApiStatus('⏳ Buscando dados…', 'loading');
+  impLog('api', `🔗 Requisição: ${document.getElementById('api-method').value} ${url}`, 'info');
+  try {
+    const method = document.getElementById('api-method').value;
+    const res = await fetch(url, { method, headers: buildApiHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    const data = await res.json();
+    const rows = getApiJsonPath(data);
+    if (!rows || !rows.length) { setApiStatus('⚠️ Nenhum registro encontrado no caminho JSON configurado.', 'err'); impLog('api', 'Array vazio ou caminho JSON incorreto.', 'warn'); return; }
+    impLog('api', `${rows.length} registros recebidos.`, 'ok');
+    setApiStatus(`✅ ${rows.length} registros recebidos`, 'ok');
+    importParsedData.api = rows;
+    // Try auto-map
+    const headers = rows.length ? Object.keys(rows[0]) : [];
+    const mapped = rows.map(r => {
+      const sexoRaw = r.sexo || r.gender || r.genero || '';
+      const s = sexoRaw.toLowerCase();
+      return {
+        cpd: String(r.cpd || r.matricula || r.codigo || r.id || '').trim(),
+        nome: String(r.nome || r.name || r.colaborador || '').trim(),
+        sexo: s.startsWith('m') ? 'Mas.' : s.startsWith('f') ? 'Fem.' : '',
+        data: parseImportDate(String(r.data || r.date || r.dt_cadastro || '').trim()) || '',
+        autorizacao: String(r.autorizacao || r.status || r.situacao || 'Em andamento').trim(),
+        processo: String(r.processo || r.process || '').trim()
+      };
+    });
+    buildPreviewTable(mapped, 'api-preview-table', 'api-preview-meta', 'api-preview');
+    importParsedData.api_mapped = mapped;
+  } catch(err) {
+    setApiStatus('❌ Erro: ' + err.message, 'err');
+    impLog('api', 'Erro: ' + err.message, 'err');
+  }
+}
+function startApiSchedule() {
+  stopApiSchedule();
+  const freq = parseInt(document.getElementById('api-freq').value);
+  if (!freq) { showToast('⚠️ Selecione uma frequência.','var(--yellow)'); return; }
+  apiScheduleTimer = setInterval(fetchApiNow, freq);
+  const labels = { 60000:'1 min', 300000:'5 min', 600000:'10 min', 1800000:'30 min', 3600000:'1h' };
+  document.getElementById('api-sched-status').innerHTML = `<span style="color:var(--green)">▶ Ativo — a cada ${labels[freq]}</span>`;
+  showToast('⏱ Sincronização automática ativada.');
+}
+function stopApiSchedule() {
+  if (apiScheduleTimer) { clearInterval(apiScheduleTimer); apiScheduleTimer = null; }
+  document.getElementById('api-sched-status').innerHTML = '<span style="color:var(--text2)">⏸ Desativado</span>';
+}
+
+// ─── CONFIRM IMPORT ───────────────────────────────────────────────────────────
+function confirmImport(type) {
+  let data = [];
+  if (type === 'csv') data = applyFieldMap('csv', importParsedData.csv || []);
+  else if (type === 'excel') data = applyFieldMap('xl', importParsedData.excel || []);
+  else if (type === 'pdf') data = importParsedData.pdf || [];
+  else if (type === 'xml') data = applyFieldMap('xml', importParsedData.xml || []);
+  else if (type === 'api') data = importParsedData.api_mapped || applyFieldMap('api', importParsedData.api || []);
+  const skipDup = document.getElementById(type === 'excel' ? 'xl-skip-dup' : type + '-skip-dup');
+  const updateExisting = document.getElementById(type === 'excel' ? 'xl-update-existing' : type + '-update-existing');
+  const previewOnly = document.getElementById(type + '-preview-only');
+  const doSkipDup = skipDup ? skipDup.checked : true;
+  const doUpdate = updateExisting ? updateExisting.checked : false;
+  const doPreviewOnly = previewOnly ? previewOnly.checked : false;
+  let countNew = 0, countUpd = 0, countSkip = 0, countErr = 0;
+  const prefix = type === 'excel' ? 'xl' : type;
+  impLog(prefix, `▶ Processando ${data.length} registros…`, 'info');
+  const nextId = records.length ? Math.max(...records.map(r => r.id)) + 1 : 1;
+  let idCounter = nextId;
+  data.forEach((r, i) => {
+    if (!r.cpd || !r.nome) { countErr++; impLog(prefix, `Linha ${i+1}: CPD ou Nome vazio — ignorado.`, 'warn'); return; }
+    const existing = records.find(x => x.cpd === r.cpd);
+    if (existing) {
+      if (doUpdate) {
+        Object.assign(existing, r);
+        countUpd++;
+      } else if (doSkipDup) {
+        countSkip++;
+      } else {
+        records.push({ id: idCounter++, ...r });
+        countNew++;
+      }
+    } else {
+      records.push({ id: idCounter++, ...r });
+      countNew++;
+    }
+  });
+  if (!doPreviewOnly) {
+    saveData();
+    refreshDashboard();
+    renderTable();
+  }
+  // Show summary
+  const sumEl = document.getElementById(prefix + '-summary');
+  sumEl.style.display = 'block';
+  document.getElementById(prefix + '-s-total').textContent = data.length;
+  document.getElementById(prefix + '-s-new').textContent = countNew;
+  document.getElementById(prefix + '-s-upd').textContent = countUpd;
+  document.getElementById(prefix + '-s-skip').textContent = countSkip;
+  impLog(prefix, `✅ Importação concluída — ${countNew} inseridos, ${countUpd} atualizados, ${countSkip} ignorados, ${countErr} inválidos.`, 'ok');
+  // Save to history
+  saveImportHistory({
+    type: type.toUpperCase(), file: '', total: data.length,
+    inserted: countNew, updated: countUpd, skipped: countSkip
+  });
+  renderImportHistorico();
+  if (!doPreviewOnly) showToast(`✅ Importação concluída: ${countNew} novos, ${countUpd} atualizados.`);
+}
+
+// ─── RESET IMPORT ─────────────────────────────────────────────────────────────
+function resetImport(type) {
+  const prefix = type === 'excel' ? 'xl' : type;
+  ['preview','log','summary','map'].forEach(s => {
+    const el = document.getElementById(prefix+'-'+s) || document.getElementById(type+'-'+s);
+    if (el) el.style.display = 'none';
+  });
+  const fileId = type === 'excel' ? 'xl-file' : type + '-file';
+  const fileEl = document.getElementById(fileId);
+  if (fileEl) fileEl.value = '';
+  importParsedData[type] = [];
+  clearImpLog(prefix);
+  if (type === 'csv') advStep('csv', 1);
+  if (type === 'excel') advStep('xl', 1);
+}
+
+// ─── IMPORT HISTORY ───────────────────────────────────────────────────────────
+function saveImportHistory(entry) {
+  const hist = JSON.parse(localStorage.getItem(IMP_HIST_KEY) || '[]');
+  hist.unshift({ ...entry, ts: new Date().toISOString() });
+  if (hist.length > 50) hist.length = 50;
+  localStorage.setItem(IMP_HIST_KEY, JSON.stringify(hist));
+}
+function renderImportHistorico() {
+  const hist = JSON.parse(localStorage.getItem(IMP_HIST_KEY) || '[]');
+  const el = document.getElementById('import-history-body');
+  if (!hist.length) {
+    el.innerHTML = '<div class="hist-import-row"><span style="font-size:12px;color:var(--text2)">Nenhuma importação realizada ainda.</span></div>';
+    return;
+  }
+  const typeIcon = { CSV:'📄', EXCEL:'📊', PDF:'📕', XML:'🗂️', API:'🔗' };
+  el.innerHTML = hist.map(h => {
+    const ts = new Date(h.ts).toLocaleString('pt-BR');
+    return `<div class="hist-import-row">
+      <div class="hist-import-icon">${typeIcon[h.type] || '📁'}</div>
+      <div class="hist-import-info">
+        <div class="hist-import-name">${h.type}${h.file ? ' — ' + h.file : ''}</div>
+        <div class="hist-import-meta">${ts} &nbsp;|&nbsp; ${h.total} lidos &nbsp;·&nbsp; <span style="color:var(--green)">${h.inserted} inseridos</span> &nbsp;·&nbsp; <span style="color:var(--yellow)">${h.updated} atualizados</span> &nbsp;·&nbsp; <span style="color:var(--text2)">${h.skipped} ignorados</span></div>
+      </div>
+      <div class="hist-import-badge"><span class="badge concluded">✅ OK</span></div>
+    </div>`;
+  }).join('');
+}
+function clearImportHistory() {
+  if (!confirm('Limpar todo o histórico de importações?')) return;
+  localStorage.removeItem(IMP_HIST_KEY);
+  renderImportHistorico();
+  showToast('🗑 Histórico limpo.');
+}
+
+// ─── SELECT ALL ──────────────────────────────────────────────────────────────
+function toggleSelectAll(scope) {
+  if(scope==='hist') {
+    const master = document.getElementById('hist-select-all');
+    document.querySelectorAll('.hist-cb').forEach(cb => {
+      cb.checked = master.checked;
+      const id = parseInt(cb.dataset.id);
+      if(master.checked) histSelected.add(id); else histSelected.delete(id);
+    });
+    updateHistSelectBar();
+  } else if(scope==='afinal') {
+    const master = document.getElementById('afinal-select-all');
+    document.querySelectorAll('.afinal-cb').forEach(cb => {
+      cb.checked = master.checked;
+      const id = parseInt(cb.dataset.id);
+      if(master.checked) afinalSelected.add(id); else afinalSelected.delete(id);
+    });
+    updateAfinalSelectBar();
+  } else if(scope==='evt') {
+    const master = document.getElementById('evt-select-all');
+    document.querySelectorAll('.evt-cb').forEach(cb => {
+      cb.checked = master.checked;
+      const id = parseInt(cb.dataset.id);
+      if(master.checked) evtSelected.add(id); else evtSelected.delete(id);
+    });
+    updateEvtSelectBar();
+  }
+}
+
+// ─── PRINT ENGINE ─────────────────────────────────────────────────────────────
+function doPrintList(title, list) {
+  const now = new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const rows = list.map(r => {
+    const st = computeStatus(r);
+    const stLabel = st === 'Processo Concluído' ? '✅ Processo Concluído' : st === 'Prazo Vencido!' ? '🔴 Prazo Vencido' : '⏰ Em andamento';
+    return `<tr>
+      <td>${r.cpd}</td>
+      <td>${r.nome}</td>
+      <td>${r.sexo === 'Mas.' ? 'Masc.' : 'Fem.'}</td>
+      <td>${formatDate(r.data)}</td>
+      <td>${stLabel}</td>
+    </tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1a1a1a; margin: 20px; }
+    h2 { font-size: 15px; margin-bottom: 4px; }
+    .meta { font-size: 11px; color: #666; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #1f6feb; color: #fff; padding: 7px 10px; text-align: left; font-size: 11px; letter-spacing: 0.3px; }
+    td { padding: 6px 10px; border-bottom: 1px solid #ddd; font-size: 12px; }
+    tr:nth-child(even) td { background: #f7f9fb; }
+    .footer { margin-top: 16px; font-size: 10px; color: #999; text-align: right; }
+  </style></head><body>
+  <h2>🚌 Treinamento Biarticulado — ${title}</h2>
+  <div class="meta">Emitido em: ${now} &nbsp;|&nbsp; Total de registros: ${list.length}</div>
+  <table><thead><tr><th>CPD</th><th>Nome</th><th>Sexo</th><th>Data Cadastro</th><th>Status</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  <div class="footer">Sistema de Controle de Treinamento Biarticulado — luidilorena</div>
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`;
+  const win = window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  loadData();
+  document.getElementById('current-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  refreshDashboard();
+}
+</script>
+<script>
+/* ☁ Receptor do painel Drive do Redentor Hub */
+window.addEventListener("message",function(ev){
+  try{
+    var d=ev.data;
+    if(!(d&&d.hubDrive==="import"&&d.buf))return;
+    var f=new File([d.buf],d.nome||"planilha.xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var inp=document.querySelector("input[type=file][accept*=xls i]")||document.querySelector("input[type=file][accept*=sheet i]")||document.querySelector("input[type=file]");
+    if(inp){
+      try{
+        var dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files;
+        try{ev.source.postMessage({hubDrive:"ok"},"*");}catch(e){}
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+        return;
+      }catch(e){}
+    }
+    /* sem importador nativo: o Hub mostra o aviso adequado */
+  }catch(e){}
+});
+</script>
+</body>
+</html>

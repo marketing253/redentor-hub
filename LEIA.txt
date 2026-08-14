@@ -1,0 +1,24 @@
+Missao, Visao e Valores — texto maior
+
+O QUE MUDOU
+  O rotulo dourado (MISSAO, VISAO, VALORES) estava no mesmo
+  tamanho dos rotulos secundarios da peca — e a tres metros
+  de distancia virava um detalhe. Ele encabeca a tela:
+  precisa ser lido antes do texto, nao junto com o rodape.
+
+    rotulo dourado  1.5vw -> 2.1vw   (+40%)
+    texto           3.1vw -> 3.6vw   (+16%)
+
+  Numa TV Full HD:
+    rotulo  29px -> 40px
+    texto   60px -> 69px
+
+  A largura maxima do texto foi de 30 para 28 caracteres por
+  linha. Aumentar a fonte sem isso faria a frase atravessar a
+  tela inteira — e linha longa e o que mais atrapalha leitura
+  a distancia.
+
+  A versao para tela em pe acompanhou na mesma proporcao.
+
+DEPOIS DE SUBIR
+  Recarregar TVs.

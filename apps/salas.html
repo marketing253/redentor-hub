@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendamento de Salas de Treinamento</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',sans-serif;min-height:100vh;transition:background .4s,color .4s}
+
+/* ── TOKENS ─────────────────────────────────────── */
+:root{
+  --a:#4f46e5;--a2:#6366f1;--al:rgba(79,70,229,.12);--ahl:#eef2ff;
+  --sb:#0ea5e9;--sbl:#e0f2fe;--sbt:#0369a1;
+  --bg:#f1f5f9;--bg2:#e8edf3;
+  --sur:#fff;--sur2:#f8fafc;--sur3:#f1f5f9;
+  --brd:#e2e8f0;--brd2:#cbd5e1;
+  --hbg:#0f172a;--htx:#f1f5f9;
+  --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 4px 20px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);
+  --shl:0 12px 40px rgba(0,0,0,.1),0 4px 12px rgba(0,0,0,.06);
+  --r:14px;--rs:9px;--rx:6px;
+  --sbtn:0 4px 14px rgba(79,70,229,.4);
+}
+[data-t="violet"]{--a:#7c3aed;--a2:#8b5cf6;--al:rgba(124,58,237,.12);--ahl:#f5f3ff;--sbtn:0 4px 14px rgba(124,58,237,.4)}
+[data-t="sky"]   {--a:#0284c7;--a2:#0ea5e9;--al:rgba(2,132,199,.12);--ahl:#e0f2fe;--sbtn:0 4px 14px rgba(2,132,199,.4)}
+[data-t="teal"]  {--a:#0d9488;--a2:#14b8a6;--al:rgba(13,148,136,.12);--ahl:#f0fdfa;--sbtn:0 4px 14px rgba(13,148,136,.4)}
+[data-t="rose"]  {--a:#e11d48;--a2:#f43f5e;--al:rgba(225,29,72,.12);--ahl:#fff1f2;--sbtn:0 4px 14px rgba(225,29,72,.4)}
+[data-t="amber"] {--a:#b45309;--a2:#d97706;--al:rgba(180,83,9,.12);--ahl:#fffbeb;--sbtn:0 4px 14px rgba(180,83,9,.4)}
+[data-t="slate"] {--a:#334155;--a2:#475569;--al:rgba(51,65,85,.12);--ahl:#f1f5f9;--sbtn:0 4px 14px rgba(51,65,85,.4)}
+[data-t="dark"]  {
+  --bg:#0b1120;--bg2:#0f1829;--sur:#111d2e;--sur2:#162032;--sur3:#1b2840;
+  --brd:#1e2f44;--brd2:#253650;--hbg:#070d18;
+  --t1:#e2e8f0;--t2:#94a3b8;--t3:#64748b;--t4:#334155;
+  --sh:0 1px 3px rgba(0,0,0,.3);--shm:0 4px 20px rgba(0,0,0,.4);
+}
+
+/* ── BASE ────────────────────────────────────────── */
+body{background:var(--bg);color:var(--t1)}
+
+/* ── LOGIN ───────────────────────────────────────── */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--hbg) 0%,#1e3a5f 100%);
+  padding:20px;
+}
+.login-card{
+  background:var(--sur);border-radius:20px;padding:40px 36px;
+  width:100%;max-width:380px;box-shadow:var(--shl);
+  border:1px solid var(--brd);
+}
+.login-logo{
+  width:52px;height:52px;border-radius:14px;
+  background:var(--a);display:flex;align-items:center;
+  justify-content:center;font-weight:900;font-size:22px;
+  color:#fff;margin:0 auto 20px;
+  box-shadow:var(--sbtn);
+}
+.login-title{font-size:1.3rem;font-weight:800;text-align:center;color:var(--t1);margin-bottom:4px}
+.login-sub{font-size:.75rem;color:var(--t4);text-align:center;margin-bottom:28px}
+.login-err{
+  background:#fee2e2;border:1px solid #fecdd3;color:#be123c;
+  border-radius:8px;padding:9px 13px;font-size:.75rem;
+  margin-bottom:14px;display:flex;gap:7px;align-items:center;
+}
+
+/* ── HEADER ──────────────────────────────────────── */
+.hdr{
+  background:var(--hbg);color:var(--htx);
+  position:sticky;top:0;z-index:200;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  box-shadow:0 2px 24px rgba(0,0,0,.22);
+}
+.hdr-in{
+  max-width:1560px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;gap:14px;flex-wrap:wrap;
+}
+.logo{display:flex;align-items:center;gap:11px}
+.logo-m{
+  width:36px;height:36px;border-radius:10px;background:var(--a);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:15px;color:#fff;flex-shrink:0;
+  box-shadow:0 0 0 3px rgba(255,255,255,.1);
+  transition:background .4s;
+}
+.logo-n{font-weight:800;font-size:.88rem;line-height:1.1}
+.logo-s{font-size:.65rem;opacity:.4;margin-top:2px;font-weight:400}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* ── Status chips header ─────────────────────────── */
+.hdr-sala{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:99px;padding:5px 12px;
+  font-size:.67rem;cursor:default;
+}
+
+/* ── Theme selector ──────────────────────────────── */
+.theme-bar{
+  display:flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:99px;padding:5px 12px;
+}
+.theme-bar span{font-size:.6rem;opacity:.45;text-transform:uppercase;letter-spacing:.5px}
+.tdots{display:flex;gap:5px}
+.td{
+  width:17px;height:17px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;
+  transition:transform .18s,border-color .18s,box-shadow .18s;
+}
+.td:hover{transform:scale(1.25)}
+.td.on{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.2);transform:scale(1.18)}
+
+/* ── User chip ───────────────────────────────────── */
+.user-chip{
+  display:flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:99px;padding:5px 13px;
+  font-size:.68rem;
+}
+.user-avatar{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--a);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:.65rem;flex-shrink:0;
+  transition:background .4s;
+}
+.btn-logout{
+  background:rgba(255,255,255,.1);border:none;color:var(--htx);
+  padding:3px 9px;border-radius:99px;font-size:.65rem;
+  cursor:pointer;transition:background .15s;font-family:inherit;
+}
+.btn-logout:hover{background:rgba(255,255,255,.2)}
+
+/* ── NAV TABS ────────────────────────────────────── */
+.nav-wrap{background:var(--sur);border-bottom:1px solid var(--brd);box-shadow:var(--sh)}
+.nav-in{max-width:1560px;margin:0 auto;display:flex;padding:0 20px;gap:2px;overflow-x:auto}
+.nav-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:13px 16px;border:none;background:none;
+  font-family:inherit;font-size:.75rem;font-weight:600;
+  color:var(--t3);cursor:pointer;
+  border-bottom:2.5px solid transparent;
+  white-space:nowrap;transition:color .18s,border-color .18s;
+}
+.nav-btn:hover{color:var(--t1)}
+.nav-btn.on{color:var(--a);border-color:var(--a)}
+.nav-ico{font-size:.9rem}
+
+/* ── MAIN LAYOUT ─────────────────────────────────── */
+.page{max-width:1560px;margin:0 auto;padding:24px 28px}
+.two-col{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+/* ── CARD ────────────────────────────────────────── */
+.card{
+  background:var(--sur);border:1px solid var(--brd);
+  border-radius:var(--r);box-shadow:var(--sh);
+  transition:background .35s,border-color .35s;
+}
+.card-p{padding:20px}
+.card-title{font-size:.85rem;font-weight:800;color:var(--t1)}
+.card-sub{font-size:.68rem;color:var(--t4);margin-top:3px}
+
+/* ── FORM ────────────────────────────────────────── */
+.fld{margin-bottom:14px}
+.fld label{
+  display:block;font-size:.62rem;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;
+}
+.finp,.fsel,.ftxt{
+  width:100%;background:var(--sur2);border:1.5px solid var(--brd);
+  border-radius:var(--rs);padding:9px 13px;
+  font-size:.82rem;font-family:inherit;color:var(--t1);
+  transition:border-color .2s,box-shadow .2s,background .35s;outline:none;
+}
+.fsel{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Cpath fill='%2394a3b8' d='M5.5 7.5L1 3h9z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;cursor:pointer;
+}
+.ftxt{resize:vertical;min-height:68px}
+.finp:focus,.fsel:focus,.ftxt:focus{border-color:var(--a);box-shadow:0 0 0 3px var(--al)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── SALA CARDS ──────────────────────────────────── */
+.sala-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sala-card{
+  border:2px solid var(--brd);border-radius:var(--rs);padding:12px;
+  cursor:pointer;background:var(--sur);text-align:left;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+.sala-card::before{
+  content:'';position:absolute;inset:0;
+  background:var(--a);opacity:0;transition:opacity .2s;pointer-events:none;
+}
+.sala-card:hover{transform:translateY(-2px);box-shadow:var(--shm)}
+.sala-card.sel{border-color:var(--a);background:var(--ahl)}
+.sala-card.sel::before{opacity:.04}
+.sala-ico{
+  width:30px;height:30px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-weight:900;font-size:.82rem;
+  color:#fff;margin-bottom:8px;transition:background .4s;
+}
+.sala-nm{font-size:.72rem;font-weight:700;color:var(--t1)}
+.sala-sel-badge{
+  display:flex;align-items:center;gap:4px;
+  font-size:.62rem;font-weight:700;color:var(--a);margin-top:5px;
+}
+
+/* ── STATUS BADGE ────────────────────────────────── */
+.stbadge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:2px 8px;border-radius:99px;
+  font-size:.62rem;font-weight:700;letter-spacing:.2px;
+}
+.stbadge.livre{background:#dcfce7;color:#16a34a}
+.stbadge.ocup{background:#fee2e2;color:#dc2626}
+.pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pdot.blink{animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── DUR TAG ─────────────────────────────────────── */
+.dur-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.68rem;color:var(--t3);
+  background:var(--sur3);border:1px solid var(--brd);
+  border-radius:99px;padding:3px 10px;margin-bottom:12px;
+}
+
+/* ── FORM HEADER GRADIENT ────────────────────────── */
+.form-hero{padding:18px 20px;color:#fff;border-radius:var(--r) var(--r) 0 0}
+.form-hero p:first-child{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;opacity:.65;margin-bottom:3px}
+.form-hero h2{font-size:1rem;font-weight:800;line-height:1.2}
+.form-hero p:last-child{font-size:.68rem;margin-top:4px;opacity:.55}
+
+/* ── ALERT ───────────────────────────────────────── */
+.alert{
+  display:flex;align-items:flex-start;gap:8px;
+  border-radius:var(--rs);padding:10px 13px;
+  font-size:.72rem;line-height:1.5;margin-bottom:12px;
+  animation:rup .22s ease both;
+}
+.alert.err{background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
+.alert.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
+@keyframes rup{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── BTN ─────────────────────────────────────────── */
+.btn-main{
+  width:100%;padding:11px;font-weight:800;font-size:.82rem;
+  border:none;border-radius:var(--rs);cursor:pointer;
+  color:#fff;letter-spacing:.2px;
+  transition:opacity .15s,transform .12s;
+}
+.btn-main:hover{opacity:.9}
+.btn-main:active{transform:scale(.985)}
+.btn-ghost{
+  background:var(--sur);border:1.5px solid var(--brd);
+  border-radius:var(--rx);padding:7px 12px;
+  font-size:.72rem;font-weight:600;color:var(--t2);
+  cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.btn-ghost:hover{border-color:var(--a);color:var(--a);background:var(--ahl)}
+
+/* ── TOP BAR ─────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;
+}
+.date-nav{display:flex;align-items:center;gap:7px}
+.tab-sw{
+  display:flex;gap:2px;background:var(--sur2);
+  border:1.5px solid var(--brd);border-radius:var(--rs);padding:3px;
+}
+.tab-b{
+  padding:5px 14px;border-radius:7px;border:none;
+  background:transparent;font-size:.72rem;font-weight:700;
+  color:var(--t3);cursor:pointer;transition:all .18s;font-family:inherit;
+}
+.tab-b.on{background:var(--sur);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* ── GRADE ───────────────────────────────────────── */
+.btn-ed{flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1px solid var(--bd,#e5e7eb);background:transparent;color:var(--t3,#6b7280);font-size:.85rem;cursor:pointer;margin-right:6px;transition:.15s}.btn-ed:hover{background:var(--a,#3b82f6);border-color:var(--a,#3b82f6);color:#fff}.sblk{overflow:visible}.sblk-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;border:none;background:#111827;color:#fff;font-size:12px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px #00000055}.sblk:hover .sblk-x{display:flex}.edit-box{max-width:460px;text-align:left}.edit-box .modal-title{text-align:left}.grade-ov{overflow-x:auto;padding-bottom:8px}
+.grade-row{min-width:860px;margin-bottom:30px}
+.grade-row:last-child{margin-bottom:0}
+.grade-hd{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:8px;font-size:.72rem;font-weight:700;color:var(--t2);
+}
+.track{
+  position:relative;height:56px;background:var(--sur2);
+  border:1px solid var(--brd);border-radius:10px;overflow:visible;
+}
+.htick{position:absolute;top:0;bottom:0;width:1px;background:var(--brd);pointer-events:none}
+.hlbl{
+  position:absolute;top:-18px;transform:translateX(-50%);
+  font-size:.58rem;color:var(--t4);font-weight:600;white-space:nowrap;
+}
+.sblk{
+  position:absolute;top:3px;bottom:3px;border-radius:7px;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:0 9px;cursor:pointer;color:#fff;overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  transition:opacity .15s,transform .15s;
+  animation:rup .2s ease both;
+}
+.sblk:hover{opacity:.82;transform:translateY(-1.5px)}
+.sblk .sblk-ev{font-size:.65rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.sblk .sblk-nm{font-size:.58rem;font-weight:500;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.nowline{position:absolute;top:0;bottom:0;width:2px;background:#f43f5e;border-radius:1px;z-index:20}
+.nowdot{position:absolute;top:-4px;left:-3px;width:8px;height:8px;border-radius:50%;background:#f43f5e}
+
+/* ── LISTA ───────────────────────────────────────── */
+.lista-sc{max-height:420px;overflow-y:auto;padding-right:2px}
+.dia-sep{
+  display:flex;align-items:center;gap:8px;
+  margin:14px 0 8px;font-size:.62rem;font-weight:800;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.6px;
+}
+.dia-sep:first-child{margin-top:0}
+.dia-line{flex:1;height:1px;background:var(--brd)}
+.li-item{
+  display:flex;align-items:center;gap:10px;
+  border-radius:var(--rs);padding:10px 13px;
+  margin-bottom:6px;animation:rup .2s ease both;
+}
+.li-bar{width:4px;border-radius:99px;align-self:stretch;flex-shrink:0}
+.li-body{flex:1;min-width:0}
+.li-ev{font-size:.72rem;font-weight:800;color:var(--t1)}
+.li-sala{font-size:.65rem;font-weight:700;margin-top:1px}
+.li-nm{font-size:.68rem;color:var(--t2);margin-top:1px}
+.li-time{font-size:.68rem;font-weight:700;color:var(--t2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.btn-rm{
+  background:none;border:none;cursor:pointer;
+  font-size:1.1rem;line-height:1;color:var(--t4);padding:2px 4px;
+  transition:color .15s;border-radius:4px;
+}
+.btn-rm:hover{color:#ef4444;background:#fee2e2}
+
+/* ── STAT CARDS ──────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{padding:16px 18px}
+.stat-ico{
+  width:36px;height:36px;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;font-size:1rem;
+  margin-bottom:10px;flex-shrink:0;
+}
+.stat-n{font-size:1.8rem;font-weight:900;line-height:1;color:var(--t1)}
+.stat-l{font-size:.65rem;color:var(--t3);margin-top:3px}
+.stat-delta{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:.62rem;font-weight:700;margin-top:6px;
+  padding:2px 7px;border-radius:99px;
+}
+.stat-delta.up{background:#dcfce7;color:#16a34a}
+.stat-delta.dn{background:#fee2e2;color:#dc2626}
+
+/* ── CHARTS ──────────────────────────────────────── */
+.chart-wrap{position:relative;overflow:hidden}
+.chart-canvas-wrap{overflow-x:auto}
+
+/* Bar chart custom */
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:grid;grid-template-columns:120px 1fr 46px;align-items:center;gap:8px}
+.bar-lbl{font-size:.68rem;font-weight:600;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.bar-track{height:26px;background:var(--sur3);border-radius:6px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 9px;font-size:.62rem;font-weight:800;color:#fff;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.bar-val{font-size:.68rem;font-weight:800;color:var(--t1);text-align:right}
+
+/* Donut chart */
+.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:6px}
+.donut-li{display:flex;align-items:center;gap:7px;font-size:.7rem;color:var(--t2)}
+.donut-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.donut-pct{font-weight:800;color:var(--t1);margin-left:auto;padding-left:10px}
+
+/* Line mini chart */
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:44px}
+.spark-bar{
+  flex:1;border-radius:3px 3px 0 0;min-width:6px;
+  transition:height .4s,opacity .15s;
+}
+.spark-bar:hover{opacity:.75}
+
+/* ── FILTROS DASH ────────────────────────────────── */
+.filter-bar{
+  display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px;
+  margin-bottom:18px;
+}
+.filter-bar .fld{margin-bottom:0;min-width:140px}
+
+/* ── EMPTY ───────────────────────────────────────── */
+.empty{text-align:center;padding:48px 20px}
+.empty .ico{font-size:2.8rem;margin-bottom:10px}
+.empty p{font-size:.78rem;color:var(--t4)}
+
+/* ── SCROLLBAR ───────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:99px}
+
+/* ── MODAL CONFIRM ───────────────────────────────── */
+.modal-ov{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:rup .18s ease both;
+}
+.modal-box{
+  background:var(--sur);border:1px solid var(--brd);
+  border-radius:var(--r);padding:28px;max-width:380px;width:100%;
+  box-shadow:var(--shl);
+}
+.modal-icon{font-size:2rem;text-align:center;margin-bottom:12px}
+.modal-title{font-size:.95rem;font-weight:800;color:var(--t1);text-align:center;margin-bottom:8px}
+.modal-msg{font-size:.75rem;color:var(--t2);text-align:center;line-height:1.55;margin-bottom:20px}
+.modal-btns{display:flex;gap:10px}
+.btn-cancel{
+  flex:1;padding:10px;background:var(--sur2);border:1.5px solid var(--brd);
+  border-radius:var(--rs);font-family:inherit;font-size:.78rem;font-weight:700;
+  color:var(--t2);cursor:pointer;transition:all .15s;
+}
+.btn-cancel:hover{border-color:var(--brd2);color:var(--t1)}
+.btn-danger{
+  flex:1;padding:10px;background:#ef4444;border:none;
+  border-radius:var(--rs);font-family:inherit;font-size:.78rem;font-weight:800;
+  color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,.35);
+  transition:opacity .15s;
+}
+.btn-danger:hover{opacity:.88}
+.form-hero2{display:flex;gap:14px;align-items:center;padding:18px 20px 15px;border-bottom:1px solid var(--brd)}
+.fh-acc{width:4px;align-self:stretch;border-radius:99px;flex-shrink:0;transition:background .3s}
+.fh-ov{font-size:.6rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--t4)}
+.fh-tt{font-size:1.02rem;font-weight:800;color:var(--t1);margin-top:3px;line-height:1.2}
+.fh-dt{font-size:.72rem;color:var(--t3);margin-top:3px}
+.nav-in{align-items:center}
+.nav-ico{display:flex;align-items:center}
+.nav-btn{letter-spacing:.01em}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;padding:7px 0 7px 14px}
+.nav-sala{display:flex;align-items:center;gap:7px;background:var(--sur2);border:1px solid var(--brd);border-radius:99px;padding:4px 6px 4px 11px;font-size:.66rem;font-weight:600;color:var(--t2);white-space:nowrap}
+.ns-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+@media(max-width:880px){.nav-right{display:none}}
+.finp:focus,.fsel:focus,.ftxt:focus{border-color:var(--a);box-shadow:0 0 0 3px var(--al);outline:none}
+.btn-main{letter-spacing:.02em}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useCallback, useEffect, useRef } = React;
+
+/* ─── PERMISSÃO: só o setor de Treinamento agenda (flag salas_editar) ─── */
+const CAN_EDIT=(function(){
+  try{
+    if(window.self===window.top) return true; /* fora do Hub (desenvolvimento) */
+    var cs=null; try{cs=window.parent.currentSession||null;}catch(e){}
+    if(!cs) return false;
+    if(cs.role==='admin') return true;
+    return !!(cs.perms && cs.perms.salas_editar===true);
+  }catch(e){ return false; }
+})();
+
+/* ─── USUÁRIOS DA BASE do Hub (para responsável e participantes) ─── */
+function useUsuariosBase(){
+  const [users,setUsers]=useState([]);
+  useEffect(()=>{let vivo=true;(async()=>{
+    try{
+      const r=await fetch('../auth.php?action=users_basic');
+      const d=await r.json();
+      if(vivo&&d.ok&&Array.isArray(d.users)){
+        setUsers(d.users.filter(u=>u&&u.username&&String(u.name||'').trim())
+          .sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR')));
+      }
+    }catch(e){}
+  })();return()=>{vivo=false};},[]);
+  return users;
+}
+function useResponsaveis(){
+  const users=useUsuariosBase();
+  return useMemo(()=>[...new Set(users.map(u=>String(u.name).trim()))],[users]);
+}
+function _meUser(){try{const cs=(window.parent&&window.parent!==window)?window.parent.currentSession:null;return (cs&&cs.username)||'';}catch(e){return '';}}
+const FORA_DO_HUB=(()=>{try{return window.self===window.top;}catch(e){return true;}})();
+/* Busca as reservas recém-gravadas por OUTROS usuários direto no servidor */
+async function reservasServidor(){
+  try{
+    if(!FORA_DO_HUB&&window.parent.dadosApi){
+      const d=await window.parent.dadosApi('get',{key:'salas_agendamentos_v1'},null);
+      if(d&&d.value){const a=JSON.parse(d.value);if(Array.isArray(a))return a;}
+    }
+  }catch(e){}
+  return null;
+}
+function NavIco({id}){
+  const P={
+    agendar:['M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z','M8 2v4M16 2v4M3 10h18','M12 13v6M9 16h6'],
+    grade:['M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z','M8 2v4M16 2v4M3 10h18'],
+    lista:['M8 6h13M8 12h13M8 18h13','M3.5 6h.01M3.5 12h.01M3.5 18h.01'],
+    dash:['M18 20V10M12 20V4M6 20v-6']
+  };
+  return(
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {(P[id]||P.grade).map((d,i)=><path key={i} d={d}/>)}
+    </svg>
+  );
+}
+/* ─── CONVITES DA RESERVA: consulta, cancelamento e atualização (motor 📩 do Hub) ─── */
+function convitesDaReserva(agId){
+  try{
+    if(window.parent&&window.parent!==window&&typeof window.parent._agcLoad==='function'){
+      return window.parent._agcLoad().filter(c=>c&&c.refEvento==='sala-'+agId);
+    }
+  }catch(e){}
+  return [];
+}
+function mapaConvitesSalas(){
+  const m={};
+  try{
+    if(window.parent&&window.parent!==window&&typeof window.parent._agcLoad==='function'){
+      window.parent._agcLoad().forEach(c=>{
+        if(!c||String(c.refEvento||'').indexOf('sala-')!==0)return;
+        if(c.status==='cancelado'||c.status==='recusado')return;
+        const k=String(c.refEvento).slice(5);
+        const o=(m[k]=m[k]||{n:0,ac:0}); o.n++; if(c.status==='aceito')o.ac++;
+      });
+    }
+  }catch(e){}
+  return m;
+}
+async function cancelarConviteIndividual(conv){
+  try{
+    if(!(window.parent&&window.parent!==window&&typeof window.parent._agcLoad==='function'))return;
+    const todos=window.parent._agcLoad();
+    const c=todos.find(x=>x&&x.id===conv.id); if(!c)return;
+    if(c.status==='aceito'){
+      try{ if(typeof window.parent.agendaRemove==='function') window.parent.agendaRemove(c.paraUser,'conv-'+c.id); }catch(e){}
+    }
+    c.status='cancelado'; c.respondidoEm=new Date().toISOString();
+    if(typeof window.parent._agcSave==='function') await window.parent._agcSave(todos);
+  }catch(e){}
+}
+async function cancelarConvitesReserva(agId){
+  try{
+    if(!(window.parent&&window.parent!==window&&typeof window.parent._agcLoad==='function'))return;
+    const todos=window.parent._agcLoad(); let mudou=false;
+    todos.forEach(c=>{
+      if(!c||c.refEvento!=='sala-'+agId)return;
+      if(c.status==='aceito'){
+        try{ if(typeof window.parent.agendaRemove==='function') window.parent.agendaRemove(c.paraUser,'conv-'+c.id); }catch(e){}
+      }
+      if(c.status==='pendente'||c.status==='aceito'){ c.status='cancelado'; c.respondidoEm=new Date().toISOString(); mudou=true; }
+    });
+    if(mudou&&typeof window.parent._agcSave==='function') await window.parent._agcSave(todos);
+  }catch(e){}
+}
+async function atualizarConvitesReserva(agId,novos,salaNome){
+  try{
+    if(!(window.parent&&window.parent!==window&&typeof window.parent._agcLoad==='function'))return;
+    const todos=window.parent._agcLoad(); let mudou=false;
+    todos.forEach(c=>{
+      if(!c||c.refEvento!=='sala-'+agId)return;
+      if(c.status!=='pendente'&&c.status!=='aceito')return;
+      c.titulo='\uD83D\uDCC5 '+novos.evento+' \u2014 '+salaNome;
+      c.data=novos.data; c.inicio=novos.inicio; c.fim=novos.fim; c.local=salaNome; c.obs=novos.obs||'';
+      mudou=true;
+      if(c.status==='aceito'){
+        try{
+          if(typeof window.parent.agendaUpdate==='function')
+            window.parent.agendaUpdate(c.paraUser,'conv-'+c.id,{titulo:c.titulo,data:c.data,inicio:c.inicio,fim:c.fim,local:salaNome,obs:c.obs});
+        }catch(e){}
+      }
+    });
+    if(mudou&&typeof window.parent._agcSave==='function') await window.parent._agcSave(todos);
+  }catch(e){}
+}
+function SelResponsavel({lista,valor,onChange}){
+  const naBase=valor===''||lista.includes(valor);
+  const [outro,setOutro]=useState(!naBase&&valor!=='');
+  useEffect(()=>{ if(outro&&valor&&lista.includes(valor)) setOutro(false); },[lista]);
+  const opts=(!naBase&&valor!=='')?[valor,...lista]:lista;
+  return(
+    <>
+      <select className="fsel" value={outro?'__outro':valor}
+        onChange={e=>{const v=e.target.value; if(v==='__outro'){setOutro(true);onChange('');} else {setOutro(false);onChange(v);}}}>
+        <option value="">— Selecione o responsável —</option>
+        {opts.map(n=><option key={n} value={n}>{n}</option>)}
+        <option value="__outro">Outro (digitar)…</option>
+      </select>
+      {outro&&<input className="finp" style={{marginTop:6}} value={valor} autoFocus
+        onChange={e=>onChange(e.target.value)} placeholder="Nome completo" maxLength={60}/>}
+    </>
+  );
+}
+
+/* ─── CONSTANTES ─────────────────────────────────── */
+const HI=7, HF=20;
+const HORAS = Array.from({length:HF-HI+1},(_,i)=>HI+i);
+const TMIN = (HF-HI)*60;
+
+const SALAS = [
+  {id:'angelo', nome:'Sala Jo\u00e3o Gulin', hex:'#ea580c'},
+  {id:'joao',   nome:'Sala Angelo Gulin',  hex:'#16a34a'},
+];
+
+const TEMAS = [
+  {id:'default', label:'Índigo',    cor:'#4f46e5'},
+  {id:'violet',  label:'Violeta',   cor:'#7c3aed'},
+  {id:'sky',     label:'Céu',       cor:'#0284c7'},
+  {id:'teal',    label:'Verde-azul',cor:'#0d9488'},
+  {id:'rose',    label:'Rosa',      cor:'#e11d48'},
+  {id:'amber',   label:'Âmbar',     cor:'#b45309'},
+  {id:'slate',   label:'Chumbo',    cor:'#334155'},
+  {id:'dark',    label:'Escuro',    cor:'#0b1120', isDark:true},
+];
+
+/* ─── HELPERS ─────────────────────────────────────── */
+const p2  = n => String(n).padStart(2,'0');
+const t2m = h => { const [a,b]=h.split(':').map(Number); return a*60+b; };
+const hoje = () => new Date().toISOString().slice(0,10);
+const amanha = () => new Date(Date.now()+86400000).toISOString().slice(0,10);
+const uid = () => Math.random().toString(36).slice(2,9);
+const fmtD = iso => { if(!iso) return '—'; const[y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
+const DSEM = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const diaSem = iso => iso ? DSEM[new Date(iso+'T12:00').getDay()] : '';
+const durLabel = m => {
+  if(m<1) return null;
+  const h=Math.floor(m/60), min=m%60;
+  return h>0 ? (min>0 ? `${h}h ${min}min` : `${h}h`) : `${min}min`;
+};
+const nowPct = () => {
+  const n=new Date(); const m=n.getHours()*60+n.getMinutes();
+  if(m<HI*60||m>HF*60) return null;
+  return ((m-HI*60)/TMIN)*100;
+};
+const pctLeft = h => ((t2m(h)-HI*60)/TMIN)*100;
+const pctW    = (i,f) => ((t2m(f)-t2m(i))/TMIN)*100;
+
+/* ─── DEMO DATA ──────────────────────────────────── */
+const HOJE=hoje(), AMAN=amanha();
+const DEMO = [
+  {id:uid(),salaId:'angelo',data:HOJE,  inicio:'09:00',fim:'10:30',responsavel:'Ana Costa',   evento:'Workshop Lean Manufacturing'},
+  {id:uid(),salaId:'angelo',data:HOJE,  inicio:'14:00',fim:'15:30',responsavel:'Bruno Lima',  evento:'Reunião Diretoria'},
+  {id:uid(),salaId:'joao',  data:HOJE,  inicio:'08:00',fim:'09:00',responsavel:'Carla Sousa', evento:'Treinamento NR-35'},
+  {id:uid(),salaId:'joao',  data:HOJE,  inicio:'11:30',fim:'13:00',responsavel:'Diego Melo',  evento:'Palestra Inovação'},
+  {id:uid(),salaId:'angelo',data:AMAN,  inicio:'10:00',fim:'11:30',responsavel:'Eduardo Paz', evento:'Curso Excel Avançado'},
+  {id:uid(),salaId:'joao',  data:AMAN,  inicio:'09:00',fim:'10:00',responsavel:'Flávia Reis', evento:'Treinamento Integração'},
+  {id:uid(),salaId:'angelo',data:AMAN,  inicio:'14:00',fim:'16:00',responsavel:'Lorena',      evento:'Palestra Liderança'},
+];
+
+/* ─── VALIDAÇÃO ──────────────────────────────────── */
+function conflito(agends,{salaId,data,inicio,fim,ignorar=null}){
+  const s=t2m(inicio), e=t2m(fim);
+  return agends.find(a=>a.id!==ignorar&&a.salaId===salaId&&a.data===data&&s<t2m(a.fim)&&e>t2m(a.inicio));
+}
+
+/* ─── AUTENTICAÇÃO ───────────────────────────────── */
+const USERS=[{user:'lorena',pass:'8586',nome:'Lorena',role:'admin'}];
+function LoginScreen({onLogin}){
+  const [u,setU]=useState('');
+  const [p,setP]=useState('');
+  const [err,setErr]=useState('');
+  const submit = e => {
+    e.preventDefault(); setErr('');
+    const found=USERS.find(x=>x.user===u.toLowerCase().trim()&&x.pass===p);
+    if(found) onLogin(found);
+    else setErr('Usuário ou senha incorretos.');
+  };
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-logo">G</div>
+        <div className="login-title">Agenda das Salas</div>
+        <div className="login-sub">Faça login para acessar o sistema</div>
+        {err && <div className="login-err"><span>⚠</span>{err}</div>}
+        <form onSubmit={submit}>
+          <div className="fld">
+            <label>Usuário</label>
+            <input className="finp" value={u} onChange={e=>setU(e.target.value)} placeholder="seu usuário" autoFocus/>
+          </div>
+          <div className="fld" style={{marginBottom:20}}>
+            <label>Senha</label>
+            <input className="finp" type="password" value={p} onChange={e=>setP(e.target.value)} placeholder="••••••••"/>
+          </div>
+          <button type="submit" className="btn-main" style={{background:'var(--a)',boxShadow:'var(--sbtn)'}}>
+            Entrar no Sistema
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ─── STATUS BADGE ───────────────────────────────── */
+function StatusBadge({salaId,data,agends}){
+  const agora=new Date();
+  const hn=`${p2(agora.getHours())}:${p2(agora.getMinutes())}`;
+  const eHoje=data===hoje();
+  const ocup=eHoje&&agends.some(a=>a.salaId===salaId&&a.data===data&&hn>=a.inicio&&hn<a.fim);
+  return(
+    <span className={`stbadge ${ocup?'ocup':'livre'}`}>
+      <span className={`pdot${ocup?' blink':''}`} style={{background:ocup?'#ef4444':'#22c55e'}}/>
+      {ocup?'Ocupada':'Livre'}
+    </span>
+  );
+}
+
+/* ─── MODAL CONFIRMAÇÃO ──────────────────────────── */
+function EditModal({item,agends,onSave,onCancel,onMerge}){
+  const [sala,setSala]=useState(item.salaId);
+  const [data,setData]=useState(item.data);
+  const [ini,setIni]=useState(item.inicio);
+  const [fim,setFim]=useState(item.fim);
+  const [ev,setEv]=useState(item.evento);
+  const [resp,setResp]=useState(item.responsavel);
+  const [obs,setObs]=useState(item.obs||'');
+  const [err,setErr]=useState('');
+  const usersBase=useUsuariosBase();
+  const respLista=useMemo(()=>[...new Set(usersBase.map(u=>String(u.name).trim()))],[usersBase]);
+  const [conv,setConv]=useState(()=>convitesDaReserva(item.id));
+  const [novosParts,setNovosParts]=useState([]);
+  const meU=_meUser();
+  const jaConvidado=u=>conv.some(c=>c.paraUser===u&&c.status!=='cancelado'&&c.status!=='recusado')||novosParts.some(p=>p.username===u);
+  const [renot,setRenot]=useState(false);
+  async function renotificar(){
+    const pend=conv.filter(c=>c.status==='pendente');
+    if(!pend.length||renot)return;
+    const slN=(SALAS.find(x=>x.id===sala)||{}).nome||'';
+    pend.forEach(c=>{
+      try{
+        if(window.parent&&typeof window.parent.pushSend==='function')
+          window.parent.pushSend(c.paraUser,'\uD83D\uDCE9 Convite aguardando resposta','Lembrete: '+ev+' \u2014 '+data.split('-').reverse().join('/')+' \u00e0s '+ini+' ('+slN+'). Abra o Hub para aceitar ou recusar.','conv-lembrete-'+Date.now(),'/');
+      }catch(e){}
+      try{
+        if(window.parent&&typeof window.parent.n8nConvite==='function')
+          window.parent.n8nConvite({tipo:'lembrete_convite_sala',para:c.paraNome,paraUser:c.paraUser,evento:ev,data:data,inicio:ini,fim:fim,sala:slN});
+      }catch(e){}
+    });
+    try{
+      if(window.parent&&window.parent._agcLoad&&window.parent._agcSave){
+        const todos=window.parent._agcLoad(); let mudou=false;
+        todos.forEach(c=>{ if(c&&c.refEvento==='sala-'+item.id&&c.status==='pendente'){c.lembreteEm=new Date().toISOString();mudou=true;} });
+        if(mudou)await window.parent._agcSave(todos);
+      }
+    }catch(e){}
+    setRenot(true); setTimeout(()=>setRenot(false),8000);
+  }
+  async function salvar(){
+    setErr('');
+    if(!resp.trim()){setErr('Informe o responsável.');return;}
+    if(!ev.trim()){setErr('Informe o evento.');return;}
+    if(t2m(fim)-t2m(ini)<15){setErr('Duração mínima: 15 minutos.');return;}
+    if(data===HOJE&&t2m(ini)<minAgoraSlot()&&!(data===item.data&&ini===item.inicio)){setErr('Para hoje, o início não pode ser anterior ao horário atual.');return;}
+    /* anti-conflito entre usuários: confere o servidor antes de salvar */
+    const srv=await reservasServidor();
+    const externos=srv?srv.filter(x=>x&&x.id&&!agends.some(l=>String(l.id)===String(x.id))):[];
+    if(externos.length&&onMerge)onMerge(externos);
+    const c=conflito([...agends,...externos].filter(a=>a.id!==item.id),{salaId:sala,data,inicio:ini,fim});
+    if(c){setErr(`Conflito: "${c.evento}" (${c.inicio}–${c.fim})${externos.some(x=>x.id===c.id)?' — acabou de ser reservado por outro usuário':''}.`);return;}
+    /* novos participantes: convite 📩 com os dados JÁ atualizados da reserva */
+    try{
+      if(novosParts.length&&window.parent&&typeof window.parent.agendaConvidar==='function'){
+        const sl2=SALAS.find(x=>x.id===sala);
+        window.parent.agendaConvidar(
+          { id:'sala-'+item.id, titulo:'\uD83D\uDCC5 '+ev.trim()+' \u2014 '+(sl2?sl2.nome:''),
+            data, inicio:ini, fim, local:sl2?sl2.nome:'', obs:obs.trim() },
+          novosParts.map(p=>({username:p.username, nome:p.name}))
+        );
+      }
+    }catch(e){}
+    onSave(item.id,{salaId:sala,data,inicio:ini,fim,evento:ev.trim(),responsavel:resp.trim(),obs:obs.trim()});
+  }
+  const salaObj=SALAS.find(x=>x.id===sala);
+  return(
+    <div className="modal-ov" onClick={onCancel}>
+      <div className="modal-box edit-box" onClick={e=>e.stopPropagation()}>
+        <div className="modal-title" style={{marginBottom:4}}>✎ Editar Agendamento</div>
+        <div style={{fontSize:'.72rem',color:'var(--t3)',marginBottom:14}}>Criado por {item.criadoPor||'—'}</div>
+        <div className="fld"><label>Sala</label>
+          <select className="fsel" value={sala} onChange={e=>setSala(e.target.value)}>
+            {SALAS.map(x=><option key={x.id} value={x.id}>{x.nome}</option>)}
+          </select>
+        </div>
+        <div className="g2">
+          <div className="fld"><label>Data</label>
+            <input className="finp" type="date" value={data} onChange={e=>setData(e.target.value)}/>
+          </div>
+          <div className="fld"><label>Responsável</label>
+            <SelResponsavel lista={respLista} valor={resp} onChange={setResp}/>
+          </div>
+        </div>
+        <div className="g2">
+          <div className="fld"><label>Início</label>
+            <select className="fsel" value={ini} onChange={e=>setIni(e.target.value)}>
+              {optsInicio(data,(data===item.data?item.inicio:null)).map(o=><option key={o}>{o}</option>)}
+            </select>
+          </div>
+          <div className="fld"><label>Término</label>
+            <select className="fsel" value={fim} onChange={e=>setFim(e.target.value)}>
+              {OPTS.filter(o=>o>ini).map(o=><option key={o}>{o}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="fld"><label>Evento</label>
+          <input className="finp" value={ev} onChange={e=>setEv(e.target.value)}/>
+        </div>
+        <div className="fld"><label>Observações</label>
+          <input className="finp" value={obs} onChange={e=>setObs(e.target.value)}/>
+        </div>
+        <div className="fld">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:6}}>
+            <label style={{marginBottom:0}}>Participantes</label>
+            {conv.some(c=>c.status==='pendente')&&
+              <button type="button" onClick={renotificar} disabled={renot}
+                style={{border:'1px solid var(--brd2)',background:'var(--sur2)',color:renot?'#16a34a':'var(--t2)',borderRadius:99,padding:'3px 11px',fontSize:'.63rem',fontWeight:700,cursor:renot?'default':'pointer',fontFamily:'inherit'}}>
+                {renot?'✓ Lembretes enviados':'🔔 Renotificar pendentes ('+conv.filter(c=>c.status==='pendente').length+')'}
+              </button>}
+          </div>
+          {conv.length>0&&<div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:8}}>
+            {conv.map(c=>{
+              const st=c.status==='aceito'?['✔','#16a34a','aceitou']
+                     :c.status==='recusado'?['✕','#dc2626','recusou']
+                     :c.status==='cancelado'?['⊘','var(--t4)','convite cancelado']
+                     :['⏳','#d97706','aguardando resposta'];
+              return(
+                <div key={c.id} style={{display:'flex',alignItems:'center',gap:8,fontSize:'.74rem'}}>
+                  <span style={{color:st[1],fontWeight:800,width:14,textAlign:'center'}}>{st[0]}</span>
+                  <span style={{flex:1,textDecoration:c.status==='cancelado'?'line-through':'none'}}>{c.paraNome} <span style={{color:'var(--t4)'}}>· {st[2]}</span></span>
+                  {(c.status==='pendente'||c.status==='aceito')&&
+                    <button type="button" title={c.status==='aceito'?'Cancelar convite (remove da agenda da pessoa)':'Cancelar convite'}
+                      onClick={async()=>{await cancelarConviteIndividual(c);setConv(convitesDaReserva(item.id));}}
+                      style={{border:0,background:'transparent',color:'var(--t3)',cursor:'pointer',fontWeight:900,fontSize:'.85rem'}}>×</button>}
+                </div>
+              );
+            })}
+          </div>}
+          <select className="fsel" value="" onChange={e=>{
+            const u=usersBase.find(x=>x.username===e.target.value);
+            if(u&&!jaConvidado(u.username))setNovosParts([...novosParts,u]);
+          }}>
+            <option value="">＋ Adicionar participante…</option>
+            {usersBase.filter(u=>u.username!==meU&&!jaConvidado(u.username))
+              .map(u=><option key={u.username} value={u.username}>{u.name}</option>)}
+          </select>
+          {novosParts.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>
+            {novosParts.map(p=>(
+              <span key={p.username} style={{display:'inline-flex',alignItems:'center',gap:6,background:'var(--al)',color:'var(--a)',borderRadius:'99px',padding:'4px 10px',fontSize:'.72rem',fontWeight:700}}>
+                {p.name}
+                <button type="button" onClick={()=>setNovosParts(novosParts.filter(x=>x.username!==p.username))}
+                  style={{border:0,background:'transparent',color:'inherit',cursor:'pointer',fontWeight:900,fontSize:'.8rem',lineHeight:1}}>×</button>
+              </span>
+            ))}
+          </div>}
+          <div style={{fontSize:'.66rem',color:'var(--t3)',marginTop:6}}>Novos participantes recebem o convite 📩 ao salvar. Cancelar um convite aceito remove o compromisso da agenda da pessoa. Alterar data/horário atualiza automaticamente a agenda de quem já aceitou.</div>
+        </div>
+        {err&&<div style={{color:'#dc2626',fontSize:'.72rem',margin:'4px 0 8px'}}>⚠ {err}</div>}
+        <div style={{display:'flex',gap:10,marginTop:10}}>
+          <button className="modal-btn conf" style={{background:salaObj.hex}} onClick={salvar}>Salvar alterações</button>
+          <button className="modal-btn canc" onClick={onCancel}>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function Modal({item,onConfirm,onCancel}){
+  if(!item) return null;
+  return(
+    <div className="modal-ov" onClick={onCancel}>
+      <div className="modal-box" onClick={e=>e.stopPropagation()}>
+        <div className="modal-icon">🗑️</div>
+        <div className="modal-title">Cancelar Agendamento?</div>
+        <div className="modal-msg">
+          O evento <strong>"{item.evento}"</strong> de <strong>{item.responsavel}</strong> ({item.inicio}–{item.fim}) será cancelado e a sala ficará disponível.
+        </div>
+        <div className="modal-btns">
+          <button className="btn-cancel" onClick={onCancel}>Manter</button>
+          <button className="btn-danger" onClick={()=>onConfirm(item.id)}>Cancelar Evento</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── THEME SELECTOR ─────────────────────────────── */
+function ThemeSelector({tema,onTema}){
+  return(
+    <div className="theme-bar">
+      <span>Tema</span>
+      <div className="tdots">
+        {TEMAS.map(t=>(
+          <div key={t.id} className={`td${tema===t.id?' on':''}`}
+            style={{background:t.cor}} title={t.label}
+            onClick={()=>onTema(t.id)}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── SALA SELECTOR ──────────────────────────────── */
+function SalaSelector({val,onChange,agends,data}){
+  return(
+    <div className="sala-grid">
+      {SALAS.map(s=>(
+        <button key={s.id} className={`sala-card${val===s.id?' sel':''}`} onClick={()=>onChange(s.id)}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+            <div className="sala-ico" style={{background:s.hex}}>{s.nome[0]}</div>
+            <StatusBadge salaId={s.id} data={data} agends={agends}/>
+          </div>
+          <div className="sala-nm">{s.nome}</div>
+          {val===s.id&&<div className="sala-sel-badge">
+            <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" stroke="currentColor" strokeWidth="1.5" fill="none"/><circle cx="4" cy="4" r="1.5" fill="currentColor"/></svg>
+            Selecionada
+          </div>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ─── FORMULÁRIO ─────────────────────────────────── */
+const OPTS=[];
+for(let h=HI;h<=HF;h++){[0,15,30,45].forEach(m=>{if(h===HF&&m>0)return;OPTS.push(`${p2(h)}:${p2(m)}`);});}
+/* hoje: não oferecer horários anteriores a agora (próximo slot de 15 min) */
+function minAgoraSlot(){const n=new Date();return Math.ceil((n.getHours()*60+n.getMinutes())/15)*15;}
+function optsInicio(data,manter){
+  let base=OPTS.filter(o=>o!==`${p2(HF)}:00`);
+  if(data===HOJE){const mm=minAgoraSlot();base=base.filter(o=>t2m(o)>=mm);}
+  if(manter&&!base.includes(manter))base=[manter,...base];
+  return base;
+}
+
+function podeMexer(a){
+  if(!CAN_EDIT) return false;          // sem a chave do Treinamento: somente leitura
+  const me=window.__ME||{};
+  if(me.admin) return true;            // admin pode tudo
+  if(!a.criadoPor) return true;        // reservas antigas (sem dono)
+  return a.criadoPor===me.nome;        // só quem criou
+}
+function Formulario({agends,onAdd,onMerge}){
+  const [sala,setSala]=useState('angelo');
+  const [data,setData]=useState(HOJE);
+  const [dataFim,setDataFim]=useState(HOJE);
+  const [ini, setIni] =useState('08:00');
+  const [fim, setFim] =useState('09:00');
+  const [resp,setResp]=useState(()=>{try{var cs=(window.parent&&window.parent!==window)?window.parent.currentSession:null;var n=(cs&&cs.name)||(window.__ME&&window.__ME.nome)||'';return (n&&n!=='Portal Redentor')?n:'';}catch(e){return '';}});
+  const [ev,  setEv  ]=useState('');
+  const [obs, setObs ]=useState('');
+  const [err, setErr ]=useState('');
+  const [ok,  setOk  ]=useState('');
+  const usersBase=useUsuariosBase();
+  const respLista=useMemo(()=>[...new Set(usersBase.map(u=>String(u.name).trim()))],[usersBase]);
+  const [parts,setParts]=useState([]); /* participantes convidados: [{username,name}] */
+  const [rec,setRec]=useState('nao');       /* recorrência: nao | sem (semanal) */
+  const [recSem,setRecSem]=useState(4);     /* por quantas semanas */
+  const [salvando,setSalvando]=useState(false);
+  const meU=(()=>{try{const cs=(window.parent&&window.parent!==window)?window.parent.currentSession:null;return (cs&&cs.username)||'';}catch(e){return '';}})();
+
+  // Sync dataFim when data moves forward
+  useEffect(()=>{ if(dataFim<data) setDataFim(data); },[data]);
+  // Hoje: se o início escolhido já passou, pula para o próximo horário disponível
+  useEffect(()=>{
+    const os=optsInicio(data);
+    if(!os.length)return;
+    if(!os.includes(ini)){
+      const ni=os[0]; setIni(ni);
+      if(t2m(fim)<=t2m(ni)){const nf=OPTS.find(o=>t2m(o)>=t2m(ni)+60)||OPTS[OPTS.length-1];setFim(nf);}
+    }
+  },[data,ini]);
+
+  const salaObj=SALAS.find(s=>s.id===sala);
+  const dur=t2m(fim)-t2m(ini);
+  const dl=durLabel(dur);
+
+  // Generate all dates in range
+  function datasNoIntervalo(ini, fim){
+    const datas=[]; let cur=new Date(ini+'T12:00');
+    const end=new Date(fim+'T12:00');
+    while(cur<=end){ datas.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
+    return datas;
+  }
+
+  function todasAsDatas(){
+    const base=datasNoIntervalo(data,dataFim);
+    if(rec!=='sem')return base;
+    const out=[];
+    for(let w=0;w<recSem;w++){
+      base.forEach(d=>{const x=new Date(d+'T12:00');x.setDate(x.getDate()+7*w);out.push(x.toISOString().slice(0,10));});
+    }
+    return out;
+  }
+  async function submit(e){
+    e.preventDefault(); setErr(''); setOk('');
+    if(salvando)return;
+    if(!resp.trim()){setErr('Informe o nome do responsável.');return;}
+    if(!ev.trim()){setErr('Informe o nome do evento ou palestra.');return;}
+    if(dur<15){setErr('Duração mínima: 15 minutos.');return;}
+    if(data===HOJE&&!optsInicio(data).length){setErr('O horário de funcionamento de hoje já encerrou — escolha outra data.');return;}
+    if(data===HOJE&&t2m(ini)<minAgoraSlot()){setErr('Para hoje, o início não pode ser anterior ao horário atual.');return;}
+    const datas=todasAsDatas();
+    if(datas.length>40){setErr('Máximo de 40 reservas por vez — reduza o período ou as semanas.');return;}
+    setSalvando(true);
+    try{
+    /* anti-conflito entre usuários: confere as reservas recém-gravadas no servidor */
+    const srv=await reservasServidor();
+    const externos=srv?srv.filter(x=>x&&x.id&&!agends.some(l=>String(l.id)===String(x.id))):[];
+    if(externos.length&&onMerge)onMerge(externos);
+    const combinado=[...agends,...externos];
+    for(const d of datas){
+      const c=conflito(combinado,{salaId:sala,data:d,inicio:ini,fim});
+      if(c){setErr(`Conflito em ${fmtD(d)}: "${c.evento}" (${c.inicio}–${c.fim})${externos.some(x=>x.id===c.id)?' — acabou de ser reservado por outro usuário':''}.`);return;}
+    }
+    // Add one booking per day
+    const novos=datas.map(d=>({id:uid(),salaId:sala,data:d,inicio:ini,fim,responsavel:resp.trim(),evento:ev.trim(),obs:obs.trim(),criadoPor:(window.__ME&&window.__ME.nome)||'',criadoPorUser:(window.__ME&&window.__ME.username)||''}));
+    novos.forEach(n=>onAdd(n));
+    /* Participantes: recebem CONVITE (aceitar/recusar) — nada entra automático na agenda de ninguém */
+    let convs=0;
+    try{
+      if(parts.length && window.parent && typeof window.parent.agendaConvidar==='function'){
+        novos.forEach(n=>{
+          convs+=window.parent.agendaConvidar(
+            { id:'sala-'+n.id, titulo:'\uD83D\uDCC5 '+n.evento+' \u2014 '+salaObj.nome,
+              data:n.data, inicio:n.inicio, fim:n.fim, local:salaObj.nome, obs:n.obs||'' },
+            parts.map(p=>({username:p.username, nome:p.name}))
+          )||0;
+        });
+      }
+    }catch(e){}
+    /* Convite via WhatsApp (n8n) — disparado pelo portal, se configurado */
+    try{
+      if(window.parent && typeof window.parent.n8nConvite==='function'){
+        novos.forEach(n=>window.parent.n8nConvite({
+          tipo:'convite_sala', sala:salaObj.nome, data:n.data, inicio:n.inicio, fim:n.fim,
+          evento:n.evento, responsavel:n.responsavel, obs:n.obs||'', criadoPor:n.criadoPor||''
+        }));
+      }
+    }catch(e){}
+    const qtd=datas.length;
+    setOk(`✓ ${qtd} reserva(s) confirmada(s)! ${salaObj.nome} · ${ini}–${fim}${qtd>1?` · ${fmtD(datas[0])} a ${fmtD(datas[datas.length-1])}`:''}${rec==='sem'?` · semanal ×${recSem}`:''}${convs?` · 📩 ${convs} convite(s) enviado(s)`:''}`);
+    setResp('');setEv('');setObs('');setParts([]);setRec('nao');
+    setTimeout(()=>setOk(''),6000);
+    }finally{ setSalvando(false); }
+  }
+
+  return(
+    <form className="card" style={{overflow:'hidden'}} onSubmit={submit}>
+      <div className="form-hero2">
+        <div className="fh-acc" style={{background:salaObj.hex}}/>
+        <div style={{minWidth:0}}>
+          <div className="fh-ov">Novo agendamento</div>
+          <div className="fh-tt">{salaObj.nome}</div>
+          <div className="fh-dt">{dataFim>data ? `${fmtD(data)} a ${fmtD(dataFim)}` : `${diaSem(data)}, ${fmtD(data)}`}</div>
+        </div>
+      </div>
+      <div className="card-p">
+        <div className="fld"><label>Sala</label>
+          <SalaSelector val={sala} onChange={setSala} agends={agends} data={data}/>
+        </div>
+        <div className="g2">
+          <div className="fld"><label>Data Início</label>
+            <input className="finp" type="date" value={data} min={HOJE} onChange={e=>setData(e.target.value)}/>
+          </div>
+          <div className="fld"><label>Data Fim</label>
+            <input className="finp" type="date" value={dataFim} min={data}
+              onChange={e=>setDataFim(e.target.value)}/>
+          </div>
+        </div>
+        <div className="g2">
+          <div className="fld"><label>Repetir</label>
+            <select className="fsel" value={rec} onChange={e=>setRec(e.target.value)}>
+              <option value="nao">Não repete</option>
+              <option value="sem">Semanalmente</option>
+            </select>
+          </div>
+          {rec==='sem'&&<div className="fld"><label>Por quantas semanas</label>
+            <select className="fsel" value={recSem} onChange={e=>setRecSem(+e.target.value)}>
+              {[2,3,4,5,6,8,10,12].map(n=><option key={n} value={n}>{n} semanas</option>)}
+            </select>
+          </div>}
+        </div>
+        {rec==='sem'&&(()=>{const _ds=todasAsDatas();return(
+          <div style={{fontSize:'.66rem',color:'var(--t3)',margin:'-8px 0 14px'}}>
+            Serão criadas <b>{_ds.length}</b> reserva(s), de {fmtD(_ds[0])} a {fmtD(_ds[_ds.length-1])}, sempre no mesmo horário. Participantes recebem um convite para cada data.
+          </div>);})()}
+        <div className="g2">
+          <div className="fld"><label>Início</label>
+            <select className="fsel" value={ini} onChange={e=>setIni(e.target.value)}>
+              {optsInicio(data).map(o=><option key={o}>{o}</option>)}
+            </select>
+          </div>
+          <div className="fld"><label>Término</label>
+            <select className="fsel" value={fim} onChange={e=>setFim(e.target.value)}>
+              {OPTS.filter(o=>o>ini).map(o=><option key={o}>{o}</option>)}
+            </select>
+          </div>
+        </div>
+        {dl&&<div className="dur-tag">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="1.2"/><path d="M5.5 3v2.5l1.5.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+          Duração: <strong style={{color:'var(--t1)',marginLeft:2}}>{dl}</strong>
+        </div>}
+        <div className="fld"><label>Nome do Evento / Palestra / Curso</label>
+          <input className="finp" value={ev} onChange={e=>setEv(e.target.value)} placeholder="Ex: Treinamento NR-35, Workshop Lean..." maxLength={80}/>
+        </div>
+        <div className="fld"><label>Responsável</label>
+          <SelResponsavel lista={respLista} valor={resp} onChange={setResp}/>
+        </div>
+        <div className="fld"><label>Participantes (opcional) — recebem convite para aceitar ou recusar</label>
+          <select className="fsel" value="" onChange={e=>{
+            const u=usersBase.find(x=>x.username===e.target.value);
+            if(u&&!parts.some(p=>p.username===u.username))setParts([...parts,u]);
+          }}>
+            <option value="">＋ Adicionar participante…</option>
+            {usersBase.filter(u=>u.username!==meU&&!parts.some(p=>p.username===u.username))
+              .map(u=><option key={u.username} value={u.username}>{u.name}</option>)}
+          </select>
+          {parts.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>
+            {parts.map(p=>(
+              <span key={p.username} style={{display:'inline-flex',alignItems:'center',gap:6,background:'var(--al)',color:'var(--a)',borderRadius:'99px',padding:'4px 10px',fontSize:'.72rem',fontWeight:700}}>
+                {p.name}
+                <button type="button" onClick={()=>setParts(parts.filter(x=>x.username!==p.username))}
+                  style={{border:0,background:'transparent',color:'inherit',cursor:'pointer',fontWeight:900,fontSize:'.8rem',lineHeight:1}}>×</button>
+              </span>
+            ))}
+          </div>}
+          <div style={{fontSize:'.66rem',color:'var(--t3)',marginTop:6}}>Cada participante recebe a notificação 📩 do Hub e só entra na agenda pessoal dele se ACEITAR o convite.</div>
+        </div>
+        <div className="fld"><label>Observações (opcional)</label>
+          <textarea className="ftxt" value={obs} onChange={e=>setObs(e.target.value)} placeholder="Detalhes adicionais..." maxLength={200}/>
+        </div>
+        {err&&<div className="alert err"><span>⚠</span><span>{err}</span></div>}
+        {ok &&<div className="alert ok" ><span>✓</span><span>{ok}</span></div>}
+        <button type="submit" className="btn-main" disabled={salvando}
+          style={{background:salaObj.hex,boxShadow:`0 4px 14px ${salaObj.hex}50`,opacity:salvando?.65:1}}>
+          {salvando?'Verificando disponibilidade…':'Confirmar Agendamento'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/* ─── GRADE ──────────────────────────────────────── */
+function Grade({agends,data,onRemover,onEditar}){
+  const np=nowPct();
+  return(
+    <div className="card card-p">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+        <div>
+          <div className="card-title">Grade de Horários</div>
+          <div className="card-sub">{diaSem(data)} · {fmtD(data)}</div>
+        </div>
+        <span style={{background:'var(--a)',color:'#fff',borderRadius:'99px',
+          padding:'3px 12px',fontSize:'.65rem',fontWeight:800,transition:'background .4s'}}>
+          {agends.filter(a=>a.data===data).length} reservas
+        </span>
+      </div>
+      <div className="grade-ov">
+        {SALAS.map(sl=>{
+          const slots=agends.filter(a=>a.salaId===sl.id&&a.data===data);
+          return(
+            <div key={sl.id} className="grade-row">
+              <div className="grade-hd">
+                <div style={{width:9,height:9,borderRadius:'50%',background:sl.hex,flexShrink:0}}/>
+                {sl.nome}
+                <StatusBadge salaId={sl.id} data={data} agends={agends}/>
+              </div>
+              <div className="track">
+                {HORAS.map(h=>(
+                  <div key={h} className="htick" style={{left:`${((h-HI)/(HF-HI))*100}%`}}>
+                    <span className="hlbl">{p2(h)}h</span>
+                  </div>
+                ))}
+                {slots.map(a=>(
+                  <div key={a.id} className="sblk"
+                    style={{left:`${pctLeft(a.inicio)}%`,width:`calc(${pctW(a.inicio,a.fim)}% - 2px)`,background:sl.hex,cursor:podeMexer(a)?'pointer':'default'}}
+                    title={podeMexer(a)?'Clique para editar · × para cancelar':'Somente quem criou pode alterar'}
+                    onClick={()=>{ if(podeMexer(a)) onEditar(a); }}>
+                    <div className="sblk-ev">{a.evento}</div>
+                    <div className="sblk-nm">👤 {a.responsavel}</div>
+                    {podeMexer(a)&&<button className="sblk-x" onClick={e=>{e.stopPropagation();onRemover(a);}} title="Cancelar">×</button>}
+                  </div>
+                ))}
+                {data===hoje()&&np!==null&&(
+                  <div className="nowline" style={{left:`${np}%`}}>
+                    <div className="nowdot"/>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p style={{fontSize:'.6rem',color:'var(--t4)',textAlign:'center',marginTop:6}}>
+        Clique em um bloco para cancelar · Linha rosa = horário atual
+      </p>
+    </div>
+  );
+}
+
+/* ─── LISTA ──────────────────────────────────────── */
+function Lista({agends,onRemover,onEditar}){
+  const convMap=useMemo(()=>mapaConvitesSalas(),[agends]);
+  const agrup=useMemo(()=>{
+    const m={};
+    [...agends].sort((a,b)=>a.data.localeCompare(b.data)||a.inicio.localeCompare(b.inicio))
+      .forEach(a=>{if(!m[a.data])m[a.data]=[];m[a.data].push(a);});
+    return m;
+  },[agends]);
+
+  if(!agends.length) return(
+    <div className="card"><div className="empty">
+      <div className="ico">📅</div><p>Nenhum agendamento.</p>
+      <p style={{marginTop:4}}>Use o formulário para criar reservas.</p>
+    </div></div>
+  );
+
+  return(
+    <div className="card card-p">
+      <div className="card-title" style={{marginBottom:14}}>Todos os Agendamentos</div>
+      <div className="lista-sc">
+        {Object.entries(agrup).map(([dt,items])=>(
+          <div key={dt}>
+            <div className="dia-sep">{diaSem(dt)} — {fmtD(dt)}<div className="dia-line"/></div>
+            {items.map(a=>{
+              const sl=SALAS.find(s=>s.id===a.salaId);
+              return(
+                <div key={a.id} className="li-item"
+                  style={{background:sl.id==='angelo'?'#fff7ed':'#f0fdf4'}}>
+                  <div className="li-bar" style={{background:sl.hex}}/>
+                  <div className="li-body">
+                    <div className="li-ev">{a.evento}</div>
+                    <div className="li-sala" style={{color:sl.hex}}>{sl.nome}</div>
+                    <div className="li-nm">👤 {a.responsavel}</div>
+                    {convMap[a.id]&&<div className="li-nm" title="Participantes convidados (✔ = aceitaram)">👥 {convMap[a.id].n} convidado(s){convMap[a.id].ac?` · ${convMap[a.id].ac} ✔`:''}</div>}
+                  </div>
+                  <div style={{textAlign:'right',flexShrink:0}}>
+                    <div className="li-time">{a.inicio}–{a.fim}</div>
+                    <div style={{fontSize:'.6rem',color:'var(--t4)',marginTop:2}}>{fmtD(a.data)}</div>
+                  </div>
+                  {podeMexer(a)&&<button className="btn-ed" title="Editar horário" onClick={()=>onEditar(a)}>✎</button>}
+                  {podeMexer(a)&&<button className="btn-rm" title="Cancelar agendamento" onClick={()=>onRemover(a)}>×</button>}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── DASHBOARD ──────────────────────────────────── */
+function Dashboard({agends}){
+  const [dIni,setDIni]=useState('');
+  const [dFim,setDFim]=useState('');
+  const [sala,setSala]=useState('');
+
+  const filtered=useMemo(()=>agends.filter(a=>{
+    if(sala&&a.salaId!==sala) return false;
+    if(dIni&&a.data<dIni) return false;
+    if(dFim&&a.data>dFim) return false;
+    return true;
+  }),[agends,sala,dIni,dFim]);
+
+  /* KPIs */
+  const total=filtered.length;
+  const totalHoje=agends.filter(a=>a.data===hoje()).length;
+  const salas=SALAS.map(s=>({...s,qt:filtered.filter(a=>a.salaId===s.id).length}));
+  const hTotalMins=filtered.reduce((s,a)=>s+t2m(a.fim)-t2m(a.inicio),0);
+  const hTotal=durLabel(hTotalMins)||'0h';
+
+  /* Eventos top (por nome) */
+  const evMap={};
+  filtered.forEach(a=>{ const k=a.evento; evMap[k]=(evMap[k]||0)+1; });
+  const evTop=Object.entries(evMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const evMax=evTop[0]?.[1]||1;
+
+  /* Por sala donut */
+  const donutData=salas.filter(s=>s.qt>0);
+  const DONUT_R=54, DONUT_CX=70, DONUT_CY=70, CIRC=2*Math.PI*DONUT_R;
+  let offset=0;
+  const donutSlices=donutData.map(s=>{
+    const pct=s.qt/total;
+    const dash=pct*CIRC;
+    const sl={s,pct,dash,offset};
+    offset+=dash;
+    return sl;
+  });
+
+  /* Evolução por data */
+  const datesUniq=[...new Set(filtered.map(a=>a.data))].sort();
+  const sparkData=datesUniq.map(d=>({d,qt:filtered.filter(a=>a.data===d).length}));
+  const sparkMax=Math.max(...sparkData.map(s=>s.qt),1);
+
+  /* Por responsável top */
+  const respMap={};
+  filtered.forEach(a=>{ respMap[a.responsavel]=(respMap[a.responsavel]||0)+1; });
+  const respTop=Object.entries(respMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const respMax=respTop[0]?.[1]||1;
+
+  /* Ocupação % por sala (expediente 07h–20h = 13h/dia no período filtrado) */
+  const perIni=dIni||datesUniq[0]||hoje(), perFim=dFim||datesUniq[datesUniq.length-1]||hoje();
+  const nDias=Math.max(1,Math.round((new Date(perFim+'T12:00')-new Date(perIni+'T12:00'))/86400000)+1);
+  const capMin=nDias*13*60;
+  const ocup=SALAS.map(sx=>{
+    const min=filtered.filter(a=>a.salaId===sx.id).reduce((t,a)=>t+Math.max(0,t2m(a.fim)-t2m(a.inicio)),0);
+    return {...sx,min,pct:capMin?Math.min(100,Math.round(min/capMin*100)):0};
+  });
+  /* Horários de pico (reservas que ocupam cada hora) */
+  const horasPico=Array.from({length:13},(_,i)=>{const h=7+i;return{h,qt:filtered.filter(a=>t2m(a.inicio)<(h+1)*60&&t2m(a.fim)>h*60).length};});
+  const picoMax=Math.max(...horasPico.map(x=>x.qt),1);
+  /* Confirmações de presença (convites do painel 📩) */
+  const convStats=useMemo(()=>{
+    const ids=new Set(filtered.map(a=>String(a.id)));
+    let tot=0,ac=0,rc=0,pen=0;
+    try{
+      if(window.parent&&window.parent!==window&&typeof window.parent._agcLoad==='function'){
+        window.parent._agcLoad().forEach(c=>{
+          if(!c||String(c.refEvento||'').indexOf('sala-')!==0)return;
+          if(!ids.has(String(c.refEvento).slice(5)))return;
+          if(c.status==='cancelado')return;
+          tot++; if(c.status==='aceito')ac++; else if(c.status==='recusado')rc++; else pen++;
+        });
+      }
+    }catch(e){}
+    return {tot,ac,rc,pen};
+  },[filtered]);
+
+  return(
+    <div>
+      {/* Filtros */}
+      <div className="filter-bar">
+        <div className="fld">
+          <label>Data Início</label>
+          <input className="finp" type="date" value={dIni} onChange={e=>setDIni(e.target.value)} style={{minWidth:145}}/>
+        </div>
+        <div className="fld">
+          <label>Data Fim</label>
+          <input className="finp" type="date" value={dFim} onChange={e=>setDFim(e.target.value)} style={{minWidth:145}}/>
+        </div>
+        <div className="fld">
+          <label>Sala</label>
+          <select className="fsel" value={sala} onChange={e=>setSala(e.target.value)} style={{minWidth:160}}>
+            <option value="">Todas as Salas</option>
+            {SALAS.map(s=><option key={s.id} value={s.id}>{s.nome}</option>)}
+          </select>
+        </div>
+        {(dIni||dFim||sala)&&(
+          <button className="btn-ghost" onClick={()=>{setDIni('');setDFim('');setSala('');}}>
+            ✕ Limpar
+          </button>
+        )}
+      </div>
+
+      {/* KPI CARDS */}
+      <div className="stat-grid">
+        <div className="card stat-card">
+          <div className="stat-ico" style={{background:'var(--ahl)'}}>📋</div>
+          <div className="stat-n">{total}</div>
+          <div className="stat-l">Total de Eventos</div>
+          <div className={`stat-delta ${totalHoje>0?'up':'dn'}`}>{totalHoje} hoje</div>
+        </div>
+        {salas.map(s=>(
+          <div key={s.id} className="card stat-card">
+            <div className="stat-ico" style={{background:`${s.hex}18`}}>
+              <span style={{fontWeight:900,color:s.hex,fontSize:'.85rem'}}>{s.nome[0]}</span>
+            </div>
+            <div className="stat-n" style={{color:s.hex}}>{s.qt}</div>
+            <div className="stat-l">{s.nome.replace('Sala ','')}</div>
+            <div className="stat-delta up">{total?Math.round(s.qt/total*100):0}% do total</div>
+          </div>
+        ))}
+        <div className="card stat-card">
+          <div className="stat-ico" style={{background:'#fef3c7'}}>⏱️</div>
+          <div className="stat-n" style={{fontSize:'1.25rem'}}>{hTotal}</div>
+          <div className="stat-l">Horas de Uso</div>
+          <div className="stat-delta up">reservadas</div>
+        </div>
+      </div>
+
+      {/* Ocupação · Picos · Confirmações */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:16,marginBottom:16}}>
+        <div className="card card-p">
+          <div className="card-title" style={{marginBottom:4}}>Ocupação das Salas</div>
+          <div className="card-sub" style={{marginBottom:14}}>{nDias} dia(s) no período · expediente 07h–20h</div>
+          {ocup.map(sx=>(
+            <div key={sx.id} style={{marginBottom:13}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'.72rem',fontWeight:700,color:'var(--t2)',marginBottom:5}}>
+                <span>{sx.nome}</span><span style={{color:sx.hex}}>{sx.pct}%</span>
+              </div>
+              <div style={{height:8,background:'var(--sur3)',borderRadius:99,overflow:'hidden'}}>
+                <div style={{width:sx.pct+'%',height:'100%',background:sx.hex,borderRadius:99,transition:'width .4s'}}/>
+              </div>
+              <div style={{fontSize:'.62rem',color:'var(--t4)',marginTop:4}}>{durLabel(sx.min)||'0h'} reservadas de {durLabel(capMin)||'—'} disponíveis</div>
+            </div>
+          ))}
+        </div>
+        <div className="card card-p">
+          <div className="card-title" style={{marginBottom:4}}>Horários de Pico</div>
+          <div className="card-sub" style={{marginBottom:14}}>Reservas que ocupam cada hora do dia</div>
+          <div style={{display:'flex',alignItems:'flex-end',gap:4,height:96}}>
+            {horasPico.map(x=>(
+              <div key={x.h} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4,minWidth:0}} title={x.h+'h — '+x.qt+' reserva(s)'}>
+                <div style={{width:'100%',height:Math.max(3,x.qt/picoMax*70)+'px',background:(x.qt===picoMax&&x.qt>0)?'var(--a)':'var(--brd2)',borderRadius:'4px 4px 0 0',transition:'height .4s, background .4s'}}/>
+                <span style={{fontSize:'.55rem',color:'var(--t4)'}}>{x.h}h</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card card-p">
+          <div className="card-title" style={{marginBottom:4}}>Confirmações de Presença</div>
+          <div className="card-sub" style={{marginBottom:14}}>Convites enviados aos participantes</div>
+          {convStats.tot===0
+            ? <div className="empty" style={{padding:'16px 0'}}><p>Nenhum convite no período.</p></div>
+            : <>
+              <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+                <span style={{fontSize:'1.9rem',fontWeight:800,color:'#16a34a'}}>{Math.round(convStats.ac/convStats.tot*100)}%</span>
+                <span style={{fontSize:'.7rem',color:'var(--t3)'}}>de aceite ({convStats.ac} de {convStats.tot})</span>
+              </div>
+              <div style={{display:'flex',height:10,borderRadius:99,overflow:'hidden',margin:'10px 0 12px',background:'var(--sur3)'}}>
+                {convStats.ac>0&&<div style={{width:(convStats.ac/convStats.tot*100)+'%',background:'#16a34a'}}/>}
+                {convStats.pen>0&&<div style={{width:(convStats.pen/convStats.tot*100)+'%',background:'#d97706'}}/>}
+                {convStats.rc>0&&<div style={{width:(convStats.rc/convStats.tot*100)+'%',background:'#dc2626'}}/>}
+              </div>
+              <div style={{display:'flex',gap:14,fontSize:'.66rem',color:'var(--t3)',flexWrap:'wrap'}}>
+                <span><b style={{color:'#16a34a'}}>{convStats.ac}</b> aceitos</span>
+                <span><b style={{color:'#d97706'}}>{convStats.pen}</b> pendentes</span>
+                <span><b style={{color:'#dc2626'}}>{convStats.rc}</b> recusados</span>
+              </div>
+            </>}
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+
+        {/* Eventos mais frequentes */}
+        <div className="card card-p">
+          <div className="card-title" style={{marginBottom:4}}>Eventos Mais Frequentes</div>
+          <div className="card-sub" style={{marginBottom:16}}>Comparativo por título do evento</div>
+          {evTop.length===0
+            ? <div className="empty" style={{padding:'24px 0'}}><p>Sem dados no período.</p></div>
+            : <div className="bar-chart">
+                {evTop.map(([ev,qt])=>(
+                  <div key={ev} className="bar-row">
+                    <div className="bar-lbl" title={ev}>{ev}</div>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{width:`${(qt/evMax)*100}%`,background:'var(--a)',transition:'background .4s'}}>
+                        {qt>1&&<span>{qt}×</span>}
+                      </div>
+                    </div>
+                    <div className="bar-val">{qt}</div>
+                  </div>
+                ))}
+              </div>
+          }
+        </div>
+
+        {/* Distribuição por sala + evolução */}
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+
+          <div className="card card-p" style={{flex:1}}>
+            <div className="card-title" style={{marginBottom:4}}>Distribuição por Sala</div>
+            <div className="card-sub" style={{marginBottom:16}}>Proporção de uso por sala</div>
+            {total===0
+              ? <div className="empty" style={{padding:'16px 0'}}><p>Sem dados.</p></div>
+              : <div className="donut-wrap">
+                  <svg className="donut-svg" width="140" height="140" viewBox="0 0 140 140">
+                    {donutSlices.map(({s,dash,offset})=>(
+                      <circle key={s.id} cx={DONUT_CX} cy={DONUT_CY} r={DONUT_R}
+                        fill="none" stroke={s.hex} strokeWidth="22"
+                        strokeDasharray={`${dash} ${CIRC-dash}`}
+                        strokeDashoffset={-offset+CIRC/4}
+                        style={{transition:'stroke-dasharray .6s'}}
+                      />
+                    ))}
+                    <text x={DONUT_CX} y={DONUT_CY-6} textAnchor="middle" fontSize="18" fontWeight="900" fill="var(--t1)">{total}</text>
+                    <text x={DONUT_CX} y={DONUT_CY+12} textAnchor="middle" fontSize="9" fill="var(--t3)">eventos</text>
+                  </svg>
+                  <div className="donut-legend">
+                    {donutSlices.map(({s,pct})=>(
+                      <div key={s.id} className="donut-li">
+                        <div className="donut-dot" style={{background:s.hex}}/>
+                        <span>{s.nome.replace('Sala ','')}</span>
+                        <span className="donut-pct">{Math.round(pct*100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+            }
+          </div>
+
+          <div className="card card-p" style={{flex:1}}>
+            <div className="card-title" style={{marginBottom:4}}>Evolução por Data</div>
+            <div className="card-sub" style={{marginBottom:12}}>Eventos confirmados por dia</div>
+            {sparkData.length===0
+              ? <div className="empty" style={{padding:'12px 0'}}><p>Sem dados.</p></div>
+              : <div>
+                  <div className="sparkline">
+                    {sparkData.map(({d,qt})=>(
+                      <div key={d} className="spark-bar"
+                        style={{height:`${(qt/sparkMax)*100}%`,background:'var(--a)',opacity:.85,transition:'background .4s'}}
+                        title={`${fmtD(d)}: ${qt} evento(s)`}/>
+                    ))}
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
+                    <span style={{fontSize:'.6rem',color:'var(--t4)'}}>{fmtD(sparkData[0]?.d)}</span>
+                    <span style={{fontSize:'.6rem',color:'var(--t4)'}}>{fmtD(sparkData[sparkData.length-1]?.d)}</span>
+                  </div>
+                </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* Top responsáveis */}
+      <div className="card card-p">
+        <div className="card-title" style={{marginBottom:4}}>Top Responsáveis</div>
+        <div className="card-sub" style={{marginBottom:16}}>Colaboradores com mais reservas no período</div>
+        {respTop.length===0
+          ? <div className="empty" style={{padding:'16px 0'}}><p>Sem dados.</p></div>
+          : <div className="bar-chart">
+              {respTop.map(([nm,qt])=>(
+                <div key={nm} className="bar-row">
+                  <div className="bar-lbl">{nm}</div>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{width:`${(qt/respMax)*100}%`,background:'var(--sb)',transition:'background .4s'}}/>
+                  </div>
+                  <div className="bar-val">{qt}</div>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ─── APP ────────────────────────────────────────── */
+const NAV=[
+  {id:'agendar', label:'Novo Agendamento', ico:'📅'},
+  {id:'grade',   label:'Grade de Horários', ico:'📊'},
+  {id:'lista',   label:'Lista Completa',   ico:'📋'},
+  {id:'dash',    label:'Dashboard',        ico:'📈'},
+];
+
+function App(){
+  const [logado,setLogado]=useState(()=>{
+    try{
+      if(window.self!==window.top){
+        var cs=null; try{ cs=window.parent.currentSession||null; }catch(e){}
+        return {nome:(cs&&cs.name)||'Portal Redentor', admin:!!(cs&&cs.role==='admin'), username:(cs&&cs.username)||''};
+      }
+      return null;
+    }catch(e){ return {nome:'Portal Redentor', admin:false}; }
+  });
+  const [agends,setAgends]=useState(()=>{try{var _s=localStorage.getItem('salas_agendamentos_v1');return _s?JSON.parse(_s):[];}catch(e){return [];}});
+  const [data,setData]=useState(HOJE);
+  const [aba,setAba]=useState(CAN_EDIT?'agendar':'grade');
+  const [tema,setTema]=useState('default');
+  const [modal,setModal]=useState(null);
+  const [editItem,setEditItem]=useState(null);
+
+  /* Tema acompanha o Hub automaticamente (claro/escuro), inclusive se trocar com o sistema aberto */
+  useEffect(()=>{
+    try{
+      if(FORA_DO_HUB)return;
+      const b=window.parent.document.body;
+      const aplicar=()=>setTema(b.classList.contains('theme-dark')?'dark':'default');
+      aplicar();
+      const mo=new MutationObserver(aplicar);
+      mo.observe(b,{attributes:true,attributeFilter:['class']});
+      return()=>mo.disconnect();
+    }catch(e){}
+  },[]);
+  useEffect(()=>{
+    const el=document.documentElement;
+    el.removeAttribute('data-t');
+    if(tema!=='default') el.setAttribute('data-t',tema);
+  },[tema]);
+  useEffect(()=>{
+    try{ localStorage.setItem('salas_agendamentos_v1', JSON.stringify(agends)); }catch(e){}
+    try{ if(window.parent&&window.parent.syncPush) window.parent.syncPush(); }catch(e){} /* banco atualizado na hora (painel de porta) */
+  },[agends]);
+  useEffect(()=>{ window.__ME = logado||{}; },[logado]);
+
+  const mergeExternos=useCallback(lista=>{
+    if(!lista||!lista.length)return;
+    setAgends(p=>{
+      const ids=new Set(p.map(a=>String(a.id)));
+      const novos=lista.filter(a=>a&&a.id&&!ids.has(String(a.id)));
+      return novos.length?[...p,...novos]:p;
+    });
+  },[]);
+  const add=useCallback(ag=>{
+    setAgends(p=>[...p,ag]);
+    setData(ag.data); setAba('grade');
+  },[]);
+
+  const pedirRemover=useCallback(item=>setModal(item),[]);
+
+  const confirmarRemover=useCallback(id=>{
+    setAgends(p=>{
+      const item=p.find(a=>a.id===id);
+      try{
+        if(item && item.criadoPorUser && window.parent && typeof window.parent.agendaRemove==='function'){
+          window.parent.agendaRemove(item.criadoPorUser, id);
+        }
+      }catch(e){}
+      return p.filter(a=>a.id!==id);
+    });
+    try{ cancelarConvitesReserva(id); }catch(e){}
+    setModal(null);
+  },[]);
+
+  const salvarEdicao=useCallback((id,novos)=>{
+    setAgends(p=>{
+      const item=p.find(a=>a.id===id);
+      try{
+        if(item && item.criadoPorUser && window.parent && typeof window.parent.agendaUpdate==='function'){
+          const sl=SALAS.find(x=>x.id===novos.salaId);
+          window.parent.agendaUpdate(item.criadoPorUser, id, {
+            titulo:novos.evento, data:novos.data, inicio:novos.inicio, fim:novos.fim,
+            local:(sl?sl.nome:''), obs:novos.obs||''
+          });
+        }
+      }catch(e){}
+      return p.map(a=>a.id===id?{...a,...novos}:a);
+    });
+    try{ const sl2=SALAS.find(x=>x.id===novos.salaId); atualizarConvitesReserva(id,novos,sl2?sl2.nome:''); }catch(e){}
+    setEditItem(null);
+  },[]);
+
+  const navData=dir=>{
+    const d=new Date(data+'T12:00');
+    d.setDate(d.getDate()+dir);
+    setData(d.toISOString().slice(0,10));
+  };
+
+  if(!logado) return <LoginScreen onLogin={setLogado}/>;
+
+  return(
+    <>
+      {/* Header — só fora do Hub; dentro dele o topo do portal já identifica o sistema */}
+      {FORA_DO_HUB&&<header className="hdr">
+        <div className="hdr-in">
+          <div className="logo">
+            <div className="logo-m">G</div>
+            <div>
+              <div className="logo-n">Agendamento de Salas de Treinamento</div>
+              <div className="logo-s">Setor de Treinamento</div>
+            </div>
+          </div>
+          <div className="hdr-right">
+            {SALAS.map(s=>(
+              <div key={s.id} className="hdr-sala">
+                <div style={{width:7,height:7,borderRadius:'50%',background:s.hex}}/>
+                <span style={{fontSize:'.66rem',opacity:.8}}>{s.nome.replace('Sala ','')}</span>
+                <StatusBadge salaId={s.id} data={hoje()} agends={agends}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      </header>}
+
+      {/* Nav */}
+      {!CAN_EDIT&&<div style={{background:'linear-gradient(90deg,rgba(180,83,9,.14),transparent)',borderBottom:'1px solid rgba(180,83,9,.35)',padding:'8px 22px',fontSize:'.74rem',fontWeight:600,color:'var(--t2)'}}>
+        🔒 Somente consulta — a criação e edição de agendamentos é feita pelo setor de Treinamento.
+      </div>}
+      <div className="nav-wrap">
+        <div className="nav-in">
+          {(CAN_EDIT?NAV:NAV.filter(n=>n.id!=='agendar')).map(n=>(
+            <button key={n.id} className={`nav-btn${aba===n.id?' on':''}`} onClick={()=>setAba(n.id)}>
+              <span className="nav-ico"><NavIco id={n.id}/></span>{n.label}
+            </button>
+          ))}
+          <div className="nav-right">
+            {SALAS.map(s=>(
+              <div key={s.id} className="nav-sala" title={s.nome}>
+                <span className="ns-dot" style={{background:s.hex}}/>
+                {s.nome.replace('Sala ','')}
+                <StatusBadge salaId={s.id} data={hoje()} agends={agends}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <main className="page">
+        {aba==='agendar'&&CAN_EDIT&&(
+          <div className="two-col">
+            <Formulario agends={agends} onAdd={add} onMerge={mergeExternos}/>
+            <div style={{display:'flex',flexDirection:'column',gap:14}}>
+              {/* mini grade hoje */}
+              <div className="card card-p">
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+                  <div>
+                    <div className="card-title">Disponibilidade — Hoje</div>
+                    <div className="card-sub">{diaSem(HOJE)}, {fmtD(HOJE)}</div>
+                  </div>
+                  <span style={{background:'var(--a)',color:'#fff',borderRadius:'99px',
+                    padding:'3px 12px',fontSize:'.65rem',fontWeight:800,transition:'background .4s'}}>
+                    {agends.filter(a=>a.data===HOJE).length} reservas
+                  </span>
+                </div>
+                <div className="grade-ov">
+                  {SALAS.map(sl=>{
+                    const slots=agends.filter(a=>a.salaId===sl.id&&a.data===HOJE);
+                    const np=nowPct();
+                    return(
+                      <div key={sl.id} className="grade-row">
+                        <div className="grade-hd">
+                          <div style={{width:8,height:8,borderRadius:'50%',background:sl.hex}}/>
+                          {sl.nome}
+                          <StatusBadge salaId={sl.id} data={HOJE} agends={agends}/>
+                        </div>
+                        <div className="track">
+                          {HORAS.map(h=>(
+                            <div key={h} className="htick" style={{left:`${((h-HI)/(HF-HI))*100}%`}}>
+                              <span className="hlbl">{p2(h)}h</span>
+                            </div>
+                          ))}
+                          {slots.map(a=>(
+                            <div key={a.id} className="sblk"
+                              style={{left:`${pctLeft(a.inicio)}%`,width:`calc(${pctW(a.inicio,a.fim)}% - 2px)`,background:sl.hex}}
+                              onClick={()=>pedirRemover(a)}>
+                              <div className="sblk-ev">{a.evento}</div>
+                              <div className="sblk-nm">👤 {a.responsavel}</div>
+                            </div>
+                          ))}
+                          {np!==null&&<div className="nowline" style={{left:`${np}%`}}><div className="nowdot"/></div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* stats rápidos */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                {SALAS.map(s=>(
+                  <div key={s.id} className="card" style={{padding:'14px 16px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                      <div style={{width:28,height:28,borderRadius:8,background:s.hex,display:'flex',
+                        alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:900,fontSize:'.78rem'}}>
+                        {s.nome[0]}
+                      </div>
+                      <div style={{fontSize:'.7rem',fontWeight:700,color:'var(--t1)'}}>{s.nome}</div>
+                    </div>
+                    <div style={{display:'flex',gap:14}}>
+                      <div>
+                        <div style={{fontSize:'1.4rem',fontWeight:900,color:'var(--t1)',lineHeight:1}}>
+                          {agends.filter(a=>a.salaId===s.id&&a.data===HOJE).length}
+                        </div>
+                        <div style={{fontSize:'.6rem',color:'var(--t4)',marginTop:2}}>hoje</div>
+                      </div>
+                      <div>
+                        <div style={{fontSize:'1.4rem',fontWeight:900,color:s.hex,lineHeight:1}}>
+                          {agends.filter(a=>a.salaId===s.id).length}
+                        </div>
+                        <div style={{fontSize:'.6rem',color:'var(--t4)',marginTop:2}}>total</div>
+                      </div>
+                    </div>
+                    <StatusBadge salaId={s.id} data={HOJE} agends={agends}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {aba==='grade'&&(
+          <div style={{display:'flex',flexDirection:'column',gap:14}}>
+            <div className="card" style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+              <div className="date-nav">
+                <button className="btn-ghost" onClick={()=>navData(-1)}>‹ Anterior</button>
+                <input type="date" value={data} onChange={e=>setData(e.target.value)}
+                  className="finp" style={{maxWidth:160,padding:'7px 12px'}}/>
+                <button className="btn-ghost" onClick={()=>navData(1)}>Próximo ›</button>
+                <button className="btn-ghost" onClick={()=>setData(HOJE)}
+                  style={data===HOJE?{borderColor:'var(--a)',color:'var(--a)',background:'var(--ahl)'}:{}}>
+                  Hoje
+                </button>
+              </div>
+            </div>
+            <Grade agends={agends} data={data} onRemover={pedirRemover} onEditar={setEditItem}/>
+          </div>
+        )}
+
+        {aba==='lista'&&<Lista agends={agends} onRemover={pedirRemover} onEditar={setEditItem}/>}
+        {aba==='dash' &&<Dashboard agends={agends}/>}
+      </main>
+
+      {/* Modal */}
+      <Modal item={modal} onConfirm={confirmarRemover} onCancel={()=>setModal(null)}/>
+      {editItem&&<EditModal key={editItem.id} item={editItem} agends={agends} onSave={salvarEdicao} onCancel={()=>setEditItem(null)} onMerge={mergeExternos}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<script>
+/* ☁ Receptor do painel Drive do Redentor Hub */
+window.addEventListener("message",function(ev){
+  try{
+    var d=ev.data;
+    if(!(d&&d.hubDrive==="import"&&d.buf))return;
+    var f=new File([d.buf],d.nome||"planilha.xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var inp=document.querySelector("input[type=file][accept*=xls i]")||document.querySelector("input[type=file][accept*=sheet i]")||document.querySelector("input[type=file]");
+    if(inp){
+      try{
+        var dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files;
+        try{ev.source.postMessage({hubDrive:"ok"},"*");}catch(e){}
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+        return;
+      }catch(e){}
+    }
+    /* sem importador nativo: o Hub mostra o aviso adequado */
+  }catch(e){}
+});
+</script>
+</body>
+</html>

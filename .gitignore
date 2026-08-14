@@ -1,0 +1,35 @@
+# ── Segredos reais — nunca versionados. Cada um tem um .example.php
+#    ao lado, que sim é commitado, como modelo. ────────────────────
+db_secrets.php
+auth_secrets.php
+cron_secrets.php
+push_secrets.php
+auxilio/config.php
+auxilio/.backup_estado.json
+
+# ── Dados pessoais/financeiros reais de moradores e colaboradores —
+#    nunca podem ir pro GitHub, nem em repositório privado. ────────
+auxilio/uploads_auxilio/
+
+# ── Conteúdo de mídia e uploads em geral: gerado em produção, não é
+#    código-fonte. Cresce sem parar e não faz sentido versionar. ───
+uploads/
+midias_tv/
+apps/vendor/
+
+# ── Backups e snapshots — histórico próprio do sistema, não do git.
+auxilio/backups/
+auxilio/.atualizacoes/
+backups_hub/
+
+# ── Cópia órfã/desatualizada (achada no levantamento inicial) — não
+#    faz sentido carregar código morto pro repositório novo.
+servidor/
+
+# ── Binários grandes que não são código-fonte de verdade.
+app/*.apk
+
+# ── Lixo comum de sistema operacional e editor.
+.DS_Store
+Thumbs.db
+*.log

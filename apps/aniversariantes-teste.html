@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aniversariantes · simulador</title>
+
+<!--
+  ============================================================
+  SIMULADOR DO MÓDULO DE ANIVERSARIANTES
+
+  Este arquivo abre com dois cliques no computador, sem servidor, sem PHP
+  e sem banco. Serve para ver a peça, ajustar tempo e mostrar para quem
+  aprova ANTES de mexer no que está no ar.
+
+  A peça de verdade é widget.php?tipo=aniversarios&modo=hoje, e ela recebe
+  os dados do webhook que o n8n chama. Aqui o payload é simulado nos
+  botões abaixo, com o MESMO formato que o servidor entrega.
+
+  Para testar: abra este arquivo no navegador e aperte F11 para tela cheia.
+  ============================================================
+-->
+
+<style>
+  :root{
+    --azul:#3B4192; --azul-esc:#2A2F6C;
+    --ouro:#C08A28; --ouro-cl:#D9A83F; --ouro-pl:#ECDBAE;
+    --bg:#0C0E1C; --txt:#F1EFE7; --txt2:#9EA2C0; --txt3:#6A6F98;
+    --pos:#57C98B; --neg:#E0576E;
+    --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+    font-family:var(--sans);-webkit-font-smoothing:antialiased}
+
+  /* ── Palco: é onde a peça roda, em 16:9 ─────────────────── */
+  #palco{position:fixed;inset:0;background:
+    radial-gradient(1400px 720px at 78% -16%,#2E3478 0,transparent 60%),
+    radial-gradient(1000px 620px at -10% 108%,#3A2A10 0,transparent 56%),var(--bg)}
+
+  .marca{position:fixed;top:3vw;right:5vw;height:5.2vw;width:auto;z-index:5;opacity:.9}
+
+  /* ── Balões: CSS puro. Nada de biblioteca de partículas, porque isto
+       roda em TV de 2017 e transform/opacity são as duas propriedades
+       que a GPU acelera sozinha. Doze elementos custam quase nada. ── */
+  .baloes{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+  .balao{position:absolute;bottom:-16vw;border-radius:50% 50% 48% 48%;
+    opacity:.34;animation-name:subir;animation-timing-function:linear;
+    animation-iteration-count:infinite;will-change:transform}
+  .balao::after{content:"";position:absolute;top:99%;left:50%;width:1px;height:5vw;
+    background:linear-gradient(180deg,currentColor,transparent);opacity:.5}
+  @keyframes subir{
+    0%   { transform:translate3d(0,0,0) rotate(-4deg); }
+    50%  { transform:translate3d(2.4vw,-58vh,0) rotate(4deg); }
+    100% { transform:translate3d(-1.4vw,-120vh,0) rotate(-3deg); }
+  }
+
+  /* ── Abertura ───────────────────────────────────────────── */
+  /* MARGEM DE SEGURANÇA (title safe): TV corta as bordas, e o overscan de
+     fábrica chega a 5%. O padrão de broadcast reserva 10% para texto. A
+     direita ganha folga extra porque é onde fica a logo. */
+  .festa{position:fixed;inset:0;z-index:3;display:none;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+    padding:9vh 14vw 9vh 10vw;box-sizing:border-box}
+  .festa.on{display:flex;animation:entrarFesta .8s cubic-bezier(.2,.8,.3,1) both}
+  .festa.saiu{animation:sairFesta .6s ease forwards;pointer-events:none}
+  @keyframes entrarFesta{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+  @keyframes sairFesta{to{opacity:0;transform:scale(1.05)}}
+  .festa__sup{font-size:2vw;letter-spacing:.3em;text-transform:uppercase;color:var(--ouro);
+    font-weight:700;margin-bottom:2.4vw;animation:surgir .7s .15s both}
+  .festa__tit{font-family:var(--serif);font-size:8.4vw;font-weight:400;line-height:1.04;
+    margin:0;letter-spacing:-.02em;animation:surgir .8s .3s both}
+  .festa__data{margin-top:2.4vw;font-family:var(--serif);font-size:3.4vw;color:var(--ouro);
+    font-weight:400;animation:surgir .8s .45s both;letter-spacing:.01em}
+  .festa__qtd{margin-top:1.2vw;font-size:2.2vw;color:var(--txt2);font-weight:300;
+    animation:surgir .8s .62s both}
+  @keyframes surgir{from{opacity:0;transform:translateY(1.6vw)}to{opacity:1;transform:none}}
+
+  /* ── Lista de nomes ─────────────────────────────────────── */
+  .lista{position:fixed;inset:0;z-index:2;display:none;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+    padding:9vh 14vw 9vh 10vw;box-sizing:border-box;
+    opacity:0;transition:opacity .7s ease}
+  .lista.on{display:flex}
+  .lista.entrou{opacity:1}
+  .secao{font-size:1.7vw;letter-spacing:.24em;text-transform:uppercase;color:var(--ouro);
+    font-weight:600;margin-bottom:2.4vw}
+  .pg{display:none;width:100%}
+  .pg.on{display:block;animation:surgir .6s both}
+  .nomes{display:flex;flex-direction:column;gap:1.2vh;width:100%;max-width:100%;overflow:hidden}
+  .nh[style*="--tam"]{font-size:var(--tam) !important}
+  .nh{width:100%;overflow-wrap:break-word;font-size:var(--tam,5vw);line-height:1.12;
+    font-weight:300}
+  /* Um nome merece a tela; seis precisam caber. Duas faixas de tamanho, e
+     acima disso vira página — a fonte NÃO encolhe, porque nome pequeno
+     não se lê de longe, que é o único jeito de ler numa TV. */
+  /* O tamanho vem do script, que MEDE o nome real. Faixa fixa por
+     quantidade não resolve: "Ana Lima" e "Elizete Kuckel de Oliveira
+     Palisser" têm larguras muito diferentes, e foi assim que o nome
+     vazou por cima da logo. */
+  .nh i{display:block;font-style:normal;color:var(--ouro);font-weight:400;
+    letter-spacing:.06em;margin-top:.35vw}
+  .nh i{font-size:calc(var(--tam,5vw) * .34);max-font-size:2.6vw}
+  .parabens{margin-top:3.4vw;font-size:2.2vw;color:var(--ouro-pl);font-weight:300;
+    font-family:var(--serif)}
+  .passos{display:flex;gap:.8vw;justify-content:center;margin-top:2vw}
+  .passos i{width:1.1vw;height:.28vw;background:rgba(236,219,174,.28);display:block;
+    transition:background .4s}
+  .passos i.on{background:var(--ouro)}
+
+  /* ── Estado ocioso: fora da janela, a peça não aparece ──── */
+  .ocioso{position:fixed;inset:0;z-index:2;display:none;align-items:center;
+    justify-content:center;text-align:center;color:var(--txt3)}
+  .ocioso.on{display:flex}
+  .ocioso p{font-size:1.6vw;max-width:44ch;line-height:1.7}
+  .ocioso b{color:var(--txt2);display:block;font-size:2.2vw;margin-bottom:1vw;font-weight:400}
+
+  /* ── Controles do simulador: NÃO existem na peça real ───── */
+  .painel{position:fixed;left:0;right:0;bottom:0;z-index:20;
+    background:rgba(6,7,15,.94);border-top:1px solid rgba(236,219,174,.18);
+    padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    font-size:13px;transition:transform .3s}
+  .painel.escondido{transform:translateY(100%)}
+  .painel b{color:var(--ouro-pl);letter-spacing:.14em;text-transform:uppercase;
+    font-size:10px;margin-right:4px}
+  .painel button{background:transparent;border:1px solid rgba(236,219,174,.24);
+    color:var(--txt2);font:inherit;font-size:12px;padding:6px 12px;border-radius:3px;
+    cursor:pointer;transition:.15s}
+  .painel button:hover{border-color:var(--ouro);color:var(--txt)}
+  .painel button.p{background:var(--ouro);border-color:var(--ouro);color:#231502;font-weight:700}
+  .painel .info{color:var(--txt3);font-size:11.5px;margin-left:auto;font-family:ui-monospace,monospace}
+  .aba{position:fixed;right:18px;bottom:18px;z-index:21;background:var(--azul);
+    border:1px solid var(--ouro);color:var(--ouro-pl);border-radius:50%;
+    width:38px;height:38px;cursor:pointer;font-size:16px;display:none}
+  .painel.escondido ~ .aba{display:block}
+
+  @media (prefers-reduced-motion:reduce){
+    .balao{display:none}
+    .festa,.festa__sup,.festa__tit,.festa__qtd,.pg.on{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="palco">
+  <div class="baloes" id="baloes" aria-hidden="true"></div>
+  <svg class="marca" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" aria-label="Redentor">
+    <text x="60" y="20" text-anchor="middle" fill="#C08A28" font-family="Georgia,serif"
+          font-size="17" letter-spacing="1">REDENTOR</text>
+    <text x="60" y="33" text-anchor="middle" fill="#6A6F98" font-family="Arial" font-size="7"
+          letter-spacing="3">AUTO VIAÇÃO</text>
+  </svg>
+
+  <!-- 1. ABERTURA -->
+  <section class="festa" id="abertura">
+    <p class="festa__sup">Hoje é dia de festa</p>
+    <h1 class="festa__tit">Aniversariantes<br>de hoje</h1>
+    <p class="festa__data" id="dataHoje"></p>
+    <p class="festa__qtd" id="qtd"></p>
+  </section>
+
+  <!-- 2. NOMES -->
+  <section class="lista" id="lista">
+    <p class="secao">Hoje é aniversário de</p>
+    <div id="paginas"></div>
+    <p class="parabens">Desejamos um feliz aniversário!</p>
+    <div class="passos" id="passos"></div>
+  </section>
+
+  <!-- 3. OCIOSO: fora da janela de exibição -->
+  <section class="ocioso" id="ocioso">
+    <p><b>Módulo oculto</b>
+      Fora da janela de exibição, a peça sai da rotação e a TV segue com a
+      programação normal. Ela volta quando um novo webhook chegar.</p>
+  </section>
+</div>
+
+<!-- Controles do simulador. Não existem na peça que vai para a parede. -->
+<div class="painel" id="painel">
+  <b>Simulador</b>
+  <button class="p" data-n="1">1 aniversariante</button>
+  <button data-n="4">4</button>
+  <button data-n="9">9 (vira páginas)</button>
+  <button data-n="18">18</button>
+  <button data-n="0">Nenhum</button>
+  <span style="width:14px"></span>
+  <button id="btnOntem">Payload de ONTEM</button>
+  <button id="btnRepetir">Rever abertura</button>
+  <button id="btnEsconder">Ocultar barra</button>
+  <span class="info" id="info"></span>
+</div>
+<button class="aba" id="aba" title="Mostrar controles">⚙</button>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ══════════════════════════════════════════════════════════
+     1. PAYLOAD DO n8n
+
+     Formato idêntico ao que o servidor entrega à peça. O webhook real
+     aceita também o texto cru da mensagem do WhatsApp e o converte nisto:
+     emoji fora, nome em negrito vira "nome", a linha de baixo vira "cargo".
+     ══════════════════════════════════════════════════════════ */
+  var PESSOAS = [
+    /* Nomes longos de propósito nos primeiros: é onde o layout quebra, e
+       testar com "Ana Lima" esconderia o problema. */
+    { nome:'Elizete Kuckel de Oliveira Palisser', cargo:'Cobrador' },
+    { nome:'Matheus Willian Rodrigues Santos',    cargo:'Aprendiz Assist Administrativo' },
+    { nome:'Joao Heber Zanni Barros',             cargo:'Cobrador' },
+    { nome:'Alexandre Radtke',            cargo:'Diretor Administrativo' },
+    { nome:'Éder Uilson de Aguiar',       cargo:'Higienizador de Tubo' },
+    { nome:'Jose Rosendo da Silva Filho', cargo:'Porteiro de Terminal' },
+    { nome:'Ricardo Chembersk',           cargo:'Abastecedor' },
+    { nome:'Maria Aparecida Souza',       cargo:'Cobradora' },
+    { nome:'João Carlos Pereira',         cargo:'Motorista' },
+    { nome:'Ana Paula Lima',              cargo:'Recursos Humanos' },
+    { nome:'Carlos Eduardo Nunes',        cargo:'Mecânico' },
+    { nome:'Fernanda Ribeiro',            cargo:'Atendente' },
+    { nome:'Roberto Alves',               cargo:'Motorista' },
+    { nome:'Patrícia Gomes',              cargo:'Financeiro' },
+    { nome:'Marcos Antônio Silva',        cargo:'Fiscal de Terminal' },
+    { nome:'Juliana Castro',              cargo:'Recepcionista' },
+    { nome:'Paulo Henrique Dias',         cargo:'Borracheiro' },
+    { nome:'Simone Martins',              cargo:'Auxiliar de Limpeza' },
+    { nome:'Rafael Oliveira',             cargo:'Motorista' },
+    { nome:'Cláudia Ferreira',            cargo:'Almoxarifado' },
+    { nome:'Bruno Teixeira',              cargo:'Eletricista' }
+  ];
+
+  function hoje(){ return new Date().toISOString().substring(0, 10); }
+  function ontem(){
+    var d = new Date(); d.setDate(d.getDate() - 1);
+    return d.toISOString().substring(0, 10);
+  }
+
+  function payload(qtd, data){
+    return {
+      data: data || hoje(),
+      recebido_em: (data || hoje()) + ' 10:10:00',
+      nomes: PESSOAS.slice(0, qtd)
+    };
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     2. REGRA DE JANELA
+
+     Só exibe se o payload for de HOJE. Isso resolve as duas regras de
+     negócio de uma vez: vale até 23:59:59, e da meia-noite em diante
+     some sozinho — sem precisar de temporizador nem de agendamento.
+
+     A comparação também impede o pior caso: se o robô falhar de manhã,
+     a TV NÃO mostra a lista de ontem como se fosse a de hoje. Isso seria
+     mais grave que não mostrar nada.
+     ══════════════════════════════════════════════════════════ */
+  function dentroDaJanela(p){
+    return !!(p && p.data === hoje() && p.nomes && p.nomes.length);
+  }
+
+  function faltaParaMeiaNoite(){
+    var a = new Date();
+    var m = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1, 0, 0, 5);
+    return m - a;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     3. BALÕES
+     ══════════════════════════════════════════════════════════ */
+  (function baloes(){
+    var cores = ['#C08A28','#D9A83F','#ECDBAE','#3B4192','#57C98B','#E0576E'];
+    var html = '';
+    for(var b = 0; b < 12; b++){
+      var tam = 3.4 + (b % 4) * 0.9;
+      html += '<span class="balao" style="' +
+        'left:' + (4 + b * 8 + (b % 3) * 3) + '%;' +
+        'width:' + tam + 'vw;height:' + (tam * 1.22) + 'vw;' +
+        'background:' + cores[b % 6] + ';color:' + cores[b % 6] + ';' +
+        'animation-duration:' + (9 + (b % 5) * 2.5) + 's;' +
+        'animation-delay:' + ((b % 6) * 1.4) + 's"></span>';
+    }
+    document.getElementById('baloes').innerHTML = html;
+  })();
+
+  /* ══════════════════════════════════════════════════════════
+     4. RENDERIZAÇÃO
+     ══════════════════════════════════════════════════════════ */
+  var ABERTURA_MS = 6000;   // quanto a tela de festa fica
+  var PAGINA_MS   = 9000;   // troca de página quando há muita gente
+  var POR_PAGINA  = 6;      // acima disso a fonte ficaria pequena demais
+
+  var el = function(id){ return document.getElementById(id); };
+  var timers = [];
+  function limpar(){ timers.forEach(clearTimeout); timers = []; }
+  function depois(fn, ms){ timers.push(setTimeout(fn, ms)); }
+
+  function mostrar(p, pularAbertura){
+    limpar();
+    el('abertura').className = 'festa';
+    el('lista').className = 'lista';
+    el('ocioso').className = 'ocioso';
+
+    if(!dentroDaJanela(p)){
+      el('ocioso').className = 'ocioso on';
+      info(p);
+      return;
+    }
+
+    // Páginas: fatia a lista em blocos de 6
+    var pgs = [];
+    for(var i = 0; i < p.nomes.length; i += POR_PAGINA){
+      pgs.push(p.nomes.slice(i, i + POR_PAGINA));
+    }
+
+    el('paginas').innerHTML = pgs.map(function(pag, k){
+      return '<div class="pg' + (k === 0 ? ' on' : '') + '">' +
+        '<div class="nomes">' +
+        pag.map(function(x){
+          return '<div class="nh">' + esc(x.nome) +
+            (x.cargo ? '<i>' + esc(x.cargo) + '</i>' : '') + '</div>';
+        }).join('') + '</div></div>';
+    }).join('');
+
+    el('passos').innerHTML = pgs.length > 1
+      ? pgs.map(function(x, k){ return '<i' + (k === 0 ? ' class="on"' : '') + '></i>'; }).join('')
+      : '';
+
+    el('qtd').textContent = p.nomes.length + (p.nomes.length === 1 ? ' pessoa' : ' pessoas');
+    var MES = ['','janeiro','fevereiro','março','abril','maio','junho','julho',
+               'agosto','setembro','outubro','novembro','dezembro'];
+    var d = new Date();
+    el('dataHoje').textContent = d.getDate() + ' de ' + MES[d.getMonth() + 1];
+
+    function irParaLista(){
+      el('abertura').className = 'festa saiu';
+      el('lista').className = 'lista on';
+      depois(function(){
+        el('lista').className = 'lista on entrou';
+        document.querySelectorAll('.pg').forEach(ajustar);
+      }, 30);
+      girar(pgs.length);
+    }
+
+    if(pularAbertura){
+      el('abertura').style.display = 'none';
+      irParaLista();
+    } else {
+      el('abertura').style.display = '';
+      el('abertura').className = 'festa on';
+      depois(irParaLista, ABERTURA_MS);
+    }
+
+    info(p);
+  }
+
+  /* Mede a caixa e encolhe até caber. Roda depois de visível, porque
+     elemento escondido tem largura zero. */
+  function ajustar(pagina){
+    var caixa = pagina.querySelector('.nomes');
+    if(!caixa) return;
+    var nomes = caixa.querySelectorAll('.nh');
+    var alturaMax = window.innerHeight * 0.62;
+    var larguraMax = caixa.clientWidth;
+
+    /* Uns 18% menor que antes. O ajuste automático já impedia o estouro,
+       mas encher a tela de borda a borda cansa: sobrar ar em volta faz o
+       nome ser lido mais rápido, não mais devagar. */
+    var base = nomes.length === 1 ? 7.4 : (nomes.length <= 2 ? 5.8
+             : (nomes.length <= 4 ? 4.4 : 3.2));
+
+    for(var i = 0; i < nomes.length; i++){
+      var el = nomes[i], tam = base, voltas = 0;
+      el.style.setProperty('--tam', tam + 'vw');
+
+      /* Medir o ELEMENTO não serve: ele ocupa a largura toda, então
+         scrollWidth nunca passa do limite mesmo com o texto vazando. O que
+         precisa ser medido é a LINHA de texto — e para isso existe
+         getClientRects, que devolve uma caixa por linha renderizada.
+         Foi exatamente esse detalhe que deixou o nome passar por cima da
+         logo na primeira tentativa. */
+      function maiorLinha(no){
+        var faixa = document.createRange();
+        faixa.selectNodeContents(no);
+        var caixas = faixa.getClientRects(), m = 0;
+        for(var k = 0; k < caixas.length; k++) m = Math.max(m, caixas[k].width);
+        return m;
+      }
+
+      // Só o nome, sem o cargo: o cargo já é bem menor.
+      var soNome = el.firstChild;
+      // Piso de 2.2vw: abaixo disso não se lê de longe, e aí é melhor
+      // deixar quebrar em duas linhas do que virar letra miúda.
+      while(soNome && maiorLinha(soNome) > larguraMax - 2 && tam > 2.2 && voltas < 40){
+        tam -= 0.2;
+        el.style.setProperty('--tam', tam + 'vw');
+        voltas++;
+      }
+    }
+
+    /* Altura: um nome que quebrou em duas linhas empurra o conjunto para
+       fora. Aqui reduzo TODOS junto, mantendo a proporção entre eles, até
+       o bloco caber. Comparo com a altura da área útil, não com a da caixa
+       — a caixa cresce com o conteúdo e nunca acusaria estouro. */
+    var util = pagina.parentNode ? pagina.parentNode.clientHeight : alturaMax;
+    var teto = Math.min(alturaMax, util) - 4;
+    var v2 = 0;
+    while(caixa.getBoundingClientRect().height > teto && v2 < 40){
+      var mudou = false;
+      for(var j = 0; j < nomes.length; j++){
+        var a = parseFloat(nomes[j].style.getPropertyValue('--tam')) || base;
+        if(a <= 2.2) continue;
+        nomes[j].style.setProperty('--tam', (a - 0.25) + 'vw');
+        mudou = true;
+      }
+      if(!mudou) break;      // todos no piso: não adianta insistir
+      v2++;
+    }
+  }
+
+  function girar(total){
+    if(total < 2) return;
+    var n = 0;
+    (function passo(){
+      depois(function(){
+        var pgs = document.querySelectorAll('.pg');
+        var pts = document.querySelectorAll('#passos i');
+        pgs[n].className = 'pg';
+        if(pts[n]) pts[n].className = '';
+        n = (n + 1) % pgs.length;
+        pgs[n].className = 'pg on';
+        if(pts[n]) pts[n].className = 'on';
+        passo();
+      }, PAGINA_MS);
+    })();
+  }
+
+  function esc(t){
+    return String(t).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  function info(p){
+    var h = Math.floor(faltaParaMeiaNoite() / 3600000);
+    var m = Math.floor((faltaParaMeiaNoite() % 3600000) / 60000);
+    el('info').textContent =
+      'payload: ' + (p ? p.data : '—') + ' · hoje: ' + hoje() +
+      ' · ' + (dentroDaJanela(p) ? 'EXIBINDO' : 'OCULTO') +
+      ' · sai em ' + h + 'h' + m + 'min';
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     5. CONTROLES DO SIMULADOR
+     ══════════════════════════════════════════════════════════ */
+  var atual = payload(4);
+
+  document.querySelectorAll('.painel [data-n]').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.painel [data-n]').forEach(function(x){ x.className = ''; });
+      this.className = 'p';
+      atual = payload(Number(this.getAttribute('data-n')));
+      mostrar(atual);
+    });
+  });
+
+  el('btnOntem').addEventListener('click', function(){
+    // Comprova a regra: payload de ontem NÃO aparece.
+    atual = payload(4, ontem());
+    mostrar(atual);
+  });
+
+  el('btnRepetir').addEventListener('click', function(){ mostrar(atual); });
+
+  el('btnEsconder').addEventListener('click', function(){
+    el('painel').className = 'painel escondido';
+  });
+  el('aba').addEventListener('click', function(){
+    el('painel').className = 'painel';
+  });
+
+  // Vira o dia enquanto a tela está aberta: a peça recalcula sozinha.
+  setTimeout(function(){ mostrar(atual); }, faltaParaMeiaNoite());
+  setInterval(function(){ info(atual); }, 30000);
+
+  mostrar(payload(4));
+})();
+</script>
+</body>
+</html>

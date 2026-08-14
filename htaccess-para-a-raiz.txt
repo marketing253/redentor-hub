@@ -1,0 +1,61 @@
+# ============================================================
+#  Redentor Hub — regras de servidor
+#
+#  Este arquivo faz o endereço curto das TVs voltar a funcionar.
+#
+#  O PROBLEMA
+#  O endereço redentorhub.com.br/t.php/COP2T3 depende de PATH_INFO:
+#  o servidor precisa entregar o "/COP2T3" ao PHP em vez de procurar
+#  uma pasta com esse nome. Em algumas configurações da Hostinger
+#  isso vem desligado, e o servidor devolve a própria página de erro
+#  — o pedido nem chega ao t.php.
+#
+#  A REGRA ABAIXO reescreve /t/CODIGO e /t.php/CODIGO para a forma
+#  que sempre funciona, sem mexer em nada nas TVs já instaladas.
+# ============================================================
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Endereço mais curto ainda: redentorhub.com.br/t/COP2T3
+  # Seis caracteres a menos para digitar no controle remoto.
+  RewriteRule ^t/([A-Za-z0-9]{4,12})/?$ /t.php?c=$1 [L,QSA]
+
+  # E o formato antigo continua valendo, mesmo sem PATH_INFO.
+  RewriteRule ^t\.php/([A-Za-z0-9]{4,12})/?$ /t.php?c=$1 [L,QSA]
+  RewriteRule ^tv\.php/([A-Za-z0-9]{4,12})/?$ /tv.php?c=$1 [L,QSA]
+</IfModule>
+
+# ------------------------------------------------------------
+#  Proteção da pasta de mídias
+#  Os arquivos precisam ser servidos, mas ninguém deve conseguir
+#  listar a pasta nem executar código dentro dela.
+# ------------------------------------------------------------
+Options -Indexes
+
+<FilesMatch "\.(php|phtml|phar|cgi|pl|py|sh)$">
+  <If "%{REQUEST_URI} =~ m#^/midias_tv/#">
+    Require all denied
+  </If>
+</FilesMatch>
+
+# ------------------------------------------------------------
+#  Cache
+#  Imagem e vídeo podem ser guardados: são grandes e não mudam.
+#  As páginas do sistema, não — quando o layout muda, precisa
+#  aparecer na parede agora, não quando o navegador resolver.
+# ------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpeg  "access plus 7 days"
+  ExpiresByType image/png   "access plus 7 days"
+  ExpiresByType image/webp  "access plus 7 days"
+  ExpiresByType video/mp4   "access plus 7 days"
+  ExpiresByType font/woff2  "access plus 30 days"
+</IfModule>
+
+<FilesMatch "\.(php|html)$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+  </IfModule>
+</FilesMatch>

@@ -1,0 +1,812 @@
+REDENTOR HUB v75.6: completo, com o modulo TV INDOOR
+======================================================
+Extrair direto em public_html (Substituir tudo).
+
+Este pacote e o seu public_html inteiro, com todos os apps que ja
+existiam. A unica novidade e o modulo TV Indoor.
+
+O QUE MUDOU EM RELACAO AO v75.5
+  index.html          card "TV Indoor" + rota + FIXOS + APP_VER 75.6
+  sw.js               cache redentor-hub-v75-6
+  apps/tvindoor.html  NOVO: o aplicativo
+  img/redentor.png    NOVO: logo usada no cabecalho e na folha impressa
+  tvindoor.php        NOVO: API do modulo
+  player.php          NOVO: pagina que fica aberta na TV
+  t.php               NOVO: endereco curto (o que se digita na TV)
+  tv.php              forma antiga, mantida para TVs ja instaladas
+  widget.php          NOVO: previsao do tempo e relogio em tela cheia
+Nenhum outro arquivo foi alterado.
+
+DEPOIS DE SUBIR: 3 PASSOS
+  1. Crie a pasta  public_html/midias_tv  com permissao 755.
+     E onde os videos e imagens ficam. O PHP tenta criar sozinho, mas a
+     Hostinger costuma bloquear mkdir por PHP.
+
+  2. Abra no navegador, logado ou nao:
+       https://SEUDOMINIO/tvindoor.php?action=ping
+     Tem que voltar um JSON com php, banco, tabelas e pasta_midia.
+     Esse endereco e o diagnostico: ele diz exatamente o que falta.
+
+  3. Abra o Hub (Ctrl+Shift+R) e entre no card TV Indoor.
+     As tabelas tvi_* nascem sozinhas no primeiro acesso.
+
+SE APARECER ERRO NA TELA DO APP
+  O app agora mostra a causa real e tem o botao "Diagnostico" na barra
+  de cima. Nao existe mais mensagem generica de "sem resposta".
+
+CADASTRAR VARIAS TVs DE UMA VEZ
+  Aba "Gerar links" -> cole a lista de nomes, um por linha:
+
+      Refeitorio
+      Recepcao
+      Terminal Central
+      Garagem Norte
+
+  -> Gerar links. Cada linha vira uma TV com endereco proprio.
+
+  Clique em "Imprimir folha de instalacao": sai um cartao por TV,
+  com o endereco curto e o codigo de 6 caracteres em letra grande.
+  E o que o instalador leva para o campo.
+
+  Na televisao, digite so o endereco curto:
+      seudominio.com.br/t.php/RF7K2M
+  Em ate 30 segundos ela aparece Online no painel.
+
+  Se por algum motivo esse endereco nao abrir na sua hospedagem, use
+  a forma reserva, que sai impressa junto na folha:
+      seudominio.com.br/t.php?c=RF7K2M
+
+ENCURTAR AINDA MAIS (opcional, so para quem sabe mexer)
+  Um .htaccess na raiz troca /t.php/RF7K2M por /t/RF7K2M, tirando
+  mais 4 caracteres. Crie o arquivo .htaccess em public_html com:
+
+      RewriteEngine On
+      RewriteRule ^t/([A-Za-z0-9]{6})$ t.php?c=$1 [L]
+
+  ATENCAO: se o seu public_html JA tiver um .htaccess, ACRESCENTE
+  as duas ultimas linhas no fim dele: nao substitua o arquivo.
+  .htaccess errado derruba o site inteiro. Na duvida, nao mexa: o
+  /t.php/RF7K2M funciona sem nenhuma configuracao.
+
+TESTE QUE VALE MAIS QUE TODOS
+  Com a TV rodando, tire o cabo de rede. O conteudo tem que continuar
+  tocando. Se parar, o cache nao subiu: confira se
+  https://SEUDOMINIO/midias_tv/ esta acessivel pelo navegador.
+
+COMO O FLUXO FUNCIONA
+  1. Aba Conteudo -> envie os arquivos. Eles vao para a BIBLIOTECA.
+     Nao criam lista nenhuma. Pode enviar 50 e usar 3.
+  2. Aba Listas -> crie a lista (ex.: "Sala Inovacao").
+  3. Dentro da lista -> vincule as TVs e arraste da biblioteca os
+     arquivos que voce quer naquela lista.
+
+  Se voce ja tem listas com nome de arquivo (sobra da versao anterior,
+  que criava lista sozinha no envio), use o botao "Limpar listas
+  automaticas" na aba Listas. Os arquivos continuam na biblioteca.
+
+LISTA DE REPRODUCAO
+  Aba "Listas": crie a lista, clique nela. O nome fica editavel no topo.
+
+  A tela e dividida em 3 partes numeradas:
+    1. Onde esta lista toca   -> clique nas TVs e grupos (clicou, salvou)
+    2. Como a tela se divide  -> tela cheia, coluna lateral, faixa rolante
+    3. Itens da lista         -> dois paineis lado a lado:
+
+         ESQUERDA                    DIREITA
+         Biblioteca                  Lista final exibida nas telas
+         (Arquivos / Extensoes /     (na ordem em que vai ao ar)
+          Paginas), com busca
+
+  ARRASTE da esquerda para a direita para incluir.
+  ARRASTE dentro da direita para mudar a ordem.
+  Os botoes fazem o mesmo: no celular use eles.
+
+  A mesma midia pode estar em varias listas com tempos diferentes.
+
+SIMULADOR DO MODULO DE ANIVERSARIANTES
+  apps/aniversariantes-teste.html
+
+  Abra com dois cliques no computador. Nao precisa de servidor, PHP nem
+  banco. Serve para ver a peca, ajustar tempo e mostrar para quem aprova
+  ANTES de mexer no que esta no ar. F11 deixa em tela cheia.
+
+  Botoes na barra de baixo:
+    1, 4, 9, 18 aniversariantes  ve o layout em cada quantidade
+    Nenhum                       comprova que some quando nao ha ninguem
+    Payload de ONTEM             comprova a regra da janela: nao aparece
+    Rever abertura               roda a animacao dos baloes de novo
+
+  A barra de controles NAO existe na peca real.
+
+ANIVERSARIANTES: COMO A PECA APARECE
+  Abertura festiva com baloes subindo e o titulo "Aniversariantes de
+  hoje", por 6 segundos. Depois transiciona para os nomes.
+
+  A abertura roda UMA VEZ POR DIA em cada TV. Nas voltas seguintes a
+  peca vai direto para os nomes: ver a mesma festa dez vezes ao dia
+  cansaria mais do que encantaria.
+
+  Ate 6 nomes por pagina. Com mais gente vira paginas que giram a cada
+  9 segundos, com marcadores embaixo. A fonte NAO encolhe: numa TV,
+  nome pequeno nao se le de longe.
+
+  A peca se recarrega sozinha 30 segundos depois da meia-noite, para o
+  servidor decidir de novo. Sem isso, uma TV ligada direto continuaria
+  mostrando a lista de ontem ate a proxima sincronizacao.
+
+ANIVERSARIANTES DE HOJE, VINDOS DA SUA AUTOMACAO
+  Se voce ja tem um robo (n8n, Make, script) que recebe a lista do dia,
+  ele pode mandar para a TV tambem.
+
+  1. Configuracoes -> bloco Extensoes -> "Aniversariantes de hoje".
+     Clique em Gerar para criar a chave. Copie o endereco e a chave.
+  2. No n8n, depois do no que monta a mensagem, acrescente um no
+     HTTP Request:
+        Method  POST
+        URL     https://SEUDOMINIO/tvindoor.php?action=hook_aniversarios
+        Body    JSON
+        { "chave": "SUA_CHAVE", "texto": "{{ $json.mensagem }}" }
+     No n8n, em "Specify Body" escolha "Using Fields Below" e crie
+     DOIS campos em Body Parameters. O que vale e a coluna Name:
+
+        Name    chave
+        Value   sua chave gerada no painel
+
+        Name    texto
+        Value   ={{ $json.mensagem_aniversario }}
+
+     O "=" na frente e o que marca como expressao no n8n. Troque
+     mensagem_aniversario pelo nome que aparece no painel INPUT do
+     seu no.
+
+     Pode mandar tambem uma lista pronta, em vez do texto:
+        Name "nomes", Value ["Maria", "Joao"]
+     O sistema entende o formato da mensagem do WhatsApp: emoji na
+     frente, nome em *negrito*, cargo na linha de baixo, cabecalho e
+     rodape descartados. O cargo aparece na TV embaixo do nome.
+  3. Na lista de reproducao, aba Extensoes, inclua
+     "Aniversariantes de hoje".
+  4. O envio ao grupo do WhatsApp continua igual: os dois nos rodam em
+     paralelo, um nao atrapalha o outro.
+
+  QUANDO NAO TEM NINGUEM, NAO MOSTRA NADA
+    Nao foi preciso inventar mecanismo: o webhook marca a midia como
+    valida SO PARA HOJE. A regra de validade ja existia, ja entra no
+    manifesto e o player ja a aplica ate offline. No dia seguinte, sem
+    receber nada, a data de ontem vence sozinha e o item sai da rotacao.
+
+    A tela tambem confere a data: se o robo falhar de manha, ela nao
+    mostra a lista de ontem como se fosse a de hoje.
+
+  ACOMPANHE
+    O bloco em Configuracoes mostra o ultimo recebimento. Sem isso, um
+    robo que parou passa semanas despercebido e ninguem liga a tela
+    vazia a automacao.
+
+INSTAGRAM
+  DOIS NIVEIS. O primeiro funciona so com o @.
+
+  NIVEL 1 — SO O @ (funciona agora, sem burocracia)
+    Configuracoes -> Instagram -> campo Perfil: @avredentor_oficial
+    Salvar. Botao "Testar" confere se o perfil existe e ja abre a
+    previa. Botao "Ver em tela cheia" mostra como fica na parede.
+
+    A peca mostra, em sequencia: as 2 ultimas publicacoes (14s cada,
+    no mesmo formato da peca de noticias — foto grande, legenda) e por
+    fim o convite com o @ e o QR CODE (9s).
+
+    TRES FORMAS DE ALIMENTAR, DA MAIS AUTOMATICA A MAIS SIMPLES
+
+    1) PELO n8n (recomendado, voce ja tem)
+       Configuracoes -> Instagram -> "Como configurar no n8n".
+       Fluxo novo com: Schedule Trigger (de hora em hora) -> o no que
+       busca o Instagram -> HTTP Request para
+         https://SEUDOMINIO/tvindoor.php?action=hook_instagram
+       Body JSON com os campos:
+         chave  = a mesma chave do webhook de aniversariantes
+         posts  = [{ "img": "...", "legenda": "..." }]
+
+       Aceita tambem um post por vez, com img e legenda soltos.
+       Mandando a lista, ela substitui tudo. Mandando um a um, o novo
+       entra na frente e os antigos descem.
+       Aceita os nomes da Graph API tambem (media_url, caption,
+       timestamp, permalink), entao se o no do n8n devolver assim,
+       funciona sem conversao.
+
+       POR QUE PELO n8n: o Instagram exige autenticacao para entregar
+       post. Fazer isso dentro do TV Indoor significaria manter token,
+       renovacao e app da Meta so para isso. O n8n ja esta instalado,
+       ja roda todo dia e ja sabe autenticar em servico externo. E o
+       mesmo desenho do fluxo de aniversariantes que voce ja validou.
+
+    2) PELA API DA META, direto no TV Indoor. Ver bloco abaixo.
+
+    3) A MAO
+      Configuracoes -> Instagram -> "Ultimas publicacoes na TV".
+      Envie a arte pela aba Conteudo (como qualquer imagem), depois
+      escolha ela aqui e cole a legenda. As duas mais recentes vao ao
+      ar; a estrela na lista marca quais estao no ar.
+      Dois minutos por post, nao depende de token e nao quebra quando
+      a Meta muda regra. Se a API for conectada depois, ela assume e
+      isto vira reserva.
+
+    POST QUADRADO NAO E CORTADO
+      Post do Instagram costuma ser 1080x1080. Esticar quadrado numa
+      tela 16:9 cortaria metade da arte, que e onde o marketing poe a
+      informacao. A peca detecta e mostra a arte inteira, com a legenda
+      na coluna ao lado. Numa sala de espera isso funciona: o passageiro
+    esta parado, com o celular na mao.
+
+    O QR e gerado pelo proprio servidor (qr.php), sem servico de fora:
+    a parede nao depende de terceiro para desenhar um quadrado, e o
+    perfil da empresa nao e enviado para ninguem a cada exibicao.
+
+  NIVEL 2 — API (traz as 3 ultimas publicacoes)
+  LEIA ANTES DE TENTAR
+    A conta precisa ser BUSINESS ou CRIADOR e estar vinculada a uma
+    Pagina do Facebook. Conta pessoal NAO tem API: nesse caso salve as
+    artes e envie como imagem pela aba Conteudo, que ja funciona.
+    A API Basic Display foi encerrada pela Meta; o caminho atual e a
+    Graph API, e e mais burocratico.
+
+  COMO CONECTAR
+    1. Instagram: Configuracoes, Tipo de conta, mude para Comercial.
+    2. Vincule a uma Pagina do Facebook da empresa.
+    3. developers.facebook.com: crie um app do tipo Empresa.
+    4. Adicione o produto "Instagram Graph API".
+    5. Ferramentas -> Explorador da API Graph: peca as permissoes
+       instagram_basic e pages_show_list e gere o token.
+    6. Copie ID do app e chave secreta em Configuracoes do app.
+    7. TV Indoor -> Configuracoes -> Instagram: cole os tres e Conectar.
+
+    O token do Explorador vale 1 HORA. Ao clicar em Conectar o sistema
+    troca pelo de 60 dias e passa a renovar sozinho antes de vencer,
+    desde que o ID e a chave estejam preenchidos. Sem eles, a parede
+    para de atualizar em 60 dias e ninguem liga uma coisa a outra.
+
+  POR QUE O @ SOZINHO NAO TRAZ OS POSTS
+    O Instagram bloqueia leitura de perfil por URL. Colar
+    instagram.com/perfil nao devolve publicacao nenhuma: eles fecharam
+    isso para impedir raspagem. Qualquer truque para contornar quebra
+    na primeira mudanca do site e pode derrubar a conta. Por isso o
+    nivel 2 exige token.
+
+  COMO USAR NA TV
+    Na lista de reproducao, aba Extensoes -> Instagram.
+    Funciona em tela cheia (tres lado a lado, o primeiro maior) e na
+    coluna lateral do layout dividido (tres empilhados). A propria peca
+    se adapta a proporcao da area.
+
+  SEGURANCA E ESTABILIDADE
+    O token fica no SERVIDOR, nunca no navegador da TV. Se ficasse no
+    JavaScript, quem tivesse acesso aquela tela leria o token e poderia
+    publicar pela conta da empresa.
+    O servidor busca uma vez a cada 10 min e serve todas as TVs.
+    A peca se atualiza sozinha de 5 em 5 min, SEM recarregar a pagina.
+    Se a internet cair, o que esta no ar CONTINUA, e a proxima tentativa
+    espera mais a cada erro (ate 30 min). Sem post nenhum, a tela vira
+    um convite "Siga a gente", nunca fica preta.
+
+ENDERECO DO NAVEGADOR ACOMPANHA O SISTEMA ABERTO
+  Os apps do Hub rodam dentro de um iframe, entao o endereco ficava
+  sempre "redentorhub.com.br", nao importava onde a pessoa estivesse.
+  Isso quebrava tres coisas que todo mundo espera de um site.
+
+  AGORA:
+    Abrir o TV Indoor          o endereco vira .../#tvindoor
+    Recarregar (F5)            volta para o MESMO sistema, nao ao menu
+    Salvar nos favoritos       o atalho abre direto naquele sistema
+    Seta de voltar             volta ao MENU do Hub, nao sai do Hub
+    Voltar ao Menu             limpa o endereco
+
+  No celular, o gesto de voltar tambem passa a funcionar dentro do Hub
+  em vez de fechar tudo.
+
+  Vale para TODOS os sistemas do Hub, nao so o TV Indoor.
+
+ABA EXTENSOES: ORGANIZADA POR GRUPO
+  Eram 12 extensoes numa lista corrida. Agora vem agrupadas pela
+  pergunta que importa na hora de montar a lista — o que precisa ser
+  configurado antes:
+
+    Funcionam sozinhas      relogio, previsao, dias sem acidente
+       nada a configurar
+    Institucional           politica da qualidade, aniversariantes
+       texto vem de Configuracoes
+    Redes e contato         redes sociais, grupo, Instagram
+       precisa do perfil ou link em Configuracoes
+    Noticias                escolha as fontes ali mesmo
+    Esporte                 Brasileirao (precisa de chave gratis)
+
+  O rotulo de cada grupo diz DE ONDE vem o conteudo. A duvida mais
+  comum de quem monta lista e "esta funcionando ou falta configurar?",
+  e agora ela se responde antes de incluir.
+
+ARQUIVOS E EXTENSOES SAO COISAS DIFERENTES
+  Toda extensao incluida numa lista tambem vira uma linha na tabela de
+  midias (do tipo 'web', apontando para o widget.php). Por isso elas
+  apareciam na aba "Arquivos" como se fossem arquivo de 0 KB.
+
+  AGORA:
+    Aba ARQUIVOS (dentro da lista de reproducao)
+      So o que foi ENVIADO: video, imagem, PDF. Mais as paginas web que
+      voce adicionou a mao pelo campo "Adicionar a biblioteca" — painel
+      de BI, por exemplo, que e conteudo seu.
+      As extensoes sairam daqui: estao na aba Extensoes, ao lado.
+
+    Aba CONTEUDO (biblioteca geral)
+      Aqui as extensoes NAO somem, porque de vez em quando e preciso
+      excluir uma que nao se usa mais. Mas ficam numa tabela separada
+      embaixo, com etiqueta "extensao" e sem peso em KB.
+
+  O FILTRO E PELA ORIGEM, nao pelo tipo: o que aponta para o nosso
+  widget.php e extensao; qualquer outro endereco e conteudo seu.
+
+CONFIRMACOES NO PADRAO DA EMPRESA
+  As 16 confirmacoes do sistema nao usam mais a janela do navegador.
+  Agora sao um dialogo proprio, com a paleta e a tipografia do painel.
+
+  O QUE MUDOU ALEM DA APARENCIA
+    - Botao de acao IRREVERSIVEL fica VERMELHO. A cor faz parte do
+      aviso: e o que diferencia "excluir de vez" de "salvar".
+    - Quando ha duas etapas, aparece "passo 1 de 2" e "passo 2 de 2".
+      Sem isso a segunda pergunta parece repeticao e a pessoa confirma
+      no automatico.
+    - Em acao perigosa o foco vai para CANCELAR. Se alguem apertar
+      Enter por reflexo, nada e destruido.
+    - O aviso de consequencia sai numa barra dourada separada do
+      texto normal, como os outros avisos do painel.
+    - Esc cancela, clicar fora cancela.
+
+INCLUIR E EXCLUIR: O QUE O SISTEMA AVISA
+  AO INCLUIR NA LISTA
+    O botao vira "Incluindo..." e depois "✓ Incluido".
+    Aparece um aviso dizendo o NOME e a POSICAO: "Grupo Redentor
+    Informa entrou na lista, na posicao 3".
+    A linha nova fica destacada em dourado por 3 segundos e a tela
+    rola ate ela. Numa lista de dez itens, dizer "posicao 8" ainda
+    obrigaria a pessoa a contar.
+
+  AO EXCLUIR — quantas confirmacoes e por que
+    UMA vez:
+      Tirar item da lista      o arquivo continua na biblioteca
+      Excluir fonte de RSS     sai do menu, listas continuam
+      Excluir grupo de TVs     as TVs continuam existindo
+
+    DUAS vezes (irreversivel):
+      Excluir arquivo          APAGA do servidor, sai de todas as listas
+      Excluir TV               o link para na hora, alguem tem que ir la
+      Excluir lista            as telas ficam sem conteudo
+
+    Pedir duas vezes em TUDO so ensina a clicar em "sim" no automatico,
+    e ai a protecao para de proteger. A segunda pergunta so aparece
+    onde nao existe como desfazer.
+
+    Todas as mensagens dizem o NOME do que vai sair, e a de arquivo
+    avisa em quantas listas ele esta sendo usado.
+
+GRUPO REDENTOR INFORMA
+  Configuracoes -> Fontes de conteudo -> Grupo Redentor Informa.
+  Cole o link de convite (WhatsApp: Info do grupo -> Convidar via link).
+  So aceita chat.whatsapp.com ou t.me: link errado numa parede e pior
+  que nenhum, porque a pessoa aponta a camera, nada acontece, e ela
+  nao volta a tentar.
+
+  O CAMPO QUE MAIS IMPORTA e "o que o grupo entrega", um item por
+  linha. "Entre no grupo" sozinho nao diz nada; "avisos de linha
+  alterada" diz. E o que decide se a pessoa aponta a camera ou nao.
+
+  ATENCAO: se alguem REDEFINIR o link no grupo, o QR para de funcionar
+  em SILENCIO — a parede continua mostrando um codigo que nao leva a
+  lugar nenhum. Quando isso acontecer, cole o link novo no painel.
+  O aviso disso fica visivel na propria tela de configuracao.
+
+  O EFEITO e diferente das outras pecas: nem baloes (aniversariantes)
+  nem ondas (politica). Aqui sao dois aneis que pulsam PARA FORA do QR,
+  em ciclo de 3,6s. O movimento aponta para onde a pessoa precisa
+  olhar, em vez de decorar o fundo — que e o trabalho de um convite.
+  Pulso rapido viraria ruido numa parede que fica horas no ar.
+
+REDES SOCIAIS
+  Configuracoes -> Fontes de conteudo -> Redes sociais.
+  Preencha so as que a empresa tem: as vazias NAO aparecem na tela.
+  Pode colar o @, o nome do perfil ou o endereco copiado do navegador —
+  o sistema entende os tres.
+
+  ATENCAO no LinkedIn: o endereco de empresa e /company/nome. Cole so o
+  nome (auto-viacao-redentor), nao o /company/.
+
+  A tela mostra um cartao por rede, cada um com QR PROPRIO que leva
+  direto ao perfil. Com menos redes os cartoes ficam maiores: com duas,
+  metade da tela ficaria vazia se o tamanho fosse fixo.
+
+  Funciona em tela cheia (lado a lado) e na coluna lateral (empilhado,
+  QR a esquerda). 22 segundos: e o tempo de alguem parado tirar o
+  celular do bolso, abrir a camera e apontar.
+
+  Os QRs sao gerados pelo proprio servidor (qr.php). Sem servico de fora.
+
+  OS ICONES sao formas genericas em SVG, nao os logotipos oficiais das
+  redes. Reproduzir marca de terceiro numa parede comercial e questao
+  de licenca, e a forma generica cumpre o papel.
+
+POLITICA DA QUALIDADE
+  Configuracoes -> Fontes de conteudo -> Politica da Qualidade.
+  Edite politica, revisao, missao, visao e valores (um por linha).
+  Botao "Ver em tela cheia" mostra antes de ir para a parede.
+
+  Depois, na lista de reproducao, aba Extensoes -> Politica da Qualidade.
+
+  A peca roda cinco telas em sequencia (52s no total):
+    1. Abertura        Politica da Qualidade + selo ISO 9001   6s
+    2. A politica      a frase entre aspas, com a revisao      13s
+    3. Missao                                                  12s
+    4. Visao                                                   12s
+    5. Valores         grade que entra em cascata              14s
+
+  POR QUE OS TEXTOS FICAM NO BANCO
+    Estes textos passam por revisao formal — o "Rev.01" existe por isso.
+    Quem revisa nao deve precisar de um programador para trocar uma
+    palavra. Salvou no painel, as TVs pegam na proxima batida.
+
+  O MOVIMENTO E DIFERENTE DO DOS ANIVERSARIANTES
+    La sao baloes subindo, rapido e festivo. Aqui sao tres ondas largas
+    girando devagar. Peca institucional precisa parecer solida, nao
+    animada. Mesma tecnica e mesmo custo (so transform e opacity).
+
+EXTENSOES DISPONIVEIS
+  Dentro da lista, aba "Extensoes" do painel da esquerda. Sete opcoes:
+
+    Relogio                 hora e data
+    Previsao do tempo       hoje e os tres proximos dias
+    Dias sem acidente       contador que sobe sozinho todo dia
+    Aniversariantes do mes  a lista vira de mes sozinha
+    Noticias                do feed RSS configurado
+    Brasileirao jogos       placar da rodada, com AO VIVO destacado
+    Brasileirao tabela      os 10 primeiros da classificacao
+
+  Configure em Configuracoes, bloco "Extensoes":
+    - Dias sem acidente: a data de inicio, e o botao de zerar quando
+      houver ocorrencia. Zerar guarda o numero atual como recorde.
+    - Aniversariantes: uma linha por pessoa, "05/08 Maria Silva".
+      Cadastre o ano inteiro; a tela mostra so o mes corrente.
+    - Brasileirao: precisa de chave GRATIS do api-futebol.com.br.
+      Sem chave a extensao avisa, nao quebra a lista.
+    - Noticias: escolha a fonte. Vem com sugestoes em dois grupos:
+        Geral            CNN Brasil, CNN Tecnologia, Agencia Brasil
+        IA e tecnologia  Tecnoblog IA, Olhar Digital IA,
+                         MIT Tech Review Brasil, Canaltech
+
+      FONTES: UMA LISTA SO
+        Configuracoes -> Noticias. TODAS as fontes ficam na mesma tabela,
+        com Testar, Editar e Excluir em cada linha.
+
+        As 10 que vem cadastradas de fabrica (CNN, Tecnoblog, Olhar
+        Digital, etc.) entram na lista na primeira abertura e daí em
+        diante sao fontes normais: da para renomear, corrigir o endereco
+        e excluir qualquer uma. Excluida nao volta sozinha.
+
+        Nao existe mais o campo separado de "feed padrao" no topo: eram
+        duas listas fazendo a mesma coisa e so uma obedecia.
+
+        Excluir tira do MENU. As noticias que ja estao em listas de
+        reproducao continuam funcionando, porque o endereco fica
+        gravado nelas.
+
+      QUALIDADE DA FOTO
+        O feed quase sempre entrega MINIATURA: o portal publica a foto em
+        varias larguras e o RSS aponta para a de 300px, porque foi pensado
+        para leitor de feed no celular, nao para uma TV de 55 polegadas.
+
+        O que o sistema faz, em ordem:
+          1. entre todas as imagens do item, escolhe a de MAIOR largura
+          2. reescreve o parametro de tamanho da CDN (?w=300 vira ?w=1600)
+             pedindo a versao grande da MESMA foto, que o servidor ja tem
+          3. mede o arquivo quando a URL nao diz o tamanho
+          4. se ainda for pequena, busca a og:image da materia, que os
+             sites publicam em 1200px para a previa do WhatsApp
+
+        E se mesmo assim a foto for pequena, a TV NAO estica: mostra ela
+        no tamanho real e nitida, com uma copia desfocada preenchendo o
+        fundo. E o mesmo recurso que servico de streaming usa em capa
+        antiga, e e o que separa "borrado" de "intencional".
+
+      QUANDO A ARTE JA TRAZ O TITULO
+        Alguns veiculos (a CNN e um) publicam a imagem com a manchete
+        JA ESCRITA dentro. Mostrar nosso titulo por cima duplica o texto.
+
+        Em Configuracoes -> Fontes de conteudo -> Noticias, ao cadastrar
+        ou editar a fonte, ligue "A arte ja traz o titulo escrito".
+
+        Com isso, para AQUELA fonte a TV mostra so a foto inteira, com o
+        credito pequeno no canto (nome do veiculo e ha quanto tempo).
+        A foto tambem passa a aparecer INTEIRA em vez de preencher
+        cortando: a manchete costuma estar perto da borda, que e
+        justamente o que o corte come.
+
+        A marca e por fonte. As outras continuam com titulo e resumo.
+
+      PREVIA VISUAL
+        O botao "Testar" agora abre tambem a previa em 16:9, mostrando a
+        MESMA pagina que vai para a parede: foto, titulo, resumo e o
+        rodizio de manchetes. Numero nao mostra se ficou bonito.
+
+      COMO O SISTEMA ACHA O FEED
+        Voce aponta para a PAGINA que le no navegador, nao para o RSS.
+        O servidor le a declaracao que o site publica no cabecalho
+        (<link rel="alternate" type="application/rss+xml">) e acha o
+        feed sozinho. Se a pagina for de uma secao, ele acha o feed
+        daquela secao.
+
+        Assim o catalogo nao quebra quando o veiculo muda o caminho do
+        RSS. Se nao houver declaracao, ele ainda tenta /feed/, /rss e
+        os caminhos comuns antes de desistir.
+
+      DE ONDE VEM A FOTO
+        O sistema procura a imagem em seis lugares, nesta ordem:
+          enclosure          o jeito canonico do RSS
+          media:content      e media:group, usado por portais grandes
+          image              alguns agregadores
+          content:encoded    texto completo, que costuma ter a foto
+                             mesmo quando o resumo nao tem
+          img na descricao   inclusive lazy load (data-src) e srcset
+          og:image           ultimo recurso: abre a materia e le a meta
+                             que o site publica para o WhatsApp mostrar
+                             previa. Funciona ate quando o feed nao tem
+                             imagem nenhuma.
+
+        Se ainda assim nao houver foto, a peca vira um cartaz de
+        manchete com letra maior, nao uma tela preta.
+
+      TESTE ANTES DE INCLUIR
+        Na aba Extensoes, botao "Testar marcadas". Ele mostra por fonte
+        quantas noticias vieram e quantas com FOTO:
+          verde   funciona e tem imagem
+          ambar   funciona mas sem imagem (vira cartaz de texto)
+          vermelho nao respondeu
+        Descobrir isso aqui e melhor do que descobrir na parede.
+
+      TEMPO DE LEITURA
+        Configuracoes -> Extensoes -> "Tempo de leitura por manchete".
+        Padrao 18 segundos, ajustavel de 6 a 60.
+
+        Esse numero e o PISO. Manchete longa ganha ate 14 segundos a
+        mais sozinha, proporcional ao tamanho do texto (cerca de 25
+        caracteres por segundo, que e leitura tranquila a distancia).
+        Com 18s: manchete curta 19s, manchete longa 29s.
+
+        Ao INCLUIR a extensao, a duracao do item na lista ja entra
+        calculada para caber pelo menos duas manchetes. Se voce mudar
+        o tempo depois, ajuste tambem a duracao do item existente em
+        Listas -> o item -> Ajustar.
+
+      DE QUANTO EM QUANTO TEMPO ATUALIZA
+        O servidor busca o feed a cada 15 minutos e serve todas as TVs
+        com a mesma resposta. A peca se recarrega no mesmo ritmo. Ou
+        seja: noticia publicada agora aparece na parede em ate 15 min,
+        nao no dia seguinte.
+
+        Cada carga traz as 6 ultimas manchetes, girando de 11 em 11s.
+        Se a peca durar pouco na lista, ela CONTINUA de onde parou na
+        proxima vez, em vez de repetir sempre as duas primeiras. Ao
+        longo do dia todas aparecem.
+
+      Para ter MAIS DE UMA FONTE na mesma lista, use a aba Extensoes
+      dentro da lista de reproducao: escolha a fonte no seletor e
+      clique Incluir. Cada fonte vira um item proprio, e a lista
+      alterna entre elas.
+
+  O servidor busca uma vez e serve todas as TVs. Se a fonte cair, a
+  ultima resposta boa continua no ar em vez de erro na parede.
+
+EXTENSOES QUE SE ATUALIZAM SOZINHAS
+  Dentro da lista, no rodape: "Previsao do tempo" e "Relogio".
+  A previsao mostra hoje e os tres proximos dias, com chance de chuva.
+  O servidor busca uma vez a cada 30 min e serve todas as TVs: se a
+  API cair, a ultima previsao boa continua no ar.
+
+MODULOS: LIGA E DESLIGA
+  Aba "Configuracoes". Cada modulo pode ser ligado ou desligado a
+  qualquer momento; desligado, some da barra e nada e perdido.
+
+    Relatorio de veiculacao   quantas vezes cada conteudo foi ao ar
+    Conteudo por endereco     colocar seus paineis de BI nas telas
+    Comunicado urgente        aviso em prioridade maxima, com prazo
+    Zonas de tela             coluna lateral e faixa rolante
+    Criar peca sem designer   modelos onde se troca texto e cor
+    Calendario de campanha    visao do mes e os dias vazios
+    Aprovacao antes de publicar   (desligado por padrao)
+
+  Aprovacao vem desligada de proposito: so faz sentido quando mais de
+  duas pessoas publicam. Ligar antes disso e burocracia sem problema.
+
+RELATORIO
+  Aba "Relatorio" -> periodo -> Gerar. Baixar CSV abre direto no Excel
+  em portugues (ponto e virgula + BOM), sem assistente de importacao.
+
+COMUNICADO URGENTE
+  Botao vermelho na barra de cima. Escreve, escolhe as telas, define
+  por quantos minutos fica. Entra no ar em ate 30s e SAI SOZINHO.
+
+ZONAS DE TELA
+  Dentro da lista de reproducao: Tela cheia / Com coluna lateral /
+  Com faixa rolante / Coluna e faixa. A coluna traz relogio e previsao.
+
+MANUTENCAO AUTOMATICA
+  Roda sozinha no primeiro acesso de cada dia, sem depender de cron:
+    - consolida em totais mensais tudo com mais de 90 dias
+    - expurga o detalhe antigo em lotes (a tabela cresce ~2 milhoes de
+      linhas por ano com 20 TVs; sem isso a cota do banco estoura)
+    - gera os avisos de vencimento
+
+AVISO DE VENCIMENTO POR E-MAIL
+  Configuracoes -> "Aviso de vencimento por e-mail". Deixe vazio para
+  nao enviar nada.
+
+FALHAS DAS TVs
+  Quando um conteudo nao carrega, a TV avisa e aparece em Alertas, no
+  Painel. Antes ela pulava em silencio.
+
+PRE-VISUALIZAR A LISTA
+  Dentro da lista, botao "Pre-visualizar" abre a reproducao ali mesmo,
+  em 16:9. "Tela cheia" abre em outra aba. E o MESMO player da TV: sem
+  heartbeat, sem registro, sem cache. Nao afeta nenhuma tela.
+
+BACKUP
+  O backup_auto.php agora inclui as tabelas do TV Indoor: cadastro das
+  TVs, grupos, listas, itens, biblioteca e o consolidado mensal.
+  Fica de fora o historico bruto (tvi_exibicoes), o cache de previsao
+  e as capturas de tela: todos recriaveis.
+  Confira rodando o cron e olhando a contagem no fim da saida.
+
+EDITAR TV E ARQUIVO
+  Aba Televisores -> "Editar" na linha da TV, ou clique na linha do
+  Painel. Muda nome, local e grupo SEM perder o token, o historico ou
+  a folha ja impressa.
+
+  Aba Conteudo -> "Editar" na linha do arquivo. Muda nome, pasta,
+  validade e tempo padrao sem reenviar o arquivo.
+
+BUSCA E FILTROS
+  Aba Televisores tem busca por nome, codigo ou local, e filtro por
+  estado. O Relatorio filtra por TV ou grupo. O Calendario e clicavel:
+  clicar num item abre a lista onde ele esta.
+
+RETENCAO DO HISTORICO
+  Configuracoes -> "Retencao do historico". Padrao 90 dias, ajustavel
+  de 30 a 730. O consolidado mensal nunca e apagado.
+
+GRUPOS
+  Aba Televisores -> bloco Grupos. Renomeia clicando no nome, exclui
+  (as TVs continuam, so ficam sem grupo) e move varias telas de uma vez.
+
+TRAVADA NA TROCA DE ITEM (Android)
+  O QUE CAUSAVA
+    1. A camada anterior so era esvaziada no COMECO do proximo item.
+       Ou seja: a peca nova carregava enquanto a antiga ainda estava
+       viva na memoria. Em Android de TV com 1 GB isso e dois
+       documentos, duas imagens grandes e duas animacoes ao mesmo
+       tempo — o engasgo aparece exatamente na troca.
+    2. As pecas continuavam ANIMANDO dentro do iframe mesmo quando o
+       player mostrava outro item. Desenhar para ninguem.
+    3. O desfoque do fundo (blur 28px em foto de 1600x900) atrasava a
+       primeira pintura em quase um segundo.
+    4. A troca acontecia no onload, que dispara quando o HTML terminou
+       — nao quando a tela pintou. A peca aparecia ainda montando.
+
+  O QUE MUDOU
+    - A camada que sai e liberada 600ms DEPOIS da transicao, com o
+      iframe mandado para about:blank antes de remover (e isso que
+      descarrega o documento de dentro).
+    - Cada peca detecta quando sai de vista e PARA todas as animacoes,
+      alem de desligar o desfoque. Volta sozinha ao reaparecer.
+    - O desfoque so entra DEPOIS da primeira pintura, com transicao
+      curta. E caiu de 28 para 22px: acima disso o ganho visual e nulo
+      e o custo cresce com o quadrado do raio.
+    - A troca espera dois quadros apos o onload, para o navegador
+      terminar a primeira pintura.
+    - A transicao passou de 0,35s linear para 0,55s com curva de
+      saida: em TV o linear parece corte seco.
+
+  MEDIDO com processador 6x mais lento (simula Android TV de entrada):
+    peca de noticias: primeira pintura de 1164ms para 632ms
+    animacoes rodando fora de vista: 7 para 0
+
+PESO DO BANCO E DESEMPENHO
+  Configuracoes -> Dados e limpeza -> Peso do banco.
+  Mostra tabela por tabela o que cresce, mais o espaco em disco das
+  midias. Botao "Limpar agora" força a manutencao e devolve o espaco.
+
+  O QUE JA FOI OTIMIZADO
+    Indices: 9 novos, criados olhando as consultas reais. O relatorio
+      filtra por DATA, mas o indice existente comecava por tv_id: uma
+      consulta so por periodo varria a tabela inteira.
+    Expurgo: capturas (7d), comandos confirmados (14d), sinal por hora
+      (30d), cache (3d). Tres dessas nao eram limpas por ninguem, e a
+      de capturas guarda IMAGEM: passava de 1 GB por ano.
+    Heartbeat: eram DOIS updates seguidos na mesma linha por batida.
+      Viraram um. Com 10 TVs, de 57.600 para 28.800 escritas por dia.
+    Registro de exibicao: era um INSERT por item exibido. Agora e um
+      INSERT por lote. De ~2.880 para ~120 idas ao banco por dia.
+    Paginas de PDF orfas: midia excluida deixava as paginas no banco E
+      no disco. Agora a manutencao varre as duas.
+
+REINICIOS E RECUPERACAO
+  Aba Televisores, bloco no fim. Toda vez que uma TV volta com sessao
+  nova, conta como reinicio: o aparelho desligou, o navegador foi morto,
+  ou alguem reabriu o link. Recarregar a pagina NAO conta.
+
+  A coluna "Voltou sozinha" separa o que interessa: voltar por conta
+  propria e diferente de voltar porque alguem foi la liberar a sessao.
+
+  TESTE ANTES DE COMPRAR VARIOS APARELHOS IGUAIS
+    1. Configure UMA tela e deixe rodando.
+    2. Tire da tomada, espere um minuto, religue.
+    3. Deixe 24h ligada direto.
+    4. Desligue o roteador por 5 minutos e religue.
+  Se depois disso a linha da TV mostrar "voltou sozinha" em 100%, o
+  aparelho passou. O passo 2 e o que reprova a maioria das combinacoes
+  gratuitas, e e justamente o que ninguem testa antes de comprar dez.
+
+UMA TV, UMA JANELA
+  Se o mesmo link for aberto num segundo navegador: alguem testando no
+  computador enquanto a tela roda, a segunda janela NAO reproduz. Ela
+  mostra "O conteudo esta tocando em outra janela", com a hora e o IP
+  de quem esta com a vaga.
+
+  Sem isso, os dois passariam a bater e a registrar exibicao: o ultimo
+  sinal ficaria pingando e o relatorio de veiculacao dobraria.
+
+  A janela barrada continua tentando a cada 30s e assume SOZINHA quando
+  a primeira sair do ar. Nao precisa fazer nada.
+
+  Se a TV antiga nao vai voltar (trocaram o aparelho, o box queimou),
+  use o botao "Liberar" na aba Televisores. Fora isso, a vaga se solta
+  sozinha depois de 150 segundos sem sinal.
+
+BARRA DE DIAGNOSTICO NA TV
+  Fica escondida. Para ver estado, sinal e cache durante uma manutencao,
+  aperte qualquer NUMERO no controle remoto. Aperte de novo para sumir.
+
+VER O QUE ESTA NA TELA
+  Aba TVs -> "Ver tela". O comando chega na proxima batida e a TV
+  devolve a imagem. Se estiver exibindo uma pagina web, o navegador nao
+  deixa capturar: o mural mostra o nome do que esta no ar.
+
+PDF
+  Se a hospedagem tiver Imagick, o PDF e convertido em uma imagem por
+  pagina no envio, e passa a funcionar bem. Confira em
+  Configuracoes -> Saude da instalacao -> "Conversao de PDF".
+  Sem Imagick, o PDF depende do leitor da TV, que falha em Tizen e
+  webOS: nesse caso exporte as paginas como imagem antes de enviar.
+
+
+════════════════════════════════════════════════════════════
+v75.7 — AUXÍLIO GRADUAÇÃO (novo módulo)
+════════════════════════════════════════════════════════════
+
+Dois cards novos no menu:
+  🎓 Auxílio Graduação      → painel do aluno (todos veem)
+  🧮 Auxílio · Contabilidade → só admin ou quem tiver a chave ligada
+                               em Configurações → Permissões
+
+Arquivos:
+  apps/auxilio.html         tela dos dois painéis
+  auxilio/                  backend, config, e-mail, backup e uploads
+
+O módulo usa o MESMO banco do portal (u505117566_portalredentor) e a
+MESMA sessão: quem está logado no Hub entra direto, sem nova senha.
+A contabilidade é reconhecida por role=admin ou pela permissão
+'auxilio-contab' no cadastro do usuário.
+
+DEPOIS DE SUBIR, abra uma vez:
+  https://SEUDOMINIO/auxilio/instalar.php
+  → Criar tabelas
+  → Atualizar colunas (Pix e senha)
+  → Permitir vários cursos
+  → Testar envio de e-mail
+E apague o instalar.php quando terminar.
+
+IMPORTANTE: o login que a contabilidade digitar no cadastro do aluno
+precisa ser o MESMO username do Hub, senão o aluno vê "nenhum auxílio
+ativo".

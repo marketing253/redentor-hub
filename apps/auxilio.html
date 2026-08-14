@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auxílio Graduação</title>
+<style>
+:root{
+  --bg:#1b1e24; --card:#23272f; --line:#333a45; --txt:#e8ecf2; --txt2:#9aa4b2;
+  --ac:#6E78E6; --ok:#2fbf71; --warn:#f0a500; --bad:#f4623a; --info:#22b8cf;
+  --azul:#3B4192; --ouro:#D9A93F;
+  --r:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 "Segoe UI",system-ui,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 90px}
+.marca{background:var(--azul);border-bottom:3px solid #D9A93F}
+.marca-in{max-width:1180px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:14px}
+.marca img{height:40px;width:auto;display:block}
+.marca-txt b{display:block;color:#fff;font-size:16px;letter-spacing:.4px;line-height:1.25}
+.marca-txt span{display:block;color:#c6cbee;font-size:12px}
+.marca #sair:hover{background:rgba(255,255,255,.12)}
+.marca .pill{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);
+  color:#eef0fb}
+.marca .pill b{color:#E7C46B}
+header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+header.top h1{font-size:20px;margin:0;letter-spacing:.2px}
+header.top h1 small{display:block;font-size:12px;color:var(--txt2);font-weight:400;letter-spacing:.4px}
+.pill{margin-left:auto;background:var(--card);border:1px solid var(--line);border-radius:999px;
+  padding:6px 14px;font-size:13px;color:var(--txt2)}
+.pill b{color:var(--ac)}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--txt2);padding:8px 16px;
+  border-radius:999px;cursor:pointer;font-size:14px}
+.tab.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:16px}
+.card p.sub{margin:0 0 16px;color:var(--txt2);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ac);
+  border-radius:var(--r);padding:14px 16px}
+.kpi .v{font-size:24px;font-weight:600}
+.kpi .l{font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--txt2);font-weight:600}
+tbody tr:hover{background:rgba(127,127,127,.08)}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;white-space:nowrap;
+  border:1px solid currentColor}
+.t-aguardando_boleto{color:var(--txt2)} .t-em_analise{color:var(--warn)}
+.t-rejeitado{color:var(--bad)} .t-aprovado{color:var(--ac)}
+.t-pago{color:var(--ok)} .t-concluido{color:var(--ok)}
+.atraso{background:var(--bad);color:#fff;font-size:11px;padding:2px 8px;border-radius:999px;
+  margin-left:6px;white-space:nowrap;font-weight:600;letter-spacing:.3px}
+.pixbox{border-left:3px solid var(--ouro);background:rgba(217,169,63,.12);padding:14px 16px;
+  border-radius:8px;margin-bottom:16px}
+button,.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:8px 14px;
+  font-size:14px;cursor:pointer;font-family:inherit}
+button.gh{background:transparent;border:1px solid var(--line);color:var(--txt)}
+button.sm{padding:5px 10px;font-size:13px}
+button:disabled{opacity:.45;cursor:not-allowed}
+a{color:var(--ac)}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);color:var(--txt);
+  border-radius:8px;padding:8px 10px;font:inherit;width:100%}
+label{display:block;font-size:12px;color:var(--txt2);margin:0 0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bars{display:flex;align-items:flex-end;gap:10px;height:130px;margin-top:10px}
+.bars div{flex:1;background:var(--ac);border-radius:6px 6px 0 0;min-height:3px;position:relative}
+.bars div span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;color:var(--txt2)}
+.vazio{color:var(--txt2);font-size:14px;padding:22px 0;text-align:center}
+.aviso{border-left:3px solid var(--warn);background:rgba(127,127,127,.08);padding:10px 14px;
+  border-radius:6px;font-size:13px;margin-bottom:14px}
+dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:var(--r);
+  padding:22px 24px;width:min(880px,95vw);max-height:90vh;overflow:auto}
+dialog h2{margin:0 0 4px}
+.dsec{border-top:1px solid var(--line);margin:18px 0 0;padding-top:14px}
+.dsec:first-of-type{border:0;margin-top:8px;padding-top:0}
+.dsec>b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--txt2);
+  margin-bottom:10px}
+.al-busca{background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:9px;
+  padding:9px 12px;font-size:13px;min-width:220px;flex:1}
+.al-card{display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg);
+  border:1px solid var(--line);border-radius:12px;margin-bottom:10px;flex-wrap:wrap}
+.al-card:hover{border-color:var(--ac)}
+.al-av{width:42px;height:42px;flex:0 0 42px;border-radius:50%;background:var(--ac);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+.al-id{min-width:190px;flex:1 1 200px}
+.al-id b{display:block;font-size:14.5px;color:var(--txt)}
+.al-id span{font-size:12px;color:var(--txt2)}
+.al-curso{flex:1 1 190px;font-size:13px;min-width:160px}
+.al-curso span{display:block;font-size:12px;color:var(--txt2)}
+.al-prog{flex:0 0 130px}
+.al-prog .barra{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:5px}
+.al-prog .barra i{display:block;height:100%;background:var(--ok)}
+.al-chips{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap}
+.al-curso-linha{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;
+  padding-top:12px;border-top:1px dashed var(--line)}
+.al-curso-nome{flex:1 1 220px;min-width:180px;font-size:13.5px}
+.al-curso-nome span{display:block;font-size:12px;color:var(--txt2);margin-top:2px}
+.ch{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 10px;border-radius:999px;
+  border:1px solid currentColor}
+.ch.ok{color:var(--ok)} .ch.warn{color:var(--warn)} .ch.bad{color:var(--bad)} .ch.n{color:var(--txt2)}
+.al-acoes{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:700px){.al-prog{flex-basis:100%}}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+#avisos{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:70;display:flex;
+  flex-direction:column;gap:8px;align-items:center;width:min(460px,92vw);pointer-events:none}
+.av{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ac);
+  border-radius:10px;padding:12px 16px;font-size:14px;box-shadow:0 8px 26px rgba(0,0,0,.45);
+  width:100%;animation:sobe .18s ease-out}
+.av.ok{border-left-color:var(--ok)} .av.bad{border-left-color:var(--bad)}
+.av.warn{border-left-color:var(--warn)}
+.av b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--txt2);
+  margin-bottom:2px}
+@keyframes sobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#dlgAsk textarea{min-height:90px;resize:vertical}
+#tema{position:fixed;right:18px;bottom:18px;width:48px;height:48px;border-radius:50%;font-size:20px;
+  background:var(--card);border:1px solid var(--line);color:var(--txt);cursor:pointer;z-index:50}
+#temaBox{position:fixed;right:18px;bottom:76px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r);padding:14px;display:none;z-index:50;width:250px}
+#temaBox.on{display:block}
+.sw{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.sw i{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.sw i.on{border-color:var(--txt)}
+.bgs{display:grid;gap:6px}
+.bgs button{background:transparent;border:1px solid var(--line);color:var(--txt);text-align:left;font-size:13px}
+.bgs button.on{border-color:var(--ac);color:var(--ac)}
+@media print{#tema,#temaBox,.tabs,button{display:none!important}
+  .marca{background:#fff;border-bottom:2px solid #885B20}
+  .marca-txt b{color:#3B4192}.marca-txt span{color:#555}.marca .pill{display:none}}
+@media (max-width:620px){th:nth-child(n+5),td:nth-child(n+5){display:none}}
+</style>
+</head>
+<body>
+<div class="marca">
+  <div class="marca-in">
+    <img src="../auxilio/assets/logo.png" alt="Auto Viação Redentor" onerror="this.remove()">
+    <div class="marca-txt"><b>Auto Viação Redentor</b>
+      <span>Auxílio Graduação · a empresa custeia 70% da mensalidade</span></div>
+    <div class="pill" id="quem">carregando…</div>
+    <a id="sair" href="../auxilio/entrar.php?sair=1" style="display:none;color:#eef0fb;text-decoration:none;
+      border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 14px;font-size:13px">Sair</a>
+  </div>
+</div>
+<div class="wrap">
+  <div id="app"><div class="vazio">Carregando…</div></div>
+</div>
+
+<button id="tema" title="Aparência">🎨</button>
+<div id="temaBox">
+  <label>Cor de destaque</label>
+  <div class="sw" id="swAc"></div>
+  <label>Fundo</label>
+  <div class="bgs" id="swBg"></div>
+</div>
+
+<div id="avisos"></div>
+
+<dialog id="dlgAsk">
+  <h2 id="ask_titulo" style="margin:0 0 6px;font-size:16px"></h2>
+  <p id="ask_texto" style="margin:0 0 14px;color:var(--txt2);font-size:13px"></p>
+  <label id="ask_label"></label>
+  <input id="ask_input">
+  <textarea id="ask_area" style="display:none"></textarea>
+  <div class="row" style="margin-top:18px;justify-content:flex-end">
+    <button class="gh" onclick="askFecha(null)">Cancelar</button>
+    <button id="ask_ok" onclick="askEnvia()">Confirmar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgSenha">
+  <h2 style="margin:0 0 6px;font-size:16px">Criar sua senha</h2>
+  <p style="margin:0 0 14px;color:var(--txt2);font-size:13px">
+    A senha que chegou por e-mail é temporária. Escolha uma sua, com pelo menos 8 caracteres,
+    misturando letras e números.</p>
+  <div class="grid">
+    <div><label>Nova senha</label><input id="s_nova" type="password" autocomplete="new-password"></div>
+    <div><label>Repita a nova senha</label><input id="s_conf" type="password" autocomplete="new-password"></div>
+  </div>
+  <div class="row" style="margin-top:18px;justify-content:flex-end">
+    <button onclick="salvaSenha()">Salvar senha</button>
+  </div>
+</dialog>
+
+<dialog id="dlgWiz">
+  <div class="l" id="wz_passo" style="font-size:12px;letter-spacing:.6px"></div>
+  <h2 id="wz_tit" style="margin:2px 0 6px;font-size:16px"></h2>
+  <p id="wz_sub" style="margin:0 0 14px;color:var(--txt2);font-size:13px"></p>
+
+  <div id="wz1">
+    <div class="grid">
+      <div><label>Tipo da chave</label><select id="p_tipo">
+        <option value="cpf">CPF</option><option value="email">E-mail</option>
+        <option value="telefone">Telefone</option><option value="aleatoria">Chave aleatória</option>
+      </select></div>
+      <div><label>Chave</label><input id="p_chave" autocomplete="off"></div>
+      <div><label>E-mail para contato</label><input id="p_email" type="email"></div>
+      <div><label>Telefone para contato</label><input id="p_tel"></div>
+    </div>
+  </div>
+
+  <div id="wz2" style="display:none">
+    <label>Contrato da faculdade (PDF, JPG ou PNG — até 5 MB)</label>
+    <input type="file" id="p_contrato" accept=".pdf,.jpg,.jpeg,.png">
+    <p class="l" style="font-size:12px;margin-top:8px">Se a contabilidade já anexou o seu contrato,
+      este passo não aparece.</p>
+  </div>
+
+  <div id="wz3" style="display:none">
+    <div class="pixbox"><b>O boleto tem que ser enviado até o dia 3 de cada mês.</b><br>
+      A janela abre no dia 1º. Neste mês o prazo é <b id="p_prazo">—</b>.
+      Depois dessa data o envio continua liberado, mas a parcela entra marcada como
+      <b>EM ATRASO</b> para você e para a contabilidade.</div>
+    <p class="l" style="font-size:13px;line-height:1.6">Depois que a contabilidade aprovar, os 70%
+      são depositados na sua chave Pix e a parcela do mês é encerrada.</p>
+  </div>
+
+  <div class="row" style="margin-top:18px;justify-content:flex-end">
+    <button class="gh" id="wz_cancel" onclick="dlgWiz.close()">Cancelar</button>
+    <button id="wz_ok" onclick="wizAvanca()">Continuar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgAluno">
+  <h2 style="font-size:17px">Cadastro do aluno</h2>
+  <p class="sub" style="color:var(--txt2);font-size:13px;margin:0 0 4px">
+    Ao salvar, as parcelas são geradas e o convite de acesso vai para o e-mail informado.</p>
+
+  <div class="dsec"><b>Pessoa</b>
+    <div style="margin-bottom:12px">
+      <label>Puxar de quem já tem conta no Hub</label>
+      <select id="f_hub" onchange="puxaDoHub()">
+        <option value="">Escolher da lista do portal</option>
+      </select>
+      <div class="l" id="f_hub_dica" style="font-size:12px;margin-top:5px">
+        Escolhendo aqui, login, nome e telefone vêm preenchidos. Quem ainda não tem conta,
+        digite o login abaixo: a conta é criada no salvamento.</div>
+    </div>
+    <div class="grid">
+      <div><label>Login no Hub</label><input id="f_usuario" placeholder="ex.: joao.silva"></div>
+      <div><label>Nome completo</label><input id="f_nome"></div>
+      <div><label>Matrícula</label><input id="f_matricula"></div>
+      <div><label>Setor</label><input id="f_setor"></div>
+      <div><label>E-mail (recebe o convite)</label><input id="f_email" type="email"></div>
+      <div><label>Telefone</label><input id="f_telefone"></div>
+    </div>
+  </div>
+
+  <div class="dsec"><b>Curso</b>
+    <div class="grid">
+      <div><label>Instituição</label><input id="f_instituicao"></div>
+      <div><label>Curso</label><input id="f_curso"></div>
+      <div><label>Situação</label><select id="f_status">
+        <option value="ativo">Ativo</option><option value="suspenso">Suspenso</option>
+        <option value="encerrado">Encerrado</option></select></div>
+    </div>
+  </div>
+
+  <div class="dsec"><b>Financeiro e prazos</b>
+    <div class="grid">
+      <div><label>Valor da mensalidade (R$)</label><input id="f_valor" type="number" step="0.01"></div>
+      <div><label>Percentual da empresa (%)</label><input id="f_perc" type="number" step="0.01" value="70"></div>
+      <div><label>Quantidade de mensalidades</label><input id="f_qtd" type="number" min="1"></div>
+      <div><label>Dia do vencimento do boleto</label><input id="f_dia" type="number" min="1" max="28" value="10"></div>
+      <div><label>Competência inicial (AAAA-MM)</label><input id="f_inicio" placeholder="2026-08"></div>
+    </div>
+    <div style="margin-top:12px"><label>Observação interna (o aluno não vê)</label><input id="f_obs"></div>
+  </div>
+
+  <div class="row" style="margin-top:20px;justify-content:flex-end">
+    <button class="gh" onclick="dlgAluno.close()">Cancelar</button>
+    <button onclick="salvarAluno()">Salvar cadastro</button>
+  </div>
+</dialog>
+
+<script>
+const API='../auxilio/api/auxilio.php';
+let S={}, editandoId=0;
+
+/* ---------- tema ---------- */
+const ACS=[['Azul Redentor','#6E78E6','#3B4192'],['Dourado','#D9A93F','#885B20'],
+ ['Azul','#4f8cff','#1d4ed8'],['Verde','#2fbf71','#087f5b'],['Âmbar','#f0a500','#a16207'],
+ ['Vermelho','#f4623a','#b42318'],['Roxo','#9b6cf0','#6d28d9'],['Ciano','#22b8cf','#0e7490']];
+const BGS=[
+ ['Grafite',{bg:'#1b1e24',card:'#23272f',line:'#333a45',txt:'#e8ecf2',txt2:'#9aa4b2'}],
+ ['Meia-noite',{bg:'#0f1626',card:'#18213a',line:'#2a3555',txt:'#e6ecfa',txt2:'#97a4c2'}],
+ ['Ardósia',{bg:'#1e2430',card:'#28303e',line:'#3a4455',txt:'#e9edf4',txt2:'#9ba7b8'}],
+ ['Carvão',{bg:'#141414',card:'#1e1e1e',line:'#333',txt:'#ececec',txt2:'#9b9b9b'}],
+ ['Claro',{bg:'#f4f6f9',card:'#ffffff',line:'#dde3ea',txt:'#16202c',txt2:'#5b6775',claro:1}]];
+const SEM={escuro:{ok:'#2fbf71',warn:'#f0a500',bad:'#f4623a',info:'#22b8cf'},
+           claro:{ok:'#087f5b',warn:'#a16207',bad:'#b42318',info:'#0e7490'}};
+let tema={ac:0,bg:0};
+function aplicaTema(){
+  const b=BGS[tema.bg][1], claro=!!b.claro, r=document.documentElement.style;
+  r.setProperty('--bg',b.bg); r.setProperty('--card',b.card); r.setProperty('--line',b.line);
+  r.setProperty('--txt',b.txt); r.setProperty('--txt2',b.txt2);
+  r.setProperty('--ac',ACS[tema.ac][claro?2:1]);
+  r.setProperty('--ouro', claro ? '#885B20' : '#D9A93F');
+  const s=SEM[claro?'claro':'escuro'];
+  for(const k in s) r.setProperty('--'+k,s[k]);
+  document.querySelectorAll('#swAc i').forEach((e,i)=>e.classList.toggle('on',i===tema.ac));
+  document.querySelectorAll('#swBg button').forEach((e,i)=>e.classList.toggle('on',i===tema.bg));
+  try{localStorage.setItem('auxTema',JSON.stringify(tema));}catch(e){}
+}
+function montaTema(){
+  swAc.innerHTML=ACS.map((a,i)=>`<i style="background:${a[1]}" title="${a[0]}" onclick="tema.ac=${i};aplicaTema()"></i>`).join('');
+  swBg.innerHTML=BGS.map((b,i)=>`<button onclick="tema.bg=${i};aplicaTema()">${b[0]}</button>`).join('');
+  try{const t=JSON.parse(localStorage.getItem('auxTema')); if(t&&Number.isInteger(t.ac))tema=t;}catch(e){}
+  aplicaTema();
+}
+document.getElementById('tema').onclick=()=>temaBox.classList.toggle('on');
+
+/* ---------- utilidades ---------- */
+const RS=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const DT=d=>d?d.split('-').reverse().join('/'):'—';
+const esc=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const ROT={aguardando_boleto:'Aguardando boleto',em_analise:'Aguardando repasse',rejeitado:'Recusado',
+  aprovado:'Aguardando repasse',pago:'Concluído',concluido:'Concluído'};
+const tag=s=>`<span class="tag t-${s}">${ROT[s]||s}</span>`;
+const compBR=c=>{const[a,m]=c.split('-');return ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][+m-1]+'/'+a};
+
+async function api(a,dados){
+  const o=dados?{method:'POST',body:dados}:{};
+  const r=await fetch(`${API}?a=${a}`,o);
+  const j=await r.json().catch(()=>({ok:false,erro:'Resposta inválida do servidor.'}));
+  if(!j.ok) throw new Error(j.erro||'Falha na operação.');
+  return j;
+}
+function fd(obj){const f=new FormData();for(const k in obj)if(obj[k]!=null)f.append(k,obj[k]);return f;}
+function toast(msg,tipo){
+  const t={ok:'Feito',bad:'Não deu certo',warn:'Atenção',info:'Aviso'}[tipo||'info'];
+  const el=document.createElement('div');
+  el.className='av '+(tipo||'info'); el.innerHTML=`<b>${t}</b>${esc(msg)}`;
+  avisos.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';
+    setTimeout(()=>el.remove(),320);}, tipo==='bad'?6000:3800);
+}
+function falha(e){toast((e&&e.message)||String(e),'bad');}
+function telaErro(e){
+  const m=(e&&e.message)||String(e);
+  const dica = /doesn't exist|Base table|Unknown column/i.test(m)
+    ? '<p class="sub">Parece que o banco ainda não foi preparado. Abra <b>auxilio/instalar.php</b> e clique em <b>Criar tabelas</b> e <b>Atualizar colunas</b>.</p>' : '';
+  app.innerHTML=`<div class="card"><h2>Não foi possível carregar</h2>
+    <p class="sub">${esc(m)}</p>${dica}
+    <button class="gh" onclick="location.reload()">Tentar de novo</button></div>`;
+}
+window.addEventListener('unhandledrejection',ev=>{ telaErro(ev.reason); ev.preventDefault(); });
+
+/* Cada pergunta ganha um número. O evento 'close' da caixa anterior chegava
+   depois da próxima abrir e cancelava a nova em silêncio — por isso a
+   segunda confirmação parecia não responder. */
+let askRes=null, askSeq=0;
+function pergunta(o){
+  return new Promise(res=>{
+    askSeq++;
+    askRes={seq:askSeq, fn:res};
+    ask_titulo.textContent=o.titulo||'';
+    ask_texto.textContent=o.texto||''; ask_texto.style.display=o.texto?'':'none';
+    ask_label.textContent=o.label||'';
+    const area=o.tipo==='texto_longo';
+    ask_area.style.display=area?'':'none'; ask_input.style.display=area?'none':'';
+    ask_ok.textContent=o.botao||'Confirmar';
+    if(area){ ask_area.value=o.valor||''; }
+    else{ ask_input.type=o.tipo||'text'; ask_input.step=o.tipo==='number'?'0.01':'';
+          ask_input.value=o.valor??''; }
+    dlgAsk.dataset.obrig=o.obrig?'1':''; dlgAsk.dataset.area=area?'1':'';
+    dlgAsk.showModal();
+    setTimeout(()=>(area?ask_area:ask_input).focus(),40);
+  });
+}
+function askEnvia(){
+  const area=dlgAsk.dataset.area==='1';
+  const v=(area?ask_area.value:ask_input.value).trim();
+  if(dlgAsk.dataset.obrig && v===''){ toast('Preencha o campo para continuar.','warn'); return; }
+  askFecha(v);
+}
+function askFecha(v){
+  const r=askRes; askRes=null;      // solta a referência antes de fechar
+  dlgAsk.close();
+  if(r) r.fn(v);
+}
+dlgAsk.addEventListener('close',()=>{
+  /* O evento 'close' chega depois da próxima caixa já ter aberto: se a caixa
+     está aberta de novo, este 'close' é o da anterior e deve ser ignorado. */
+  if(dlgAsk.open) return;
+  const r=askRes; askRes=null; if(r) r.fn(null);
+});
+ask_input.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();askEnvia();} });
+
+/* ---------- painel do aluno ---------- */
+let cursoAtual=0;
+async function viewAluno(){
+  const d=await api('meu_painel');
+  const cs=d.contratos||[];
+  if(!cs.length){app.innerHTML=`<div class="card"><h2>Nenhum auxílio ativo</h2>
+    <p class="sub">Seu login ainda não está vinculado a um curso. Procure a contabilidade.</p></div>`;return;}
+  if(cursoAtual>=cs.length) cursoAtual=0;
+  const a=cs[cursoAtual]; window._aluno=a; window._cursos=cs;
+  const pend=(a.parcelas||[]).filter(p=>['aguardando_boleto','rejeitado','em_analise'].includes(p.status));
+  const atual=(a.parcelas||[]).find(p=>p.id===window._parcelaSel)
+            ||(a.parcelas||[]).find(p=>p.competencia===S.competencia&&['aguardando_boleto','rejeitado','em_analise'].includes(p.status))
+            ||pend[0]
+            ||(a.parcelas||[]).find(p=>p.competencia===S.competencia);
+  window._pend=pend;
+  const pagas=(a.parcelas||[]).filter(p=>p.status==='concluido').length;
+  const abas=cs.length>1?`<div class="tabs">${cs.map((c,i)=>
+      `<div class="tab ${i===cursoAtual?'on':''}" onclick="cursoAtual=${i};viewAluno()">${esc(c.curso)}${
+        (c.parcelas||[]).some(p=>p.competencia===S.competencia&&p.status==='aguardando_boleto')
+          ? ' <span class="atraso" style="background:var(--warn)">pendente</span>':''}</div>`).join('')}</div>`:'';
+  app.innerHTML=abas+`
+  <div class="kpis">
+    <div class="kpi"><div class="l">Curso</div><div class="v" style="font-size:17px">${esc(a.curso)}</div>
+      <div class="l" style="margin-top:4px">${esc(a.instituicao)}</div></div>
+    <div class="kpi"><div class="l">Mensalidade</div><div class="v">${RS(a.valor_mensalidade)}</div>
+      <div class="l">empresa paga ${(+a.percentual).toFixed(0)}%</div></div>
+    <div class="kpi"><div class="l">Parcelas concluídas</div><div class="v">${pagas}/${a.qtd_mensalidades}</div></div>
+    <div class="kpi"><div class="l">Contrato</div><div class="v" style="font-size:17px">${
+      a.contrato_arquivo?`<a href="${API}?a=arquivo&tipo=contrato&id=${a.id}" target="_blank">Ver contrato</a>`
+        :`<button class="sm" onclick="abreWiz(2,'so')">Anexar</button>`}</div></div>
+  </div>
+  ${a.pix_chave?`<div class="card"><div class="row">
+      <div><div class="l" style="font-size:12px">Chave Pix para o depósito</div>
+        <b style="font-size:16px">${esc(a.pix_chave)}</b>
+        <span class="l" style="font-size:12px"> · ${esc(a.pix_tipo||'')}</span></div>
+      <button class="gh sm" style="margin-left:auto" onclick="abreWiz(1,'so')">Alterar chave</button>
+    </div></div>`
+   :`<div class="card"><div class="pixbox"><b>Cadastre sua chave Pix</b><br>
+      É para essa chave que a contabilidade deposita os 70% da mensalidade.
+      Sem ela o envio do boleto fica bloqueado.</div>
+      <button onclick="abreWiz(1,'onboard')">Cadastrar chave Pix</button></div>`}
+  <div class="card" id="boxMes"></div>
+  <div class="card"><h2>Histórico</h2><p class="sub">Parcelas de ${esc(a.curso)}.</p>
+    <table><thead><tr><th>Competência</th><th>Vencimento</th><th>Situação</th><th>Boleto</th>
+      <th>Empresa (${(+a.percentual).toFixed(0)}%)</th></tr></thead><tbody>${
+    (a.parcelas||[]).map(p=>`<tr>
+      <td>${compBR(p.competencia)}</td><td>${DT(p.vencimento)}</td>
+      <td>${tag(p.status)}${+p.boleto_atrasado?'<span class="atraso">ATRASADO</span>':''}
+        ${p.status==='rejeitado'&&p.observacao?`<div class="l" style="color:var(--bad);font-size:12px">${esc(p.observacao)}</div>`:''}</td>
+      <td>${p.boleto_arquivo?`<a href="${API}?a=arquivo&tipo=boleto&id=${p.id}" target="_blank">abrir</a>`
+        :(['aguardando_boleto','rejeitado'].includes(p.status)
+          ?`<button class="sm gh" onclick="trocaParcela(${p.id})">Enviar</button>`:'—')}</td>
+      <td>${RS(p.valor_empresa)}</td>
+    </tr>`).join('')||'<tr><td colspan="5" class="vazio">Sem parcelas.</td></tr>'}</tbody></table></div>`;
+  window._parcelaSel=atual?atual.id:null;
+  boxMes.innerHTML=blocoEnvio(atual,!a.pix_chave,pend);
+  if(S.trocar_senha && !dlgSenha.open){ dlgSenha.showModal(); avisaSenhaPadrao(); return; }
+  if(!a.pix_chave && !dlgWiz.open) abreWiz(1,'onboard');
+  else if(!a.contrato_arquivo && !dlgWiz.open) abreWiz(2,'onboard');
+}
+function trocaParcela(id){ window._parcelaSel=Number(id); viewAluno(); }
+function blocoEnvio(p,semPix,pend){
+  const hoje=S.hoje;
+  const escolha=(pend&&pend.length>1)
+    ? `<div class="row" style="margin-bottom:12px">
+         <label style="margin:0">Mês do boleto</label>
+         <select style="width:auto;min-width:170px" onchange="trocaParcela(this.value)">
+           ${pend.map(x=>`<option value="${x.id}" ${p&&x.id===p.id?'selected':''}>${compBR(x.competencia)}${
+             x.competencia>S.competencia?' (adiantado)':''}</option>`).join('')}
+         </select>
+         <span class="l" style="font-size:12px">Dá para adiantar os próximos meses.</span>
+       </div>` : '';
+  const tit=`<h2>Envio de ${p?compBR(p.competencia):compBR(S.competencia)}</h2>`+escolha;
+  if(semPix) return tit+`<div class="pixbox">Cadastre a chave Pix acima para liberar o envio do boleto.</div>`;
+  if(!p) return tit+`<p class="sub">Não há parcela prevista para este mês.</p>`;
+  const noPrazo=hoje<=p.prazo_envio;
+  const futuro=p.competencia>S.competencia;
+  const prazo=`<p class="sub">Envio liberado no dia 1º. Prazo até ${DT(p.prazo_envio)} — dia ${S.dia_prazo||3} de cada mês.
+    </p>${(noPrazo||futuro)?'':'<div class="pixbox" style="border-color:var(--bad);background:rgba(244,98,58,.12)">'
+      +'O prazo do dia '+DT(p.prazo_envio)+' já passou. O envio continua liberado, mas esta parcela '
+      +'entra marcada como <b>EM ATRASO</b> para você e para a contabilidade.</div>'}`;
+  if(p.status==='aguardando_boleto'||p.status==='rejeitado'||p.status==='em_analise'){
+    const rec=p.status==='rejeitado'?`<div class="aviso">Boleto recusado: ${esc(p.observacao||'')}. Envie um novo arquivo.</div>`:'';
+    const ana=p.status==='em_analise'?`<div class="aviso">Boleto enviado em ${DT((p.boleto_enviado_em||'').slice(0,10))}. Aguardando o repasse.</div>`:'';
+    return tit+prazo+rec+ana+`<div class="grid">
+      <div><label>Boleto do mês (PDF, JPG ou PNG — até 5 MB)</label><input type="file" id="upBoleto" accept=".pdf,.jpg,.jpeg,.png"></div>
+      <div><label>Valor do boleto (R$)</label><input type="number" step="0.01" id="upValor"
+        value="${p.valor_boleto||''}" placeholder="ex.: 980,50"></div>
+    </div><div class="row" style="margin-top:14px"><button onclick="enviaBoleto(${p.id})">Enviar boleto</button></div>`;
+  }
+  if(p.status==='aprovado'||p.status==='em_analise') return tit+`<div class="aviso">Boleto recebido
+    em ${DT((p.boleto_enviado_em||'').slice(0,10))}. A empresa vai depositar <b>${RS(p.valor_empresa)}</b>
+    na sua chave Pix.${p.observacao?`<div class="l" style="font-size:12px;margin-top:6px">${esc(p.observacao)}</div>`:''}</div>`;
+  if(p.status==='pago') return tit+`<div class="aviso" style="border-left-color:var(--ok)">Repasse de
+    ${RS(p.valor_empresa)} registrado em ${DT(p.pago_em)}. Parcela do mês encerrada.</div>`;
+  return tit+`<div class="aviso">Parcela concluída. Nada pendente neste mês.</div>`;
+}
+/* Enquanto a senha do convite não for trocada, ela é padrão e conhecida.
+   O aviso diz quanto tempo resta — depois disso só com a contabilidade. */
+async function avisaSenhaPadrao(){
+  try{
+    const d=await api('estado_senha');
+    if(!d.pendente) return;
+    const h=d.vence_em;
+    const txt = (h===null) ? 'Você ainda está usando a senha padrão do convite. Troque agora.'
+      : (h>0 ? `Você ainda está usando a senha padrão do convite — ela vence em ${h}h. Depois disso, só a contabilidade reabre.`
+             : 'A senha padrão do convite venceu. Troque agora para continuar entrando.');
+    toast(txt, h!==null && h<=12 ? 'bad' : 'warn');
+  }catch(e){}
+}
+
+async function salvaSenha(){
+  const a=s_nova.value, b=s_conf.value;
+  if(a!==b) return toast('As duas senhas não são iguais.','warn');
+  try{ await api('trocar_senha',fd({nova:a}));
+    dlgSenha.close(); S.trocar_senha=false; toast('Senha alterada.','ok'); viewAluno();
+  }catch(e){falha(e);}
+}
+
+let wiz={passo:1,modo:'onboard',aluno:{}};
+function abreWiz(passo,modo){
+  wiz.passo=passo; wiz.modo=modo||'onboard'; wiz.aluno=window._aluno||{};
+  const a=wiz.aluno;
+  p_tipo.value=a.pix_tipo||'cpf'; p_chave.value=a.pix_chave||'';
+  p_email.value=a.email||''; p_tel.value=a.telefone||'';
+  p_prazo.textContent=DT(S.prazo);
+  wizMostra();
+  if(!dlgWiz.open) dlgWiz.showModal();
+}
+function wizMostra(){
+  const total=wiz.modo==='onboard'?3:1, n=wiz.passo;
+  wz1.style.display=n===1?'':'none';
+  wz2.style.display=n===2?'':'none';
+  wz3.style.display=n===3?'':'none';
+  wz_passo.textContent=total>1?`PASSO ${n} DE ${total}`:'';
+  const txt={
+    1:['Chave Pix','É nesta chave que a contabilidade deposita os 70%. Confira antes de salvar.','Salvar e continuar'],
+    2:['Contrato da faculdade','Anexe o contrato ou o comprovante de matrícula do seu curso.','Enviar e continuar'],
+    3:['Prazo de envio do boleto','Leia com atenção — é o ponto que mais gera atraso.','Entendi, começar']
+  }[n];
+  wz_tit.textContent=txt[0]; wz_sub.textContent=txt[1];
+  wz_ok.textContent=total===1?'Salvar':txt[2];
+  wz_cancel.style.display=(wiz.modo==='onboard'&&n<3)?'none':'';
+}
+async function wizAvanca(){
+  try{
+    if(wiz.passo===1){
+      await api('salvar_pix',fd({pix_tipo:p_tipo.value,pix_chave:p_chave.value,
+        email:p_email.value,telefone:p_tel.value}));
+      toast('Chave Pix salva.','ok');
+      if(wiz.modo!=='onboard'){ dlgWiz.close(); return viewAluno(); }
+      wiz.passo = wiz.aluno.contrato_arquivo ? 3 : 2; return wizMostra();
+    }
+    if(wiz.passo===2){
+      const f=p_contrato.files[0];
+      if(!f) return toast('Selecione o arquivo do contrato.','warn');
+      await api('meu_contrato',fd({arquivo:f,aluno_id:(window._aluno||{}).id}));
+      toast('Contrato enviado.','ok');
+      if(wiz.modo!=='onboard'){ dlgWiz.close(); return viewAluno(); }
+      wiz.passo=3; return wizMostra();
+    }
+    dlgWiz.close(); viewAluno();
+  }catch(e){falha(e);}
+}
+
+async function enviaBoleto(id){
+  const f=upBoleto.files[0]; if(!f) return toast('Selecione o arquivo do boleto.','warn');
+  try{const r=await api('enviar_boleto',fd({mensalidade_id:id,valor:upValor.value,arquivo:f,aluno_id:(window._aluno||{}).id}));
+    toast((r.atrasado?'Boleto enviado (marcado como ATRASADO). ':'Boleto enviado dentro do prazo. ')
+      +'A empresa vai depositar '+RS(r.valor_empresa)+' na sua chave Pix.', r.atrasado?'warn':'ok');
+    window._parcelaSel=null; viewAluno();}catch(e){falha(e);}
+}
+
+/* ---------- painel da contabilidade ---------- */
+let abaAtual='resumo';
+function viewContab(){
+  app.innerHTML=`<div class="tabs">
+    ${[['resumo','Resumo'],['mens','Mensalidades'],['alunos','Alunos']]
+      .map(([k,r])=>`<div class="tab ${abaAtual===k?'on':''}" onclick="abre('${k}')">${r}</div>`).join('')}
+    </div><div id="conteudo"><div class="vazio">Carregando…</div></div>`;
+  ({resumo:abaResumo,mens:abaMens,alunos:abaAlunos})[abaAtual]()
+    .catch(e=>{ conteudo.innerHTML=`<div class="card"><h2>Não foi possível carregar</h2>
+      <p class="sub">${esc(e.message)}</p></div>`; });
+}
+function abre(k){abaAtual=k;viewContab();}
+
+async function abaResumo(){
+  const d=await api(`resumo&competencia=${S.competencia}`);
+  const m=Object.fromEntries(d.por_status.map(r=>[r.status,r]));
+  const q=s=>+(m[s]?.q||0), atrasados=d.por_status.reduce((a,r)=>a+ +r.atr,0);
+  const emp=d.por_status.reduce((a,r)=>a+ +r.emp,0);
+  const max=Math.max(1,...d.serie.map(s=>+s.total));
+  const pendentes=q('em_analise'), semBoleto=q('aguardando_boleto'), aguardaComp=q('pago');
+  conteudo.innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="l">Alunos ativos</div><div class="v">${d.alunos_ativos}</div></div>
+    <div class="kpi"><div class="l">Repasses a fazer</div><div class="v">${pendentes+(+((m['aprovado']||{}).q||0))}</div></div>
+    <div class="kpi"><div class="l">Sem boleto em ${compBR(S.competencia)}</div><div class="v">${semBoleto}</div></div>
+    <div class="kpi"><div class="l">Repasses feitos</div><div class="v">${aguardaComp}</div></div>
+    <div class="kpi"><div class="l">Custo da empresa no mês</div><div class="v">${RS(emp)}</div></div>
+    <div class="kpi"><div class="l">Envios em atraso</div><div class="v">${atrasados}</div></div>
+    <div class="kpi"><div class="l">Sem chave Pix</div><div class="v">${d.sem_pix||0}</div></div>
+  </div>
+  <div class="card"><h2>Custo mensal da empresa</h2>
+    <p class="sub">Soma dos 70% aprovados por competência, últimos 12 meses.</p>
+    <div class="bars">${d.serie.map(s=>`<div style="height:${Math.round(+s.total/max*100)}%"
+      title="${compBR(s.competencia)}: ${RS(s.total)}"><span>${compBR(s.competencia).slice(0,3)}</span></div>`).join('')
+      ||'<div class="vazio">Sem valores aprovados ainda.</div>'}</div></div>
+  <div class="card"><h2>O que precisa de ação hoje</h2>
+    <p class="sub">Leitura direta da competência ${compBR(S.competencia)}.</p>
+    <ul style="margin:0;padding-left:18px;color:var(--txt2)">
+      <li>${pendentes+(+((m['aprovado']||{}).q||0))} boleto(s) recebido(s) aguardando o repasse — registre na aba Mensalidades.</li>
+      <li>${semBoleto} aluno(s) ainda não enviaram o boleto do mês${atrasados?`; ${atrasados} envio(s) já entraram atrasados`:''}.</li>
+      <li>${aguardaComp} repasse(s) registrado(s) neste mês.</li>
+      ${d.sem_pix?`<li>${d.sem_pix} aluno(s) ainda não cadastraram a chave Pix — sem ela o envio do boleto fica travado.</li>`:''}
+    </ul></div>`;
+}
+
+let mensOffset=0;
+async function abaMens(){
+  const st=window._fStatus||'', cp=window._fComp||S.competencia;
+  const d=await api(`mensalidades&competencia=${cp}&status=${st}&limite=50&offset=${mensOffset}`);
+  conteudo.innerHTML=`<div class="card">
+    <div class="row" style="margin-bottom:14px">
+      <div style="width:150px"><label>Competência</label><input id="fComp" value="${cp}" placeholder="AAAA-MM"></div>
+      <div style="width:190px"><label>Situação</label><select id="fStatus">
+        <option value="">Todas</option>${Object.entries(ROT).map(([k,v])=>
+          `<option value="${k}" ${st===k?'selected':''}>${v}</option>`).join('')}</select></div>
+      <button class="gh" style="margin-top:18px" onclick="mensOffset=0;window._fComp=fComp.value;window._fStatus=fStatus.value;abaMens()">Filtrar</button>
+      <a class="btn" style="margin-top:18px;margin-left:auto;text-decoration:none"
+         href="${API}?a=exportar&competencia=${cp}">Exportar CSV</a>
+    </div>
+    <table><thead><tr><th>Aluno</th><th>Competência</th><th>Situação</th><th>Boleto</th>
+      <th>Valor</th><th>Empresa</th><th></th></tr></thead><tbody>${
+    d.mensalidades.map(p=>`<tr>
+      <td>${esc(p.nome)}<div class="l" style="font-size:12px">${esc(p.curso)}</div></td>
+      <td>${compBR(p.competencia)}<div class="l" style="font-size:12px">vence ${DT(p.vencimento)}</div></td>
+      <td>${tag(p.status)}${+p.boleto_atrasado?'<span class="atraso">atrasado</span>':''}</td>
+      <td>${p.boleto_arquivo?`<a href="${API}?a=arquivo&tipo=boleto&id=${p.id}" target="_blank">abrir</a>`:'—'}</td>
+      <td>${RS(p.valor_boleto)}${acimaDaBase(p)}</td><td>${RS(p.valor_empresa)}${pixNovo(p)}</td>
+      <td class="row">${acoes(p)}</td></tr>`).join('')
+      ||'<tr><td colspan="7" class="vazio">Nenhuma mensalidade neste filtro.</td></tr>'}</tbody></table>
+    <div class="row" style="margin-top:14px">
+      ${mensOffset?`<button class="gh sm" onclick="mensOffset=Math.max(0,mensOffset-50);abaMens()">← Anteriores</button>`:''}
+      ${d.tem_mais?`<button class="gh sm" onclick="mensOffset+=50;abaMens()">Ver mais →</button>`:''}
+      ${mensOffset||d.tem_mais?`<span class="l" style="font-size:12px">mostrando ${mensOffset+1}–${mensOffset+d.mensalidades.length}</span>`:''}
+    </div></div>`;
+}
+function acimaDaBase(p){
+  const v=+p.valor_boleto, ref=+p.valor_mensalidade;
+  if(!v||!ref||v<=ref+0.009) return '';
+  return `<div class="l" style="color:var(--warn);font-size:12px">acima da mensalidade (${RS(ref)})</div>`;
+}
+function pixNovo(p){
+  if(!p.pix_atualizado_em) return '';
+  const dias=Math.max(0,Math.floor((Date.now()-new Date(p.pix_atualizado_em.replace(' ','T')))/86400000));
+  if(dias>15||!['aprovado','em_analise'].includes(p.status)) return '';
+  const q=dias===0?'hoje':(dias===1?'ontem':`há ${dias} dias`);
+  return `<div class="l" style="color:var(--bad);font-size:12px">chave Pix alterada ${q}</div>`;
+}
+function acoes(p){
+  // O boleto já chega com o valor calculado: a contabilidade só registra o repasse.
+  if(p.status==='aprovado'||p.status==='em_analise') return `
+    <button class="sm" onclick="pagar(${p.id})">Registrar repasse</button>
+    <button class="sm gh" onclick="recusar(${p.id})" title="Boleto errado: devolve para o aluno reenviar">Recusar</button>`;
+  return '';
+}
+async function recusar(id){
+  const o=await pergunta({titulo:'Recusar boleto',
+    texto:'O aluno lê este texto no painel dele e reenvia o arquivo.',
+    label:'Motivo da recusa',tipo:'texto_longo',obrig:1,botao:'Recusar'});
+  if(o===null) return;
+  try{await api('avaliar',fd({mensalidade_id:id,decisao:'rejeitar',observacao:o}));
+    toast('Boleto recusado. O aluno foi informado do motivo.','ok'); abaMens();}catch(e){falha(e);}
+}
+async function pagar(id){
+  const d=await pergunta({titulo:'Registrar repasse',
+    texto:'Confirma o depósito na chave Pix do aluno e encerra a parcela do mês.',
+    label:'Data do repasse',tipo:'date',valor:S.hoje,obrig:1,botao:'Registrar'});
+  if(d===null) return;
+  try{await api('avaliar',fd({mensalidade_id:id,decisao:'pagar',pago_em:d}));
+    toast('Repasse registrado.','ok'); abaMens();}catch(e){falha(e);}
+}
+
+async function abaAlunos(){
+  const d=await api('alunos');
+  window._alunos=d.alunos||[];
+  conteudo.innerHTML=`<div class="card">
+    <div class="row" style="margin-bottom:16px">
+      <h2 style="margin:0">Alunos cadastrados</h2>
+      <input class="al-busca" id="alBusca" placeholder="Buscar por nome, login ou curso"
+        oninput="pintaAlunos()">
+      <button onclick="novoAluno()">Cadastrar aluno</button>
+    </div>
+    <div id="alLista"></div></div>
+    <input type="file" id="upContrato" accept=".pdf,.jpg,.jpeg,.png" style="display:none">`;
+  pintaAlunos();
+}
+function pintaAlunos(){
+  const q=((document.getElementById('alBusca')||{}).value||'').trim().toLowerCase();
+  const lista=(window._alunos||[]).filter(a=>!q ||
+    (a.nome+' '+a.usuario+' '+a.curso+' '+a.instituicao).toLowerCase().includes(q));
+  if(!lista.length){
+    alLista.innerHTML='<div class="vazio">'+(q?'Nenhum aluno com esse filtro.':'Nenhum aluno cadastrado ainda.')+'</div>';
+    return;
+  }
+  // Uma pessoa pode ter mais de um curso: agrupa por login e mostra os cursos
+  // dentro do cartão dela, em vez de repetir a pessoa em várias linhas.
+  const grupos=new Map();
+  lista.forEach(a=>{
+    const k=String(a.usuario||'').toLowerCase();
+    if(!grupos.has(k)) grupos.set(k,[]);
+    grupos.get(k).push(a);
+  });
+
+  alLista.innerHTML=[...grupos.values()].map(cursos=>{
+    const p=cursos[0];                       // dados da pessoa
+    const chipsPessoa=[];
+    if(!p.pix_chave) chipsPessoa.push('<span class="ch bad">Sem chave Pix</span>');
+    else chipsPessoa.push(`<span class="ch ok">Pix ${esc(p.pix_chave)}</span>`);
+    if(!p.email) chipsPessoa.push('<span class="ch bad">Sem e-mail</span>');
+    else if(!p.acesso_enviado_em) chipsPessoa.push('<span class="ch warn">Convite não enviado</span>');
+    else chipsPessoa.push(`<span class="ch ${p.ultimo_acesso?'ok':'n'}">Convite ${DT(p.acesso_enviado_em.slice(0,10))} · ${p.ultimo_acesso?'já entrou':'nunca entrou'}</span>`);
+    if(cursos.length>1) chipsPessoa.push(`<span class="ch n">${cursos.length} cursos</span>`);
+
+    const blocos=cursos.map(a=>{
+      const qt=+a.qtd_mensalidades||1, ok=+a.quitadas||0;
+      const pct=Math.min(100,Math.round(ok/qt*100));
+      const ch=[];
+      if(!a.contrato_arquivo) ch.push('<span class="ch bad">Contrato pendente</span>');
+      else ch.push(`<a class="ch ok" style="text-decoration:none"
+          href="${API}?a=arquivo&tipo=contrato&id=${a.id}" target="_blank">Ver contrato</a>`);
+      if(+a.atrasos) ch.push(`<span class="ch bad">${a.atrasos} atraso(s)</span>`);
+      if(+a.vencidas) ch.push(`<span class="ch bad">${a.vencidas} prazo(s) vencido(s)</span>`);
+      if(+a.pendentes) ch.push(`<span class="ch warn">${a.pendentes} repasse(s) a fazer</span>`);
+      if(a.status!=='ativo') ch.push(`<span class="ch n">${esc(a.status)}</span>`);
+      if(ch.length===1 && !+a.atrasos) ch.push('<span class="ch ok">Em dia</span>');
+      return `<div class="al-curso-linha">
+        <div class="al-curso-nome"><b>${esc(a.curso)}</b>
+          <span>${esc(a.instituicao)} · ${RS(a.valor_mensalidade)} · empresa ${(+a.percentual).toFixed(0)}%</span></div>
+        <div class="al-prog"><span class="l" style="font-size:12px">${ok} de ${qt} parcelas</span>
+          <div class="barra"><i style="width:${pct}%"></i></div></div>
+        <div class="al-acoes">
+          <button class="sm gh" onclick='editarAluno(${JSON.stringify(a)})'>Editar</button>
+          <button class="sm gh" onclick="subirContrato(${a.id})">Contrato</button>
+          <button class="sm gh" style="border-color:var(--bad);color:var(--bad)"
+            onclick='excluirAluno(${JSON.stringify(a)})'>Excluir</button>
+        </div>
+        <div class="al-chips">${ch.join('')}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="al-card" style="flex-direction:column;align-items:stretch;gap:0">
+      <div class="row" style="gap:14px;align-items:center">
+        <div class="al-av">${esc((p.nome||'?').trim().charAt(0).toUpperCase())}</div>
+        <div class="al-id"><b>${esc(p.nome)}</b>
+          <span>@${esc(p.usuario)}${p.email?' · '+esc(p.email):''}${p.telefone?' · '+esc(p.telefone):''}</span></div>
+        <button class="sm gh" style="margin-left:auto" onclick="reenviarAcesso(${p.id})">Reenviar acesso</button>
+      </div>
+      <div class="al-chips" style="margin-top:10px">${chipsPessoa.join('')}</div>
+      ${blocos}
+    </div>`;
+  }).join('');
+}
+function conformidade(a){
+  const atr=+a.atrasos||0, env=+a.enviados||0, venc=+a.vencidas||0;
+  const partes=[];
+  if(atr) partes.push(`<span class="atraso">${atr} ATRASO${atr>1?'S':''}</span>`);
+  if(venc) partes.push(`<div class="l" style="color:var(--bad);font-size:12px">${venc} parcela(s) com prazo vencido sem boleto</div>`);
+  if(!partes.length) partes.push(`<span style="color:var(--ok)">em dia</span>`);
+  return partes.join('')+`<div class="l" style="font-size:12px">${env} envio(s)</div>`;
+}
+async function carregaUsuariosHub(){
+  const sel=document.getElementById('f_hub'); if(!sel) return;
+  try{
+    const d=await api('usuarios_hub');
+    window._hubUsers=d.usuarios||[];
+    sel.innerHTML='<option value="">Escolher da lista do portal</option>'+
+      window._hubUsers.map((u,i)=>{
+        const marca=+u.cursos ? ` · já tem ${u.cursos} curso(s)` : '';
+        return `<option value="${i}">${esc(u.name||u.username)} (@${esc(u.username)})${marca}</option>`;
+      }).join('');
+    if(!window._hubUsers.length){
+      document.getElementById('f_hub_dica').textContent=
+        'Não consegui ler a lista do portal — digite o login manualmente.';
+    }
+  }catch(e){
+    document.getElementById('f_hub_dica').textContent=
+      'Lista do portal indisponível — digite o login manualmente.';
+  }
+}
+function puxaDoHub(){
+  const i=document.getElementById('f_hub').value;
+  if(i==='') return;
+  const u=(window._hubUsers||[])[+i]; if(!u) return;
+  f_usuario.value=u.username||'';
+  if(!f_nome.value) f_nome.value=u.name||'';
+  if(!f_telefone.value) f_telefone.value=u.telefone||'';
+  if(!f_email.value && u.email) f_email.value=u.email;
+  const d=document.getElementById('f_hub_dica');
+  d.innerHTML = +u.cursos
+    ? `<b style="color:var(--warn)">${esc(u.name)} já tem ${u.cursos} curso(s) cadastrado(s).</b> `
+      +'Salvar aqui acrescenta mais um curso para a mesma pessoa — a chave Pix e o acesso continuam os mesmos.'
+    : 'Conta do portal encontrada. O convite vai para o e-mail que você preencher abaixo.';
+}
+function preenche(a){
+  f_usuario.value=a.usuario||''; f_nome.value=a.nome||''; f_matricula.value=a.matricula||'';
+  f_setor.value=a.setor||''; f_email.value=a.email||''; f_telefone.value=a.telefone||'';
+  f_instituicao.value=a.instituicao||''; f_curso.value=a.curso||'';
+  f_valor.value=a.valor_mensalidade||''; f_perc.value=a.percentual||70; f_qtd.value=a.qtd_mensalidades||'';
+  f_dia.value=a.dia_vencimento||10; f_inicio.value=a.inicio_competencia||S.competencia;
+  f_status.value=a.status||'ativo'; f_obs.value=a.observacao||'';
+}
+function novoAluno(){
+  editandoId=0; preenche({});
+  const s=document.getElementById('f_hub'); if(s) s.value='';
+  document.getElementById('f_hub_dica').textContent=
+    'Escolhendo aqui, login, nome e telefone vêm preenchidos. Quem ainda não tem conta, '
+    +'digite o login abaixo: a conta é criada no salvamento.';
+  carregaUsuariosHub();
+  dlgAluno.showModal();
+}
+function editarAluno(a){
+  editandoId=a.id; preenche(a);
+  const s=document.getElementById('f_hub'); if(s) s.value='';
+  carregaUsuariosHub();
+  dlgAluno.showModal();
+}
+async function salvarAluno(){
+  try{
+    const r=await api('salvar_aluno',fd({id:editandoId,usuario:f_usuario.value,nome:f_nome.value,
+      matricula:f_matricula.value,setor:f_setor.value,email:f_email.value,telefone:f_telefone.value,
+      instituicao:f_instituicao.value,curso:f_curso.value,
+      valor_mensalidade:f_valor.value,percentual:f_perc.value,qtd_mensalidades:f_qtd.value,
+      dia_vencimento:f_dia.value,inicio_competencia:f_inicio.value,status:f_status.value,observacao:f_obs.value}));
+    dlgAluno.close();
+    toast(r.parcelas_geradas?`Cadastro salvo. ${r.parcelas_geradas} parcela(s) geradas.`
+                            :'Cadastro salvo.','ok');
+    if(r.aviso) toast(r.aviso, r.aviso.includes('falhou')||r.aviso.includes('sem e-mail')?'warn':'ok');
+    abaAlunos();
+  }catch(e){falha(e);}
+}
+async function excluirAluno(a){
+  const um=await pergunta({titulo:'Excluir do Auxílio Graduação',
+    texto:`${a.nome} (${a.curso}) sairá desta lista junto com todas as parcelas, valores e `
+      +'histórico do curso. A conta dele no Redentor Hub continua existindo — só o acesso ao '
+      +'painel do aluno é retirado, se este for o último curso dele.',
+    label:'Digite EXCLUIR para continuar',obrig:1,botao:'Continuar'});
+  if(um===null) return;
+  if(um.trim().toUpperCase()!=='EXCLUIR') return toast('Ação cancelada.','warn');
+
+  const dois=await pergunta({titulo:'Tem certeza mesmo?',
+    texto:'Esta é a última confirmação. Depois disso não dá para desfazer: os boletos e '
+      +'comprovantes enviados por esta pessoa neste curso serão apagados junto.',
+    label:`Digite o login do aluno (${a.usuario}) para confirmar`,obrig:1,botao:'Excluir definitivamente'});
+  if(dois===null) return;
+  if(dois.trim().toLowerCase()!==String(a.usuario).toLowerCase())
+    return toast('O login não confere. Nada foi excluído.','warn');
+
+  try{
+    const r=await api('excluir_aluno',fd({aluno_id:a.id,confirmacao:'EXCLUIR'}));
+    toast(r.restantes ? `Curso excluído. ${a.nome} ainda tem ${r.restantes} curso(s) ativo(s).`
+                      : `${a.nome} foi removido do auxílio. ${r.aviso||''}`,'ok');
+    abaAlunos();
+  }catch(e){falha(e);}
+}
+async function reenviarAcesso(id){
+  const r=await pergunta({titulo:'Reenviar acesso',
+    texto:'O aluno recebe uma senha nova por e-mail e a antiga deixa de valer.',
+    label:'Digite CONFIRMA para prosseguir',obrig:1,botao:'Reenviar'});
+  if(r===null) return;
+  if(r.trim().toUpperCase()!=='CONFIRMA') return toast('Ação cancelada.','warn');
+  try{const d=await api('reenviar_acesso',fd({aluno_id:id}));
+    toast('Acesso enviado para '+d.email,'ok');}catch(e){falha(e);}
+}
+function subirContrato(id){
+  upContrato.onchange=async()=>{
+    if(!upContrato.files[0])return;
+    try{await api('enviar_contrato',fd({aluno_id:id,arquivo:upContrato.files[0]}));
+      toast('Contrato anexado.','ok'); abaAlunos();}catch(e){falha(e);}
+  };
+  upContrato.click();
+}
+
+/* ---------- início ---------- */
+const MODO=new URLSearchParams(location.search).get('modo')||'';
+(async()=>{
+  montaTema();
+  try{
+    S=await api('sessao');
+    const contab = S.contabilidade && MODO!=='aluno';
+    quem.innerHTML=`${esc(S.usuario)} · <b>${contab?'Contabilidade':'Aluno'}</b>`;
+    if(S.teste) sair.style.display='';
+    if(MODO==='contabilidade' && !S.contabilidade){
+      app.innerHTML=`<div class="card"><h2>Área da contabilidade</h2>
+        <p class="sub">Seu login não tem acesso a esta área. Use o ícone <b>Auxílio Graduação</b>
+        para ver o seu curso, ou fale com a contabilidade se precisar de acesso.</p></div>`;
+      return;
+    }
+    await (contab?viewContab():viewAluno());
+  }catch(e){ telaErro(e); quem.textContent='—'; }
+})();
+</script>
+</body>
+</html>

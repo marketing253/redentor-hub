@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de LNT — Gestão de Eficácia</title>
+<style>
+/* ===== TEMAS ===== */
+:root {
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#222538;--border:#2e3150;
+  --accent:#6c63ff;--accent2:#a78bfa;--accent3:#38bdf8;
+  --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4);
+}
+[data-theme="ocean"] { --bg:#030d1a;--surface:#071526;--surface2:#0d2040;--border:#1a3a5c;--accent:#0ea5e9;--accent2:#38bdf8;--accent3:#06b6d4; }
+[data-theme="forest"] { --bg:#071210;--surface:#0d1f1a;--surface2:#152b24;--border:#1e4035;--accent:#22c55e;--accent2:#4ade80;--accent3:#86efac; }
+[data-theme="sunset"] { --bg:#170a00;--surface:#241200;--surface2:#341a00;--border:#4a2500;--accent:#f97316;--accent2:#fb923c;--accent3:#fbbf24; }
+[data-theme="rose"] { --bg:#170010;--surface:#240018;--surface2:#340022;--border:#4a0030;--accent:#ec4899;--accent2:#f472b6;--accent3:#fb7185; }
+[data-theme="slate"] { --bg:#0a0c10;--surface:#131620;--surface2:#1c2030;--border:#282d40;--accent:#8b92a5;--accent2:#a8afc0;--accent3:#c5cad8;--text:#e8eaf0;--text2:#a0a8b8;--text3:#6a7285; }
+[data-theme="light"] { --bg:#f1f5f9;--surface:#ffffff;--surface2:#f8fafc;--border:#e2e8f0;--accent:#6c63ff;--accent2:#a78bfa;--accent3:#38bdf8;--text:#1e293b;--text2:#475569;--text3:#94a3b8;--shadow:0 2px 12px rgba(0,0,0,.1); }
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;transition:background .3s,color .3s}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:380px;box-shadow:var(--shadow);text-align:center}
+.login-logo{font-size:48px;margin-bottom:16px}
+.login-title{font-size:22px;font-weight:800;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:32px}
+.login-field{background:var(--bg);border:1px solid var(--border);color:var(--text);width:100%;padding:12px 16px;border-radius:10px;font-size:14px;outline:none;margin-bottom:14px;transition:border .2s}
+.login-field:focus{border-color:var(--accent)}
+.login-btn{background:var(--accent);color:#fff;border:none;width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:4px}
+.login-btn:hover{opacity:.85}
+.login-err{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+.login-user{font-size:12px;color:var(--text3);margin-top:20px}
+
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-text{font-size:14px;font-weight:700}
+.logo-sub{font-size:10px;color:var(--text3)}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hdr-user{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text2)}
+.hdr-date-wrap{display:flex;flex-direction:column;gap:2px}
+.hdr-date-label{font-size:10px;color:var(--text3)}
+#dataReferencia{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;outline:none}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--text3);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:11px}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* TEMAS BTNs */
+.theme-strip{display:flex;gap:5px;align-items:center}
+.tc{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .2s,border-color .2s}
+.tc:hover,.tc.active{transform:scale(1.2);border-color:var(--text)}
+.tc-violet{background:linear-gradient(135deg,#6c63ff,#a78bfa)}
+.tc-ocean{background:linear-gradient(135deg,#0ea5e9,#38bdf8)}
+.tc-forest{background:linear-gradient(135deg,#22c55e,#4ade80)}
+.tc-sunset{background:linear-gradient(135deg,#f97316,#fbbf24)}
+.tc-rose{background:linear-gradient(135deg,#ec4899,#fb7185)}
+.tc-slate{background:linear-gradient(135deg,#64748b,#94a3b8)}
+.tc-light{background:linear-gradient(135deg,#e2e8f0,#f8fafc);border-color:#94a3b8}
+
+/* MAIN */
+main{padding:20px;max-width:1440px;margin:0 auto}
+.tabs{display:flex;gap:3px;margin-bottom:20px;background:var(--surface);padding:4px;border-radius:12px;width:fit-content;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);border:none;background:transparent;transition:all .2s}
+.tab:hover{color:var(--text);background:var(--surface2)}
+.tab.active{background:var(--accent);color:#fff}
+.section{display:none}.section.active{display:block}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.c-accent::before{background:var(--accent)}
+.kpi-card.c-green::before{background:var(--green)}
+.kpi-card.c-yellow::before{background:var(--yellow)}
+.kpi-card.c-red::before{background:var(--red)}
+.kpi-card.c-blue::before{background:var(--accent3)}
+.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:800;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text2);margin-top:5px}
+.kpi-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:28px;opacity:.1}
+
+/* CHARTS */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
+canvas{max-height:240px;width:100%!important}
+
+/* FILTERS */
+.filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
+.fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
+.fg label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:8px;font-size:12px;outline:none;transition:border .2s}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:opacity .2s;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);opacity:1}
+.btn-green{background:var(--green)}
+.btn-yellow{background:var(--yellow)}
+.btn-red{background:var(--red)}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{padding:9px 14px}
+
+/* STATUS BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.b-realizado{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.b-prazo{background:rgba(56,189,248,.15);color:var(--accent3);border:1px solid rgba(56,189,248,.3)}
+.b-verificar{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3)}
+.b-vencido{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.b-pendente{background:rgba(100,116,139,.15);color:var(--text3);border:1px solid var(--border)}
+
+/* PAGINATOR */
+.paginator{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.page-btns{display:flex;gap:4px}
+.page-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11px}
+.page-btn:hover,.page-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* YEAR CHART */
+.year-chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+
+/* INSIGHTS */
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.insight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;gap:12px;align-items:flex-start}
+.insight-icon{font-size:22px;flex-shrink:0}
+.insight-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.insight-text{font-size:12px;color:var(--text);line-height:1.5}
+
+/* BAR */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bar-label{font-size:11px;color:var(--text2);width:180px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;background:var(--surface2);border-radius:4px;height:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .6s}
+.bar-val{font-size:10px;color:var(--text3);width:28px;text-align:right}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:14px}
+.tl-dot{position:absolute;left:-18px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.tl-dot.green{background:var(--green)}.tl-dot.yellow{background:var(--yellow)}.tl-dot.red{background:var(--red)}
+.tl-content{font-size:12px;color:var(--text)}
+.tl-date{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* RINGS */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+svg.ring{transform:rotate(-90deg)}
+.ring-label{font-size:11px;color:var(--text2);text-align:center;max-width:100px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:center;justify-content:center}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:420px;max-width:95vw;box-shadow:var(--shadow)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:20px}
+.modal-field{margin-bottom:14px}
+.modal-field label{display:block;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.modal-field input,.modal-field select{background:var(--bg);border:1px solid var(--border);color:var(--text);width:100%;padding:9px 13px;border-radius:8px;font-size:13px;outline:none}
+.modal-field input:focus{border-color:var(--accent)}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.modal-err{color:var(--red);font-size:12px;margin-top:8px}
+.modal-ok{color:var(--green);font-size:12px;margin-top:8px;font-weight:600}
+
+/* ACTION BTNS */
+.action-btn{background:transparent;border:1px solid var(--border);color:var(--text2);padding:3px 9px;border-radius:6px;cursor:pointer;font-size:10px;transition:all .2s}
+.action-btn:hover{border-color:var(--green);color:var(--green)}
+.action-btn.warn:hover{border-color:var(--yellow);color:var(--yellow)}
+
+/* CADASTRO */
+.cadastro-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:580px;margin:0 auto}
+.cadastro-card h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.cadastro-card p{font-size:12px;color:var(--text3);margin-bottom:24px}
+.form-field{margin-bottom:16px}
+.form-field label{display:block;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.form-field input,.form-field select{background:var(--bg);border:1px solid var(--border);color:var(--text);width:100%;padding:10px 14px;border-radius:8px;font-size:13px;outline:none;transition:border .2s}
+.form-field input:focus{border-color:var(--accent)}
+.recentes-list{margin-top:24px}
+.recentes-list h4{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.rec-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.rec-curso{font-size:12px;font-weight:600}
+.rec-meta{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{background:var(--red)}
+.toast.warn{background:var(--yellow)}
+
+/* SCROLL */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+@media(max-width:768px){
+  main{padding:10px}
+  .chart-row{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .bar-label{width:100px}
+  .hdr-right{gap:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">📋</div>
+    <div class="login-title">Cadastro de LNT</div>
+    <div class="login-sub">Gestão de Eficácia de Treinamentos<br>Acesso restrito — identifique-se</div>
+    <input class="login-field" type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input class="login-field" type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-user">Sistema interno — uso exclusivo</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL ANÁLISE -->
+<div class="modal-bg" id="modalAnalise" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">✅ Registrar Análise de Eficácia</div>
+    <div class="modal-field"><label>Curso</label><input id="maCurso" readonly style="opacity:.7"></div>
+    <div class="modal-field"><label>Data da Verificação da Eficácia</label><input type="date" id="maData"></div>
+    <div class="modal-field"><label>Nome de quem está verificando *</label><input id="maResponsavel" placeholder="Digite seu nome completo"></div>
+    <div class="modal-field"><label>Resultado da Análise</label>
+      <select id="maResultado">
+        <option value="OK">✅ Concluído</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Observação (opcional)</label><input id="maObs" placeholder="Descreva o resultado..."></div>
+    <div class="modal-err" id="maErr"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="fecharModal('modalAnalise')">Cancelar</button>
+      <button class="btn btn-green" onclick="confirmarAnalise()">Salvar Análise</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalAnexo" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">📎 Documento da LNT</div>
+    <div class="modal-field"><label>Registro de origem</label><input id="anexoCtx" readonly style="opacity:.7"></div>
+    <div id="anexoAtual" style="margin:6px 0 14px"></div>
+    <div class="modal-field">
+      <label>Anexar / substituir documento (PDF)</label>
+      <input type="file" id="anexoInput" accept="application/pdf,.pdf" onchange="selecionarAnexo(this)">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="fecharModal('modalAnexo')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">📋</div>
+    <div>
+      <div class="logo-text">Cadastro de LNT</div>
+      <div class="logo-sub">Gestão de Eficácia de Treinamentos</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="theme-strip" title="Alterar tema">
+      <div class="tc tc-violet active" data-theme="default" onclick="setTheme('default',this)" title="Violeta"></div>
+      <div class="tc tc-ocean" data-theme="ocean" onclick="setTheme('ocean',this)" title="Oceano"></div>
+      <div class="tc tc-forest" data-theme="forest" onclick="setTheme('forest',this)" title="Floresta"></div>
+      <div class="tc tc-sunset" data-theme="sunset" onclick="setTheme('sunset',this)" title="Pôr do Sol"></div>
+      <div class="tc tc-rose" data-theme="rose" onclick="setTheme('rose',this)" title="Rosa"></div>
+      <div class="tc tc-slate" data-theme="slate" onclick="setTheme('slate',this)" title="Cinza"></div>
+      <div class="tc tc-light" data-theme="light" onclick="setTheme('light',this)" title="Claro"></div>
+    </div>
+    <div class="hdr-date-wrap">
+      <div class="hdr-date-label">Data de Referência</div>
+      <input type="date" id="dataReferencia" onchange="onRefDateChange()">
+    </div>
+    <div class="hdr-user" id="hdrUser">—</div>
+    <button class="btn-logout" onclick="doLogout()">Sair</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard',this)">📊 Dashboard</button>
+    <button class="tab" onclick="showTab('registros',this)">📋 Registros</button>
+    <button class="tab" onclick="showTab('historico',this)">📈 Histórico</button>
+    <button class="tab" onclick="showTab('cursos',this)">🎓 Cursos</button>
+    <button class="tab" onclick="showTab('cadastro',this)">➕ Novo Evento</button>
+    <button class="tab" onclick="showTab('insights',this)">💡 Insights</button>
+    <button class="tab" onclick="showTab('anexos',this)">📎 Anexos</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="section active">
+    <div class="filter-bar" style="margin-bottom:16px">
+      <div class="fg"><label>Data Início</label><input type="date" id="dashDataInicio" onchange="renderDashboard()"></div>
+      <div class="fg"><label>Data Fim</label><input type="date" id="dashDataFim" onchange="renderDashboard()"></div>
+      <div class="fg"><label>Ano de Referência</label>
+        <select id="dashAno" onchange="renderDashboard()">
+          <option value="">Todos os Anos</option>
+          <option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option>
+          <option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option>
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+        </select>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="limparFiltrosDash()">Limpar</button>
+    </div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="chart-row">
+      <div class="chart-card"><div class="chart-title">Status dos LNTs — Período</div><canvas id="chartStatus"></canvas></div>
+      <div class="chart-card"><div class="chart-title">LNTs por Mês — Período</div><canvas id="chartMensal"></canvas></div>
+      <div class="chart-card full"><div class="chart-title">Evolução Anual Histórica</div><canvas id="chartEvolucao"></canvas></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px">
+      <div class="chart-title">Indicadores de Cumprimento — Período Selecionado</div>
+      <div id="ringsArea" style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin-top:12px"></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+      <div class="chart-title">Vencimentos / Atenção — Próximas Datas</div>
+      <div id="proximosVencimentos"></div>
+    </div>
+  </div>
+
+  <!-- REGISTROS -->
+  <div id="tab-registros" class="section">
+    <div class="filter-bar">
+      <div class="fg"><label>Buscar Curso</label><input type="text" id="filtroCurso" placeholder="Digite..." oninput="aplicarFiltros()"></div>
+      <div class="fg"><label>Status</label>
+        <select id="filtroStatus" onchange="aplicarFiltros()">
+          <option value="">Todos os Status</option>
+          <option value="ANÁLISE REALIZADO">✅ Análise Realizado</option>
+          <option value="DENTRO DO PRAZO">◉ Dentro do Prazo</option>
+          <option value="VERIFICAR EFICÁCIA!">⚠ Verificar Eficácia</option>
+          <option value="VENCIDO">✗ Vencido</option>
+        </select>
+      </div>
+      <div class="fg"><label>Data Início</label><input type="date" id="filtroDataInicio" onchange="aplicarFiltrosPorData()"></div>
+      <div class="fg"><label>Data Fim</label><input type="date" id="filtroDataFim" onchange="aplicarFiltrosPorData()"></div>
+      <button class="btn btn-outline btn-sm" onclick="limparFiltros()">Limpar</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div id="filtroAnoLabel" style="font-size:12px;color:var(--text3)">Todos os anos</div>
+      <button class="btn btn-outline btn-sm" onclick="limparAnoFiltro()">🔄 Ver todos os anos</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#LNT</th><th>Ano</th><th>Curso / Treinamento</th>
+            <th>Data Eficácia</th><th>Dia</th><th>Análise</th><th>Status</th><th>Responsável</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaCorpo"></tbody>
+      </table>
+      <div class="paginator">
+        <span id="paginatorInfo">—</span>
+        <div class="page-btns" id="paginatorBtns"></div>
+      </div>
+    </div>
+    <div class="year-chart-wrap" style="margin-top:16px">
+      <div class="chart-title">Volume de LNTs por Ano — clique no gráfico para filtrar</div>
+      <canvas id="chartAnosel" style="max-height:140px"></canvas>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="tab-historico" class="section">
+    <div class="filter-bar">
+      <div class="fg"><label>Ano Início</label>
+        <select id="histAnoIni" onchange="renderHistorico()">
+          <option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option>
+          <option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option>
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+        </select>
+      </div>
+      <div class="fg"><label>Ano Fim</label>
+        <select id="histAnoFim" onchange="renderHistorico()">
+          <option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option>
+          <option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option>
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+        </select>
+      </div>
+    </div>
+    <div class="kpi-grid" id="historicoKpis"></div>
+    <div class="chart-row">
+      <div class="chart-card full"><div class="chart-title">Série Histórica de LNTs</div><canvas id="chartHistorico"></canvas></div>
+    </div>
+    <div id="historicoTimeline"></div>
+  </div>
+
+  <!-- CURSOS -->
+  <div id="tab-cursos" class="section">
+    <div class="filter-bar">
+      <div class="fg"><label>Ano Início</label>
+        <select id="cursosAnoIni" onchange="renderCursos()">
+          <option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option>
+          <option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option>
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+        </select>
+      </div>
+      <div class="fg"><label>Ano Fim</label>
+        <select id="cursosAnoFim" onchange="renderCursos()">
+          <option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option>
+          <option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option>
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+        </select>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-card"><div class="chart-title">Top 15 Cursos — Período</div><div id="barrasCursos"></div></div>
+      <div class="chart-card"><div class="chart-title">Catálogo Oficial (29 cursos)</div><div id="catalogoCursos" style="display:flex;flex-direction:column;gap:7px;max-height:380px;overflow-y:auto"></div></div>
+    </div>
+  </div>
+
+  <!-- CADASTRO -->
+  <div id="tab-cadastro" class="section">
+    <div class="cadastro-card">
+      <h3>➕ Registrar Novo Evento LNT</h3>
+      <p>Preencha os dados do treinamento. O registro será integrado ao histórico e à base comparativa.</p>
+      <div class="form-field"><label>Curso / Treinamento *</label>
+        <input type="text" id="cadCurso" list="cadCursoList" placeholder="Nome do treinamento...">
+        <datalist id="cadCursoList"></datalist>
+      </div>
+      <div class="form-field"><label>Data para Verificar Eficácia *</label>
+        <input type="date" id="cadData">
+      </div>
+      <div class="form-field"><label>Responsável pelo Cadastro *</label>
+        <input type="text" id="cadResponsavel" placeholder="Nome completo de quem está cadastrando...">
+      </div>
+      <div class="form-field"><label>Observação (opcional)</label>
+        <input type="text" id="cadObs" placeholder="Contexto ou detalhes adicionais...">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn" onclick="salvarCadastro()">✅ Salvar Registro</button>
+        <button class="btn btn-outline" onclick="limparCadastro()">Limpar</button>
+      </div>
+      <div id="cadMsg" style="margin-top:12px;font-size:13px"></div>
+      <div class="recentes-list">
+        <h4>Registros Recentes (sessão atual)</h4>
+        <div id="recentesList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div id="tab-insights" class="section">
+    <div class="insights-grid" id="insightsGrid"></div>
+  </div>
+  <!-- ANEXOS -->
+  <div id="tab-anexos" class="section">
+    <div class="cadastro-card">
+      <h3>📎 Anexar Documento (PDF)</h3>
+      <p>Selecione o registro de origem, escolha o arquivo PDF e clique em anexar. O documento fica vinculado àquele registro.</p>
+      <div class="form-field"><label>Buscar registro</label>
+        <input type="text" id="anexoBusca" placeholder="Digite curso, ano ou nº da LNT..." oninput="renderAnexoSelect()">
+      </div>
+      <div class="form-field"><label>Registro de origem *</label>
+        <select id="anexoSelect"></select>
+      </div>
+      <div class="form-field"><label>Arquivo PDF * (máx. 25 MB)</label>
+        <input type="file" id="anexoFileTab" accept="application/pdf,.pdf">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn" onclick="anexarPeloTab()">📎 Anexar ao registro</button>
+      </div>
+      <div id="anexoTabMsg" style="margin-top:12px;font-size:13px"></div>
+    </div>
+
+    <div class="cadastro-card" style="margin-top:18px">
+      <h3>📄 Documentos anexados</h3>
+      <p>PDFs vinculados aos registros. Clique em <b>Visualizar</b> para abrir abaixo.</p>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Registro de origem</th><th>Arquivo</th><th>Tamanho</th><th>Anexado em</th><th>Ações</th></tr></thead>
+          <tbody id="anexosListaCorpo"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cadastro-card" id="anexoPreviewCard" style="margin-top:18px;display:none">
+      <h3>👁 Visualização — <span id="anexoPreviewNome" style="font-weight:600"></span></h3>
+      <div style="display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="abrirAnexoPreviewNovaAba()">↗ Abrir em nova aba</button>
+        <button class="btn btn-outline" onclick="fecharAnexoPreview()">✕ Fechar</button>
+      </div>
+      <iframe id="anexoPreviewFrame" title="Visualizacao do PDF" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px;background:#fff"></iframe>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ============================================================
+// DADOS BASE (imutável — fonte original Excel)
+// ============================================================
+const DB_BASE = {"records":[{"ano":2026,"curso":"Inspeção de Frota","dataEficacia":"2026-03-16","diaSemana":"Segunda-feira","numeroLNT":1,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"Direção Econômica","dataEficacia":"2026-04-22","diaSemana":"Quarta-feira","numeroLNT":2,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"Integração Manobrista","dataEficacia":"2026-04-27","diaSemana":"Segunda-feira","numeroLNT":3,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"MEDIDA SANEADORA","dataEficacia":"2026-04-30","diaSemana":"Quinta-feira","numeroLNT":4,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"Integração Manobrista","dataEficacia":"2026-05-06","diaSemana":"Quarta-feira","numeroLNT":5,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"Desvio de Itinerário Devido a Obras","dataEficacia":"2026-05-06","diaSemana":"Quarta-feira","numeroLNT":6,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"Básico de Transmissão Volvo","dataEficacia":"2026-05-19","diaSemana":"Terça-feira","numeroLNT":7,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"ORIENTAÇÃO DA LINHA TURISMO COM ÔNIBUS ELÉTRICOS","dataEficacia":"2026-05-25","diaSemana":"Segunda-feira","numeroLNT":8,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"TREINAMENTO DE ATENDIMENTO E VENDA DE PASSAGENS LINHA TURISMO","dataEficacia":"2026-05-25","diaSemana":"Segunda-feira","numeroLNT":9,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"Básico de Motor - Regulagem de Válvulas do Motor","dataEficacia":"2026-05-26","diaSemana":"Terça-feira","numeroLNT":10,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2026,"curso":"ERRO OPERACIONAL - HELP DESK","dataEficacia":"2026-07-01","diaSemana":"Quarta-feira","numeroLNT":11,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"CONSCIENTIZAÇÃO SOBRE PARADAS EM ESTAÇÕES TUBO","dataEficacia":"2026-06-30","diaSemana":"Terça-feira","numeroLNT":12,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"DIVULGAÇÃO DA NORMA 39001","dataEficacia":"2026-06-26","diaSemana":"Sexta-feira","numeroLNT":13,"analiseEficacia":null,"status":"VERIFICAR EFICÁCIA!"},{"ano":2026,"curso":"Treinamento Ônibus Elétrico","dataEficacia":"2026-07-09","diaSemana":"Quinta-feira","numeroLNT":14,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"Análise de Falhas Sistema Multiplex","dataEficacia":"2026-07-14","diaSemana":"Terça-feira","numeroLNT":15,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"MEDIDA SANEADORA","dataEficacia":"2026-07-22","diaSemana":"Quarta-feira","numeroLNT":16,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"CONDUÇÃO INTELIGENTE MERCEDES BENZ 1721 EURO V","dataEficacia":"2026-07-22","diaSemana":"Quarta-feira","numeroLNT":17,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"DIAGNÓSTICO TRATAMENTO DOS GASES DE ESCAPE EURO V / VI.","dataEficacia":"2026-07-27","diaSemana":"Segunda-feira","numeroLNT":18,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"Ferramenta Diagnóstico - Pós Tratameto Gases de Escape","dataEficacia":"2026-07-30","diaSemana":"Quinta-feira","numeroLNT":19,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"MAIO AMARELO: SEGURANÇA, CONSCIÊNCIA E VIDA NO TRANSPORTE","dataEficacia":"2026-09-01","diaSemana":"Terça-feira","numeroLNT":20,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"MEDIDA SANEADORA","dataEficacia":"2026-08-10","diaSemana":"Segunda-feira","numeroLNT":21,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"TREINAMENTO ABASTECEDORES","dataEficacia":"2026-08-17","diaSemana":"Segunda-feira","numeroLNT":22,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"Formação de NR-20","dataEficacia":"2026-08-31","diaSemana":"Segunda-feira","numeroLNT":23,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"Diagnóstico Caixa Automática ZF","dataEficacia":"2026-09-02","diaSemana":"Quarta-feira","numeroLNT":24,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"Treinamento Técnico de Lavação","dataEficacia":"2026-09-09","diaSemana":"Quarta-feira","numeroLNT":25,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2026,"curso":"Alinhamento Operacional ( Expresso )","dataEficacia":"2026-09-18","diaSemana":"Sexta-feira","numeroLNT":26,"analiseEficacia":null,"status":"DENTRO DO PRAZO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-04-09","diaSemana":"Quarta-feira","numeroLNT":1,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-04-17","diaSemana":"Quinta-feira","numeroLNT":2,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Conhecimento do produto EURO 6 MA / MDA","dataEficacia":"2025-04-23","diaSemana":"Quarta-feira","numeroLNT":3,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-05-06","diaSemana":"Terça-feira","numeroLNT":4,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Compliance e Entrega do Código de Conduta","dataEficacia":"2025-05-14","diaSemana":"Quarta-feira","numeroLNT":5,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Treinamento Help-Desk","dataEficacia":"2025-05-12","diaSemana":"Segunda-feira","numeroLNT":6,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-05-20","diaSemana":"Terça-feira","numeroLNT":7,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Compliance e Entrega do Código de Conduta","dataEficacia":"2025-05-26","diaSemana":"Segunda-feira","numeroLNT":8,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-06-06","diaSemana":"Sexta-feira","numeroLNT":9,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Treinamento Help-Desk","dataEficacia":"2025-06-09","diaSemana":"Segunda-feira","numeroLNT":10,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Conhecimento de Produto - Caixa de Transmissão ZF","dataEficacia":"2025-06-16","diaSemana":"Segunda-feira","numeroLNT":11,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Compliance e Entrega do Código de Conduta","dataEficacia":"2025-06-20","diaSemana":"Sexta-feira","numeroLNT":12,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Treinamento Ônibus Mercedes-Benz Euro VI MA/MDA - Entrega Técnica","dataEficacia":"2025-06-19","diaSemana":"Quinta-feira","numeroLNT":13,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-06-24","diaSemana":"Terça-feira","numeroLNT":14,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Conhecimento de Produto - VeÍculo Volvo / Mercedes EURO VI","dataEficacia":"2025-06-30","diaSemana":"Segunda-feira","numeroLNT":15,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-07-03","diaSemana":"Quinta-feira","numeroLNT":16,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2025-07-15","diaSemana":"Terça-feira","numeroLNT":17,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DIREÇÃO ECONÔMICA","dataEficacia":"2025-08-13","diaSemana":"Quarta-feira","numeroLNT":18,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"CONSCIENTIZAÇÃO SOBRE PARADAS EM ESTAÇÕES TUBO","dataEficacia":"2025-07-22","diaSemana":"Terça-feira","numeroLNT":19,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-07-24","diaSemana":"Quinta-feira","numeroLNT":20,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Treinamento ônibus Elétrico Volksvagen","dataEficacia":"2025-07-25","diaSemana":"Sexta-feira","numeroLNT":21,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DIREÇÃO DEFENSIVA-MAIO AMARELO","dataEficacia":"2025-08-04","diaSemana":"Segunda-feira","numeroLNT":22,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-08-08","diaSemana":"Sexta-feira","numeroLNT":23,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"TREINAMENTO DO BIARTICULADO","dataEficacia":"2025-06-30","diaSemana":"Segunda-feira","numeroLNT":24,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-08-29","diaSemana":"Sexta-feira","numeroLNT":25,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DPO","dataEficacia":"2025-06-05","diaSemana":"Quinta-feira","numeroLNT":26,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"RISCOS AMBIENTAIS NO AMBIENTE DE TRABALHO","dataEficacia":"2025-09-10","diaSemana":"Quarta-feira","numeroLNT":27,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-09-11","diaSemana":"Quinta-feira","numeroLNT":28,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-09-26","diaSemana":"Sexta-feira","numeroLNT":29,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2025-09-30","diaSemana":"Terça-feira","numeroLNT":30,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DIREÇÃO ECONÔMICA","dataEficacia":"2025-10-22","diaSemana":"Quarta-feira","numeroLNT":31,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Ferramenta de Diagnostico XENTRY - Mercedes Benz.","dataEficacia":"2025-10-23","diaSemana":"Quinta-feira","numeroLNT":32,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Ferramenta de Diagnostico Techtool - Volvo","dataEficacia":"2025-10-24","diaSemana":"Sexta-feira","numeroLNT":33,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Esquema Elétrico B7R","dataEficacia":"2025-10-27","diaSemana":"Segunda-feira","numeroLNT":34,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"FORMAÇÃO DA BRIGADA DE EMERGÊNCIA","dataEficacia":"2025-10-24","diaSemana":"Sexta-feira","numeroLNT":35,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2025-10-30","diaSemana":"Quinta-feira","numeroLNT":36,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Treinamento abasteciemento","dataEficacia":"2025-10-31","diaSemana":"Sexta-feira","numeroLNT":37,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-10-31","diaSemana":"Sexta-feira","numeroLNT":38,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"FORMAÇÃO DE NR-35 TRABALHO EM ALTURA","dataEficacia":"2025-11-07","diaSemana":"Sexta-feira","numeroLNT":39,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Recondicionamento CaixaI - Shift","dataEficacia":"2025-12-02","diaSemana":"Terça-feira","numeroLNT":40,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Palestra de Pneus","dataEficacia":"2025-11-17","diaSemana":"Segunda-feira","numeroLNT":41,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Higienização Sistema AR CONDICIONDO","dataEficacia":"2025-12-02","diaSemana":"Terça-feira","numeroLNT":42,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Direção Defensiva","dataEficacia":"2025-11-27","diaSemana":"Quinta-feira","numeroLNT":43,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Higienização Sistema AR CONDICIONDO","dataEficacia":"2025-12-02","diaSemana":"Terça-feira","numeroLNT":44,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-10-28","diaSemana":"Terça-feira","numeroLNT":44,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"ORIENTAÇÕES SOBRE EPILEPSIA","dataEficacia":"2025-12-11","diaSemana":"Quinta-feira","numeroLNT":45,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"TREINAMENTO DO BIARTICULADO","dataEficacia":"2025-12-17","diaSemana":"Quarta-feira","numeroLNT":46,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2026-01-29","diaSemana":"Quinta-feira","numeroLNT":47,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"NOVA NR1","dataEficacia":"2025-08-25","diaSemana":"Segunda-feira","numeroLNT":48,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2026-01-12","diaSemana":"Segunda-feira","numeroLNT":49,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Básico de Freios","dataEficacia":"2026-01-12","diaSemana":"Segunda-feira","numeroLNT":50,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2025-10-17","diaSemana":"Sexta-feira","numeroLNT":51,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2026-01-02","diaSemana":"Sexta-feira","numeroLNT":52,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Conhecimento de Produto - VeÍculo Volvo / Mercedes EURO VI","dataEficacia":"2026-01-12","diaSemana":"Segunda-feira","numeroLNT":53,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"DMU-276/2025 e para transmitir conhecimento aos colaboradores sobre LGPD","dataEficacia":"2026-02-26","diaSemana":"Quinta-feira","numeroLNT":54,"analiseEficacia":"ok","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2026-01-30","diaSemana":"Sexta-feira","numeroLNT":55,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2026-02-27","diaSemana":"Sexta-feira","numeroLNT":56,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Qualificação Técnica Lavação","dataEficacia":"2026-03-02","diaSemana":"Segunda-feira","numeroLNT":57,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"FORMAÇÃO DE CIPA","dataEficacia":"2026-03-17","diaSemana":"Terça-feira","numeroLNT":58,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"CONSCIENTIZAÇÃO DE SEGURANÇA DO TRABALHO","dataEficacia":"2026-03-30","diaSemana":"Segunda-feira","numeroLNT":59,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2025,"curso":"Medida Saneadora","dataEficacia":"2026-03-18","diaSemana":"Quarta-feira","numeroLNT":60,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"RECICLAGEM CHECK-LIST","dataEficacia":"2024-04-23","diaSemana":"Terça-feira","numeroLNT":1,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"DIREÇÃO ECONÔMICA INDIVIDUAL (Claúdio)","dataEficacia":"2024-05-22","diaSemana":"Quarta-feira","numeroLNT":2,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2024-05-16","diaSemana":"Quinta-feira","numeroLNT":3,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2024-06-07","diaSemana":"Sexta-feira","numeroLNT":4,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Máquina De Cartão Débito e Crédito","dataEficacia":"2024-06-08","diaSemana":"Sábado","numeroLNT":5,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Máquina De Cartão Débito e Crédito","dataEficacia":"2024-06-21","diaSemana":"Sexta-feira","numeroLNT":6,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Biarticulado","dataEficacia":"2024-06-14","diaSemana":"Sexta-feira","numeroLNT":7,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de NR-35 Trabalho em altura","dataEficacia":"2024-06-15","diaSemana":"Sábado","numeroLNT":8,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Relacionamento Interpessoal e Atendimento ao Cliente","dataEficacia":"2024-06-22","diaSemana":"Sábado","numeroLNT":9,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2024-07-09","diaSemana":"Terça-feira","numeroLNT":10,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Curso NR-20","dataEficacia":"2024-07-11","diaSemana":"Quinta-feira","numeroLNT":11,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Workshop Portas","dataEficacia":"2024-07-25","diaSemana":"Quinta-feira","numeroLNT":12,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Workshop Freios","dataEficacia":"2024-07-30","diaSemana":"Terça-feira","numeroLNT":13,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Direção Defensiva / Maio Amarelo","dataEficacia":"2024-09-01","diaSemana":"Domingo","numeroLNT":14,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Workshop Lavação","dataEficacia":"2024-09-08","diaSemana":"Domingo","numeroLNT":15,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"E-Social nos Processos do Trabalho","dataEficacia":"2024-05-16","diaSemana":"Quinta-feira","numeroLNT":16,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"FGTS Digital e E-Social – Noções Preliminares","dataEficacia":"2024-05-16","diaSemana":"Quinta-feira","numeroLNT":17,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2024-10-03","diaSemana":"Quinta-feira","numeroLNT":18,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Básico de Freios","dataEficacia":"2024-09-03","diaSemana":"Terça-feira","numeroLNT":19,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"ABASTECIMENTO PADRÃO","dataEficacia":"2024-09-07","diaSemana":"Sábado","numeroLNT":20,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Workshop Vistoria","dataEficacia":"2024-09-09","diaSemana":"Segunda-feira","numeroLNT":21,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Escola de formação de Motorista","dataEficacia":"2025-02-09","diaSemana":"Domingo","numeroLNT":22,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Básico de Freios","dataEficacia":"2024-09-10","diaSemana":"Terça-feira","numeroLNT":23,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Formação da Brigada de Emergência","dataEficacia":"2024-09-07","diaSemana":"Sábado","numeroLNT":24,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Pesquisa de Satisfação da Qualidade","dataEficacia":"2024-09-15","diaSemana":"Domingo","numeroLNT":25,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Ônibus Elétrico BYD - Entrega Técnica","dataEficacia":"2024-10-05","diaSemana":"Sábado","numeroLNT":26,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Ônibus Elétrico BYD - Entrega Técnica","dataEficacia":"2024-10-12","diaSemana":"Sábado","numeroLNT":27,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Instruções Técnicas Operacionais/Prevenção de Acidentes de Trabalho","dataEficacia":"2024-10-16","diaSemana":"Quarta-feira","numeroLNT":28,"analiseEficacia":"ok","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2024-10-22","diaSemana":"Terça-feira","numeroLNT":29,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Formação da Brigada de Emergência","dataEficacia":"2024-10-25","diaSemana":"Sexta-feira","numeroLNT":30,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Certificação Fiscal e Tributária","dataEficacia":"2024-07-12","diaSemana":"Sexta-feira","numeroLNT":31,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"DIREÇÃO ECONÔMICA","dataEficacia":"2024-11-14","diaSemana":"Quinta-feira","numeroLNT":32,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Linha Direta Tatuquara / Centro","dataEficacia":"2024-11-15","diaSemana":"Sexta-feira","numeroLNT":33,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Indicador de Acidente deTrabalho com Afastamento/Horas de Acidente","dataEficacia":"2024-11-16","diaSemana":"Sábado","numeroLNT":34,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Palestra de Conscientização e Prevenção de Acidente deTrabalho","dataEficacia":"2024-11-16","diaSemana":"Sábado","numeroLNT":35,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Básico de Freios","dataEficacia":"2024-11-20","diaSemana":"Quarta-feira","numeroLNT":36,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Ônibus Elétrico VOLVO BZL - Entrega Técnica","dataEficacia":"2024-11-29","diaSemana":"Sexta-feira","numeroLNT":37,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Direção Defensiva","dataEficacia":"2024-12-03","diaSemana":"Terça-feira","numeroLNT":38,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Acesso Qualyteam / Controle de Formulários","dataEficacia":"2024-10-31","diaSemana":"Quinta-feira","numeroLNT":39,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Controle Revisões de Formulário / Qualyteam","dataEficacia":"2024-11-01","diaSemana":"Sexta-feira","numeroLNT":40,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Direção Econômica","dataEficacia":"2024-12-22","diaSemana":"Domingo","numeroLNT":41,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Ônibus Elétrico VOLVO BZL - Entrega Técnica","dataEficacia":"2024-12-24","diaSemana":"Terça-feira","numeroLNT":42,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Ônibus Elétrico VOLVO BZL - Entrega Técnica","dataEficacia":"2024-12-23","diaSemana":"Segunda-feira","numeroLNT":43,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Compliance e Entrega do Código de conduta","dataEficacia":"2024-12-29","diaSemana":"Domingo","numeroLNT":44,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Básico de Freios","dataEficacia":"2024-12-23","diaSemana":"Segunda-feira","numeroLNT":45,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Implementação Relação de Documentos Internos","dataEficacia":"2024-11-29","diaSemana":"Sexta-feira","numeroLNT":46,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Conhecimento de Produto - Telemetria Mobs2 (CANCELADO)","dataEficacia":"2025-01-19","diaSemana":"Domingo","numeroLNT":47,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Conhecimento de Produto - Telemetria Kontrow (CANCELADO)","dataEficacia":"2025-01-23","diaSemana":"Quinta-feira","numeroLNT":48,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2025-02-07","diaSemana":"Sexta-feira","numeroLNT":49,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Conhecimento de Produto - VeÍculo Volvo B8R","dataEficacia":"2025-02-20","diaSemana":"Quinta-feira","numeroLNT":50,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Conhecimento da telemetria MOBS2","dataEficacia":"2025-02-25","diaSemana":"Terça-feira","numeroLNT":51,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento Ônibus VOLVO B8 320R Euro VI - Entrega Técnica","dataEficacia":"2025-03-06","diaSemana":"Quinta-feira","numeroLNT":52,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Conhecimento de Produto - VeÍculo Volvo B8R EURO VI","dataEficacia":"2025-03-03","diaSemana":"Segunda-feira","numeroLNT":53,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Curso NR-5 Formação de CIPA","dataEficacia":"2025-03-12","diaSemana":"Quarta-feira","numeroLNT":54,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Conhecimento de Produto - VeÍculo Volvo B8R EURO VI","dataEficacia":"2025-03-20","diaSemana":"Quinta-feira","numeroLNT":55,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Treinamento de reciclagem 5S","dataEficacia":"2025-03-12","diaSemana":"Quarta-feira","numeroLNT":56,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2024,"curso":"Medida Saneadora","dataEficacia":"2025-03-31","diaSemana":"Segunda-feira","numeroLNT":57,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"TREINAMENTO FALHA OPERACIONAL","dataEficacia":"2023-04-17","diaSemana":null,"numeroLNT":1,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Freios Assistência Técnica HF002","dataEficacia":"2023-04-20","diaSemana":null,"numeroLNT":2,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Normas de Segurança para Circulação Veicular no Pátio","dataEficacia":"2023-04-19","diaSemana":null,"numeroLNT":3,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Freios Assistência Técnica HF002","dataEficacia":"2023-05-20","diaSemana":null,"numeroLNT":4,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Freios Assistência Técnica HF002","dataEficacia":"2023-06-20","diaSemana":null,"numeroLNT":5,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Trabalho em Altura NR-35","dataEficacia":"2023-05-17","diaSemana":null,"numeroLNT":6,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Direção Defensiva","dataEficacia":"2023-06-02","diaSemana":null,"numeroLNT":7,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2023-06-17","diaSemana":null,"numeroLNT":8,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Check-List","dataEficacia":"2023-06-07","diaSemana":null,"numeroLNT":9,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Condução Inteligente Mercedes Benz","dataEficacia":"2023-06-16","diaSemana":null,"numeroLNT":10,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Direção Econômica Individual","dataEficacia":"2023-07-15","diaSemana":null,"numeroLNT":11,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2023-07-17","diaSemana":null,"numeroLNT":12,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Palestra Direção Defensiva para Condutores de Motocicletas","dataEficacia":"2023-09-15","diaSemana":null,"numeroLNT":13,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Pesquisa de Satisfação da Qualidade","dataEficacia":"2023-07-03","diaSemana":null,"numeroLNT":14,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Condução Inteligente Articulado 18m","dataEficacia":"2023-06-30","diaSemana":null,"numeroLNT":15,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Acidente de Trabalho com Afastamento/Horas de Acidente","dataEficacia":"2023-09-30","diaSemana":null,"numeroLNT":16,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Acidente de Trabalho com Afastamento/Horas de Acidente","dataEficacia":"2023-09-30","diaSemana":null,"numeroLNT":17,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Acidente de Trabalho com Afastamento/Horas de Acidente","dataEficacia":"2023-09-30","diaSemana":null,"numeroLNT":18,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Biarticulado","dataEficacia":"2023-07-06","diaSemana":null,"numeroLNT":19,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Acidente de Trabalho com Afastamento/Horas de Acidente","dataEficacia":"2023-09-30","diaSemana":null,"numeroLNT":20,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Escola de Formação de Motorista","dataEficacia":"2023-10-10","diaSemana":null,"numeroLNT":21,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Acidente de Trabalho com Afastamento/Horas de Acidente","dataEficacia":"2023-09-30","diaSemana":null,"numeroLNT":22,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Scania K280 B4X2CNG 1","dataEficacia":"2023-07-10","diaSemana":null,"numeroLNT":23,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2023-08-18","diaSemana":null,"numeroLNT":24,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento leitura de Painel Volvo X Mercedes","dataEficacia":"2023-08-01","diaSemana":null,"numeroLNT":25,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento leitura de Painel Volvo X Mercedes","dataEficacia":"2023-08-10","diaSemana":null,"numeroLNT":26,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento BSC / Implementação da Estratégia","dataEficacia":"2023-12-14","diaSemana":null,"numeroLNT":27,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento BSC / Implementação da Estratégia","dataEficacia":"2023-09-01","diaSemana":null,"numeroLNT":28,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento leitura de Painel Volvo X Mercedes","dataEficacia":"2023-09-08","diaSemana":null,"numeroLNT":29,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Módulo FLAG / SOFTWARE QUALYTEAM","dataEficacia":"2023-12-26","diaSemana":null,"numeroLNT":30,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Ônibus Elétrico Eletra","dataEficacia":"2023-08-15","diaSemana":null,"numeroLNT":31,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento leitura de Painel Volvo X Mercedes","dataEficacia":"2023-08-15","diaSemana":null,"numeroLNT":32,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento leitura de Painel Volvo X Mercedes","dataEficacia":"2023-09-14","diaSemana":null,"numeroLNT":33,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2023-09-23","diaSemana":null,"numeroLNT":34,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Reciclagem Operacional URBS","dataEficacia":"2023-08-24","diaSemana":null,"numeroLNT":35,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Trabalho em Altura NR-35","dataEficacia":"2023-08-23","diaSemana":null,"numeroLNT":36,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Direção Econômica Individual","dataEficacia":"2023-09-23","diaSemana":null,"numeroLNT":37,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Condução Inteligente - M.Benz OF1721","dataEficacia":"2023-09-05","diaSemana":null,"numeroLNT":38,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Condução Inteligente Articulado 18m","dataEficacia":"2023-09-13","diaSemana":null,"numeroLNT":39,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Biarticulado","dataEficacia":"2023-09-20","diaSemana":null,"numeroLNT":40,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Requalificação Profissional  Cobrador (a) para Porteiro (a).","dataEficacia":"2023-08-31","diaSemana":null,"numeroLNT":41,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Excelência Operacional  Porteiro (a).","dataEficacia":"2023-09-13","diaSemana":null,"numeroLNT":42,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2023-10-26","diaSemana":null,"numeroLNT":43,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Freios ( Sistema de Freios Miqueloto).","dataEficacia":"2023-10-30","diaSemana":null,"numeroLNT":44,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Biarticulado","dataEficacia":"2023-10-06","diaSemana":null,"numeroLNT":45,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Reboque Operacional","dataEficacia":"2023-10-12","diaSemana":null,"numeroLNT":46,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Ônibus Elétrico Eletra 15 Metros","dataEficacia":"2023-10-19","diaSemana":null,"numeroLNT":47,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Pneus","dataEficacia":"2023-11-24","diaSemana":null,"numeroLNT":48,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Leitura de Painel Volvo X Mercedes","dataEficacia":"2023-11-27","diaSemana":null,"numeroLNT":49,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Manutenção Mecânica e Elétrica Marcoplo","dataEficacia":"2023-11-30","diaSemana":null,"numeroLNT":50,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2023-11-14","diaSemana":null,"numeroLNT":51,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Motor B8R","dataEficacia":"2023-11-16","diaSemana":null,"numeroLNT":52,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Atualização de Cobradores do Transporte Coletivo","dataEficacia":"2023-12-02","diaSemana":null,"numeroLNT":53,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Operacional  para  Manobrista","dataEficacia":"2023-11-13","diaSemana":null,"numeroLNT":54,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Relacionamento Interpessoal e Atendimento ao Cliente","dataEficacia":"2023-12-14","diaSemana":null,"numeroLNT":55,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Motor B8R","dataEficacia":"2023-12-20","diaSemana":null,"numeroLNT":56,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Desempenho operacional linha 653 / 658","dataEficacia":"2023-12-20","diaSemana":null,"numeroLNT":57,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Relacionamento Interpessoal e Atendimento ao Cliente","dataEficacia":"2023-12-21","diaSemana":null,"numeroLNT":58,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de Direção Econômica Individual","dataEficacia":"2024-01-02","diaSemana":null,"numeroLNT":59,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2024-01-02","diaSemana":null,"numeroLNT":60,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Direção Defensiva / Setran-Eptran","dataEficacia":"2024-02-22","diaSemana":null,"numeroLNT":61,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Relacionamento Interpessoal e Atendimento ao Cliente","dataEficacia":"2024-01-05","diaSemana":null,"numeroLNT":62,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Transmisão / Embreagem","dataEficacia":"2024-01-06","diaSemana":null,"numeroLNT":63,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Escola de Formação de Motorista","dataEficacia":"2024-06-01","diaSemana":null,"numeroLNT":64,"analiseEficacia":"ok","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Relacionamento Interpessoal e Atendimento ao Cliente","dataEficacia":"2024-01-26","diaSemana":null,"numeroLNT":65,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Máquina de Cartão Débito e Crédito","dataEficacia":"2024-01-20","diaSemana":null,"numeroLNT":66,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Relacionamento Interpessoal e Atendimento ao Cliente","dataEficacia":"2024-02-06","diaSemana":null,"numeroLNT":67,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Básico de Freios / Suspensão","dataEficacia":"2024-02-10","diaSemana":null,"numeroLNT":68,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Introdução à PNL","dataEficacia":"2023-12-22","diaSemana":null,"numeroLNT":69,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Assédio","dataEficacia":"2023-12-22","diaSemana":null,"numeroLNT":70,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Eletromobilidade","dataEficacia":"2024-02-10","diaSemana":null,"numeroLNT":71,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Ônibus Elétrico Marcopolo","dataEficacia":"2024-02-29","diaSemana":null,"numeroLNT":72,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Treinamento Ônibus Elétrico Marcopolo","dataEficacia":"2024-03-04","diaSemana":null,"numeroLNT":73,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Máquina de Cartão Débito e Crédito","dataEficacia":"2024-03-13","diaSemana":null,"numeroLNT":74,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-28","diaSemana":null,"numeroLNT":75,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-28","diaSemana":null,"numeroLNT":76,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-28","diaSemana":null,"numeroLNT":77,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-28","diaSemana":null,"numeroLNT":78,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos/CANCELADO","dataEficacia":"2024-03-28","diaSemana":null,"numeroLNT":79,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-28","diaSemana":null,"numeroLNT":80,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-29","diaSemana":null,"numeroLNT":81,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-29","diaSemana":null,"numeroLNT":82,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Educação Ambiental/Descarte de Resíduos","dataEficacia":"2024-03-29","diaSemana":null,"numeroLNT":83,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2023,"curso":"Curso CIPA","dataEficacia":"2024-02-29","diaSemana":null,"numeroLNT":84,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"TREINAMENTO FALHA OPERACIONAL HELP DESK INDIVIDUAL","dataEficacia":"2022-04-06","diaSemana":null,"numeroLNT":1,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-04-06","diaSemana":null,"numeroLNT":2,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Pesquisa de Satisfação","dataEficacia":"2022-04-19","diaSemana":null,"numeroLNT":3,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento Lei Geral de Proteção de Dados","dataEficacia":"2022-04-25","diaSemana":null,"numeroLNT":4,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-04-30","diaSemana":null,"numeroLNT":5,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Acidente de trabalho, Uso Correto de Epis, Manuseio de Ferramentas Manuais","dataEficacia":"2022-05-16","diaSemana":null,"numeroLNT":6,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Acidente de trabalho, Uso Correto de Epis, Manuseio de Ferramentas Manuais","dataEficacia":"2022-05-18","diaSemana":null,"numeroLNT":7,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Acidente de trabalho, Uso Correto de Epis, Manuseio de Ferramentas Manuais","dataEficacia":"2022-05-23","diaSemana":null,"numeroLNT":8,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Acidente de trabalho, Uso Correto de Epis, Manuseio de Ferramentas Manuais","dataEficacia":"2022-05-23","diaSemana":null,"numeroLNT":9,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Acidente de trabalho, Uso Correto de Epis, Manuseio de Ferramentas Manuais","dataEficacia":"2022-05-23","diaSemana":null,"numeroLNT":10,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Acidente de trabalho, Uso Correto de Epis, Manuseio de Ferramentas Manuais","dataEficacia":"2022-05-23","diaSemana":null,"numeroLNT":11,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Acidente de trabalho, Uso Correto de Epis, Manuseio de Ferramentas Manuais","dataEficacia":"2022-05-23","diaSemana":null,"numeroLNT":12,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-05-31","diaSemana":null,"numeroLNT":13,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"TREINAMENTO FALHA OPERACIONAL HELP DESK INDIVIDUAL","dataEficacia":"2022-06-07","diaSemana":null,"numeroLNT":14,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-06-30","diaSemana":null,"numeroLNT":15,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento Biarticulado","dataEficacia":"2022-07-18","diaSemana":null,"numeroLNT":16,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"FORMAÇÃO BRIGADA DE EMERGÊNCIA","dataEficacia":"2022-08-05","diaSemana":null,"numeroLNT":17,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Escola de Formação de Motorista","dataEficacia":"2022-08-04","diaSemana":null,"numeroLNT":18,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-09-01","diaSemana":null,"numeroLNT":19,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2022-08-19","diaSemana":null,"numeroLNT":20,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento de Ônibus Articulado","dataEficacia":"2022-09-01","diaSemana":null,"numeroLNT":21,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Palestra de Pneus","dataEficacia":"2022-09-09","diaSemana":null,"numeroLNT":22,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Procedimentos ISO9001","dataEficacia":"2022-09-09","diaSemana":null,"numeroLNT":23,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Excelência Operacional","dataEficacia":"2022-09-13","diaSemana":null,"numeroLNT":24,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"INSPETORES DE FROTA - NÃO CONFORMIDADE","dataEficacia":"2022-09-20","diaSemana":null,"numeroLNT":25,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-09-30","diaSemana":null,"numeroLNT":26,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Integração de Colaboradores de Outra Organização (Transição de Colaboradores)","dataEficacia":"2023-03-01","diaSemana":null,"numeroLNT":27,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"FORMAÇÃO BRIGADA DE EMERGÊNCIA","dataEficacia":"2022-10-21","diaSemana":null,"numeroLNT":28,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Tech Tool / VCADS","dataEficacia":"2022-11-09","diaSemana":null,"numeroLNT":29,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento de 5S's","dataEficacia":"2022-11-18","diaSemana":null,"numeroLNT":30,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Excelência Operacional","dataEficacia":"2022-11-23","diaSemana":null,"numeroLNT":31,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento Ônibus Elétrico","dataEficacia":"2022-10-12","diaSemana":null,"numeroLNT":32,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Qualificação Técnica Mecânica - Sistema de Freios ECKISIL","dataEficacia":"2022-11-21","diaSemana":null,"numeroLNT":33,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Direção Defensiva","dataEficacia":"2022-12-29","diaSemana":null,"numeroLNT":34,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"TREINAMENTO FALHA OPERACIONAL HELP DESK INDIVIDUAL","dataEficacia":"2022-12-21","diaSemana":null,"numeroLNT":35,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"FERRAMENTA DE PESQUISA WIS MERCEDES","dataEficacia":"2022-12-21","diaSemana":null,"numeroLNT":36,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"SEGREGAÇÃO DE RESÍDUOS E SUSTENTABILIDADE","dataEficacia":"2023-01-05","diaSemana":null,"numeroLNT":37,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Básico de Freios Volvo / Mercedes","dataEficacia":"2023-01-05","diaSemana":null,"numeroLNT":38,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"TREINAMENTO TÉCNICO DE LAVAÇÃO","dataEficacia":"2023-01-10","diaSemana":null,"numeroLNT":39,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Escola de Formação de Motorista","dataEficacia":"2023-03-21","diaSemana":null,"numeroLNT":40,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento DEPEN (Departamento Penitenciário - Paraná)","dataEficacia":"2023-02-09","diaSemana":null,"numeroLNT":41,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento de falha operacional HELP DESK","dataEficacia":"2023-02-16","diaSemana":null,"numeroLNT":42,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2022,"curso":"Treinamento Normas de Segurança para Circulação Veicular no Pátio","dataEficacia":"2023-03-14","diaSemana":null,"numeroLNT":43,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Excelência Operacional","dataEficacia":"2021-04-30","diaSemana":null,"numeroLNT":1,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento Software Qualyteam","dataEficacia":"2021-04-02","diaSemana":null,"numeroLNT":2,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação de NR-35 - Trabalho em Altura","dataEficacia":"2021-04-26","diaSemana":null,"numeroLNT":3,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação da Brigada de Emergência","dataEficacia":"2021-04-26","diaSemana":null,"numeroLNT":4,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Prevenção de Acidentes na Máquina de Lavar","dataEficacia":"2021-04-29","diaSemana":null,"numeroLNT":5,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação de NR-35 - Trabalho em Altura","dataEficacia":"2021-04-29","diaSemana":null,"numeroLNT":6,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação da Brigada de Emergência","dataEficacia":"2021-04-29","diaSemana":null,"numeroLNT":7,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"FALHA OPERACIONAL \"HELP-DESK\" LATARIA","dataEficacia":"2021-05-04","diaSemana":null,"numeroLNT":8,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Excelência Operacional","dataEficacia":"2021-05-30","diaSemana":null,"numeroLNT":9,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-05-02","diaSemana":null,"numeroLNT":10,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento Transmissão Voith / ZF","dataEficacia":"2021-06-02","diaSemana":null,"numeroLNT":11,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Acidente de Tabalho;Uso correto de EPI's;Manuseio de Ferramentas Manuais","dataEficacia":"2021-06-02","diaSemana":null,"numeroLNT":12,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento Help-Desk","dataEficacia":"2021-06-08","diaSemana":null,"numeroLNT":13,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-06-01","diaSemana":null,"numeroLNT":14,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Tech Tool / VCADS","dataEficacia":"2021-06-16","diaSemana":null,"numeroLNT":15,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-07-01","diaSemana":null,"numeroLNT":16,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Normas de Segurança para Circulação Veicular no Pátio","dataEficacia":"2021-07-08","diaSemana":null,"numeroLNT":17,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento de 5S's - Reciclagem","dataEficacia":"2021-07-23","diaSemana":null,"numeroLNT":18,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"TREINAMENTO HIGIENIZAÇÃO DE VEÍCULOS","dataEficacia":"2021-07-30","diaSemana":null,"numeroLNT":19,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2021-08-20","diaSemana":null,"numeroLNT":20,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-08-02","diaSemana":null,"numeroLNT":21,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação da Brigada de Emergência","dataEficacia":"2021-07-27","diaSemana":null,"numeroLNT":22,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Práticas de uso do Aspirador HIDROPÓ.","dataEficacia":"2021-08-18","diaSemana":null,"numeroLNT":23,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação da Brigada de Emergência","dataEficacia":"2021-08-25","diaSemana":null,"numeroLNT":24,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Esquema Pneumático B12M/B7R","dataEficacia":"2021-09-07","diaSemana":null,"numeroLNT":25,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-09-01","diaSemana":null,"numeroLNT":26,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento Help-Desk","dataEficacia":"2021-09-09","diaSemana":null,"numeroLNT":27,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Segregação,Transporte e Amazenamento de Resíduos Sólidos","dataEficacia":"2021-10-28","diaSemana":null,"numeroLNT":28,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-10-01","diaSemana":null,"numeroLNT":29,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento Help-Desk","dataEficacia":"2021-10-07","diaSemana":null,"numeroLNT":30,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2021-10-10","diaSemana":null,"numeroLNT":31,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Abastecedores","dataEficacia":"2021-10-21","diaSemana":null,"numeroLNT":32,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"SISTEMA Gerenciamento Eletrônico/Liquid Only","dataEficacia":"2021-12-28","diaSemana":null,"numeroLNT":33,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento QlikView","dataEficacia":"2021-10-25","diaSemana":null,"numeroLNT":34,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-11-01","diaSemana":null,"numeroLNT":35,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica Prática na Operação","dataEficacia":"2021-11-07","diaSemana":null,"numeroLNT":36,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação da Brigada de Emergência","dataEficacia":"2021-11-18","diaSemana":null,"numeroLNT":37,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Educação para o Trânsito","dataEficacia":"2021-11-21","diaSemana":null,"numeroLNT":38,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação da Brigada de Emergência","dataEficacia":"2021-11-30","diaSemana":null,"numeroLNT":39,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-12-01","diaSemana":null,"numeroLNT":40,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Relacionamento Interpessoal e Atendimento ao Usuário (Cliente)","dataEficacia":"2021-12-23","diaSemana":null,"numeroLNT":41,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Treinamento Help-Desk","dataEficacia":"2021-12-29","diaSemana":null,"numeroLNT":42,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2022-01-06","diaSemana":null,"numeroLNT":43,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Relacionamento Interpessoal e Atendimento ao Usuário (Cliente)","dataEficacia":"2021-12-30","diaSemana":null,"numeroLNT":44,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação de NR-35 - Trabalho em Altura","dataEficacia":"2022-01-08","diaSemana":null,"numeroLNT":45,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Formação da Brigada de Emergência","dataEficacia":"2022-01-08","diaSemana":null,"numeroLNT":46,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Relacionamento Interpessoal e Atendimento ao Usuário (Cliente)","dataEficacia":"2022-01-19","diaSemana":null,"numeroLNT":47,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Auditoria de Processos","dataEficacia":"2021-12-31","diaSemana":null,"numeroLNT":48,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-01-31","diaSemana":null,"numeroLNT":49,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"TREINAMENTO NR-20","dataEficacia":"2022-02-04","diaSemana":null,"numeroLNT":50,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Relacionamento Interpessoal e Atendimento ao Usuário (Cliente)","dataEficacia":"2022-02-09","diaSemana":null,"numeroLNT":51,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"DIREÇÃO DEFENSIVA","dataEficacia":"2022-03-01","diaSemana":null,"numeroLNT":52,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2022-03-01","diaSemana":null,"numeroLNT":53,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Relacionamento Interpessoal e Atendimento ao Usuário (Cliente)","dataEficacia":"2022-03-02","diaSemana":null,"numeroLNT":54,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Escola de Formação de Motorista","dataEficacia":"2022-03-07","diaSemana":null,"numeroLNT":55,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Relacionamento Interpessoal e Atendimento ao Usuário (Cliente)","dataEficacia":"2022-03-23","diaSemana":null,"numeroLNT":56,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2021,"curso":"Comissão Interna de Prevenção de Acidente- CIPA","dataEficacia":"2022-03-28","diaSemana":null,"numeroLNT":57,"analiseEficacia":"OK","status":"ANÁLISE REALIZADO"},{"ano":2020,"curso":"Basico de freios","dataEficacia":"31/04/2020","diaSemana":null,"numeroLNT":1,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Excelência Operacional","dataEficacia":"2020-04-22","diaSemana":null,"numeroLNT":2,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Defensiva","dataEficacia":"2020-04-23","diaSemana":null,"numeroLNT":3,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Capacitação de Tutores","dataEficacia":"2020-02-19","diaSemana":null,"numeroLNT":4,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Basico de Motor B12M/B7R","dataEficacia":"2020-06-02","diaSemana":null,"numeroLNT":5,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Básico de Freios","dataEficacia":"2020-06-10","diaSemana":null,"numeroLNT":6,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Entrega Técnica Mercedes Benz","dataEficacia":"2020-06-06","diaSemana":null,"numeroLNT":7,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Escola de Formação de Motorista","dataEficacia":"2020-09-07","diaSemana":null,"numeroLNT":8,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Atualização de Cobradores do Transporte Coletivo","dataEficacia":"2020-04-15","diaSemana":null,"numeroLNT":9,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Premiação","dataEficacia":"2020-06-11","diaSemana":null,"numeroLNT":10,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica nas Linhas 502 e 602","dataEficacia":"2020-06-18","diaSemana":null,"numeroLNT":11,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Ferramenta de Diagnóstico MBB - Mercedes Benz.","dataEficacia":"2020-10-10","diaSemana":null,"numeroLNT":12,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Help-Desk Falha Operacional","dataEficacia":"2020-08-07","diaSemana":null,"numeroLNT":13,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Conhecimento do Produto Volvo/Mercedes Torre","dataEficacia":"2020-10-20","diaSemana":null,"numeroLNT":14,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica","dataEficacia":"2020-10-02","diaSemana":null,"numeroLNT":15,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica","dataEficacia":"2020-08-07","diaSemana":null,"numeroLNT":16,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Defensiva","dataEficacia":"2020-11-06","diaSemana":null,"numeroLNT":17,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2020-12-01","diaSemana":null,"numeroLNT":18,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2020-11-01","diaSemana":null,"numeroLNT":19,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Treinamento Falha Operacional - Individual","dataEficacia":"2021-01-02","diaSemana":null,"numeroLNT":20,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-01-02","diaSemana":null,"numeroLNT":21,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Defensiva","dataEficacia":"2020-12-23","diaSemana":null,"numeroLNT":22,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Básico de Motor","dataEficacia":"2020-12-16","diaSemana":null,"numeroLNT":23,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Alinhamento e Geometria","dataEficacia":"2020-11-26","diaSemana":null,"numeroLNT":24,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-02-01","diaSemana":null,"numeroLNT":25,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Normas de Circulação no Pátio","dataEficacia":"2021-01-20","diaSemana":null,"numeroLNT":26,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Básico de Motor / Sistema SCR MERCEDES","dataEficacia":"2021-01-20","diaSemana":null,"numeroLNT":27,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"TREINAMENTO RETORNO AO TRABALHO / COVID-19","dataEficacia":"2021-01-16","diaSemana":null,"numeroLNT":28,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Help-Desk Falha Operacional","dataEficacia":"2021-01-30","diaSemana":null,"numeroLNT":29,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Prevenção de Acidentes na Máquina de Lavar","dataEficacia":"2021-01-29","diaSemana":null,"numeroLNT":30,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-02-01","diaSemana":null,"numeroLNT":31,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Prevenção de Acidentes de Trabalhos/Trajeto","dataEficacia":"2021-02-01","diaSemana":null,"numeroLNT":32,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Excelência Operacional","dataEficacia":"2021-03-17","diaSemana":null,"numeroLNT":33,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Direção Econômica INDIVIDUAL","dataEficacia":"2021-03-01","diaSemana":null,"numeroLNT":34,"analiseEficacia":"OK","status":null},{"ano":2020,"curso":"Elétrica e Eletrônica Volvo","dataEficacia":"2021-06-03","diaSemana":null,"numeroLNT":35,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Direção Defensiva","dataEficacia":"2019-04-10","diaSemana":null,"numeroLNT":1,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Procedimento em Casos de Assaltos e Arrastões","dataEficacia":"2019-04-24","diaSemana":null,"numeroLNT":2,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica Mercedes Benz","dataEficacia":"2019-05-02","diaSemana":null,"numeroLNT":3,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica Mercedes Benz - Motoristas","dataEficacia":"2019-05-06","diaSemana":null,"numeroLNT":4,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Direção Defensiva","dataEficacia":"2019-05-14","diaSemana":null,"numeroLNT":5,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica Mercedes Benz - Motoristas","dataEficacia":"2019-12-31","diaSemana":null,"numeroLNT":6,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Lataria / Pintura","dataEficacia":"2019-08-20","diaSemana":null,"numeroLNT":7,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Lataria / Pintura","dataEficacia":"2019-09-22","diaSemana":null,"numeroLNT":8,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Reciclagem Atendentes do ensino especial","dataEficacia":"2019-06-06","diaSemana":null,"numeroLNT":9,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Direção Defensiva","dataEficacia":"2019-06-25","diaSemana":null,"numeroLNT":10,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Premiação","dataEficacia":"2019-06-19","diaSemana":null,"numeroLNT":11,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento Software Qualyteam","dataEficacia":"2019-09-23","diaSemana":null,"numeroLNT":12,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica Mercedes Benz","dataEficacia":"2019-07-01","diaSemana":null,"numeroLNT":13,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Direção Econômica","dataEficacia":"2019-07-09","diaSemana":null,"numeroLNT":14,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Excelência Operacional","dataEficacia":"2019-07-11","diaSemana":null,"numeroLNT":15,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica","dataEficacia":"2019-07-22","diaSemana":null,"numeroLNT":16,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica","dataEficacia":"2019-08-23","diaSemana":null,"numeroLNT":17,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Diagnóstico Freios / Suspensão","dataEficacia":"2019-10-01","diaSemana":null,"numeroLNT":18,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Premiação","dataEficacia":"2019-08-08","diaSemana":null,"numeroLNT":19,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Direção Econômica","dataEficacia":"2019-09-14","diaSemana":null,"numeroLNT":20,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Direção Defensiva","dataEficacia":"2019-08-09","diaSemana":null,"numeroLNT":21,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"CIPA","dataEficacia":"2019-05-27","diaSemana":null,"numeroLNT":22,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Atualização de curso para cobradores","dataEficacia":"2019-08-27","diaSemana":null,"numeroLNT":23,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Atualização dos padrões internos de segurança para colaboradores","dataEficacia":"2019-09-30","diaSemana":null,"numeroLNT":24,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Atualização de Ferramentas","dataEficacia":"2019-08-03","diaSemana":null,"numeroLNT":25,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica","dataEficacia":"2019-08-16","diaSemana":null,"numeroLNT":26,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Coleta Seletiva Conforme CONAMA257/01","dataEficacia":"2019-07-25","diaSemana":null,"numeroLNT":27,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento de brigada de emergencia","dataEficacia":"2019-07-25","diaSemana":null,"numeroLNT":28,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"IMPACT","dataEficacia":"2019-09-19","diaSemana":null,"numeroLNT":29,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento Abastecimento","dataEficacia":"2019-09-07","diaSemana":null,"numeroLNT":30,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento - Sistema Expresso","dataEficacia":"2019-09-19","diaSemana":null,"numeroLNT":31,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica Mercedes Benz","dataEficacia":"2019-10-02","diaSemana":null,"numeroLNT":32,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Básico de Freios","dataEficacia":"2019-11-19","diaSemana":null,"numeroLNT":33,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Premiação","dataEficacia":"2019-09-28","diaSemana":null,"numeroLNT":34,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Regulagem de Válvulas In Local","dataEficacia":"2019-09-28","diaSemana":null,"numeroLNT":35,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Direção Defensiva","dataEficacia":"2019-10-10","diaSemana":null,"numeroLNT":36,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Pesquisa de satisfação","dataEficacia":"2019-10-12","diaSemana":null,"numeroLNT":37,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento Tela Help Desk","dataEficacia":"2019-10-11","diaSemana":null,"numeroLNT":38,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Prevenção de acidente trabalho/trajeto","dataEficacia":"2019-10-16","diaSemana":null,"numeroLNT":39,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Palestra de Pneus","dataEficacia":"2019-10-30","diaSemana":null,"numeroLNT":40,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Tech Tool/Vcads","dataEficacia":"2019-11-09","diaSemana":null,"numeroLNT":41,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Plano de resposta e emêrgencia","dataEficacia":"2019-11-21","diaSemana":null,"numeroLNT":42,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Prevenção de acidente trabalho/trajeto","dataEficacia":"2019-11-14","diaSemana":null,"numeroLNT":43,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Premiação","dataEficacia":"2019-11-20","diaSemana":null,"numeroLNT":44,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Help-Desk Falha Operacional","dataEficacia":"2019-11-27","diaSemana":null,"numeroLNT":45,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento de Monitoramento e Rastreamento Volvo","dataEficacia":"2019-12-20","diaSemana":null,"numeroLNT":46,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Atualização de Ferramentas","dataEficacia":"2019-12-02","diaSemana":null,"numeroLNT":47,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Implantação do programa 5S","dataEficacia":"2019-12-05","diaSemana":null,"numeroLNT":48,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Palestra Liderança Servidora","dataEficacia":"2019-12-12","diaSemana":null,"numeroLNT":49,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento sistema de monitoramento M2M","dataEficacia":"2019-12-27","diaSemana":null,"numeroLNT":50,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Palestra de Pneus","dataEficacia":"2019-12-18","diaSemana":null,"numeroLNT":51,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"IMPACT","dataEficacia":"2020-01-18","diaSemana":null,"numeroLNT":52,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento Despachante de Trafego e Apontadores de Manutenção","dataEficacia":"2020-01-04","diaSemana":null,"numeroLNT":53,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"IMPACT","dataEficacia":"2020-01-18","diaSemana":null,"numeroLNT":54,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Escola de Formação de Motorista","dataEficacia":"2020-04-14","diaSemana":null,"numeroLNT":55,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Básico de Freios","dataEficacia":"2020-01-30","diaSemana":null,"numeroLNT":56,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Excelência Operacional","dataEficacia":"2020-01-17","diaSemana":null,"numeroLNT":57,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Soldagem MIG","dataEficacia":"2020-02-11","diaSemana":null,"numeroLNT":58,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Call Center","dataEficacia":"2020-01-31","diaSemana":null,"numeroLNT":59,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento Baterias","dataEficacia":"2020-01-31","diaSemana":null,"numeroLNT":60,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Premiação","dataEficacia":"2020-01-29","diaSemana":null,"numeroLNT":61,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Qualidade de Atendimento ao Cliente","dataEficacia":"2020-03-16","diaSemana":null,"numeroLNT":62,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"NR-10","dataEficacia":"2019-11-18","diaSemana":null,"numeroLNT":63,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Treinamento de Monitoramento e Rastreamento Volvo","dataEficacia":"2020-03-04","diaSemana":null,"numeroLNT":64,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Entrega Técnica Scania","dataEficacia":"2020-02-04","diaSemana":null,"numeroLNT":65,"analiseEficacia":"OK","status":null},{"ano":2019,"curso":"Premiação","dataEficacia":"2020-03-20","diaSemana":null,"numeroLNT":66,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Curso de Preposto na Justiça do Trabalho","dataEficacia":"2018-04-18","diaSemana":null,"numeroLNT":1,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Condução Inteligente de Transmissão Manual","dataEficacia":"2018-04-28","diaSemana":null,"numeroLNT":2,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Condução Inteligente - Transmissão Automática","dataEficacia":"2018-06-01","diaSemana":null,"numeroLNT":3,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Treinamento de Biarticulado","dataEficacia":"2018-05-07","diaSemana":null,"numeroLNT":4,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Sistema Pneumático (Portas)","dataEficacia":"2018-04-09","diaSemana":null,"numeroLNT":5,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Sistema Comman Rail B7R","dataEficacia":"2018-04-16","diaSemana":null,"numeroLNT":6,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Formação de Ferramentas da Qualidade para Gestão de Negócios","dataEficacia":"2018-08-09","diaSemana":null,"numeroLNT":7,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"NR20","dataEficacia":"2018-08-30","diaSemana":null,"numeroLNT":8,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"NR35","dataEficacia":"2018-09-06","diaSemana":null,"numeroLNT":9,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"IMPACT","dataEficacia":"2018-04-16","diaSemana":null,"numeroLNT":10,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"METROLOGIA","dataEficacia":"2018-04-16","diaSemana":null,"numeroLNT":11,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Check-List","dataEficacia":"2018-05-29","diaSemana":null,"numeroLNT":12,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Implantação Programa 5S","dataEficacia":"2018-07-31","diaSemana":null,"numeroLNT":13,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"IMPACT","dataEficacia":"2018-08-16","diaSemana":null,"numeroLNT":13,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Implantação Programa 5S","dataEficacia":"2018-07-31","diaSemana":null,"numeroLNT":14,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Básico de Freios","dataEficacia":"2018-09-16","diaSemana":null,"numeroLNT":14,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Implantação Programa 5S","dataEficacia":"2018-07-31","diaSemana":null,"numeroLNT":15,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Implantação Programa 5S","dataEficacia":"2018-07-31","diaSemana":null,"numeroLNT":16,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Premiação","dataEficacia":"2018-08-11","diaSemana":null,"numeroLNT":17,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Cipa","dataEficacia":"2018-08-25","diaSemana":null,"numeroLNT":18,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Conhecimento do Produto","dataEficacia":"2018-05-18","diaSemana":null,"numeroLNT":19,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Treinamento alinhamento e geometria Truk center","dataEficacia":"2018-11-05","diaSemana":null,"numeroLNT":20,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Treinamento alinhamento e geometria","dataEficacia":"2018-11-20","diaSemana":null,"numeroLNT":21,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Entrega Técnica Scania XY036","dataEficacia":"2018-09-01","diaSemana":null,"numeroLNT":22,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Elétrica e Eletrônica B7R","dataEficacia":"2018-12-10","diaSemana":null,"numeroLNT":23,"analiseEficacia":"ok","status":null},{"ano":2018,"curso":"Treinamento utilização Ficha de Inspeção Auditoria 5S","dataEficacia":"2018-07-31","diaSemana":null,"numeroLNT":24,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Treinamento inspetor de frota","dataEficacia":"2018-09-28","diaSemana":null,"numeroLNT":25,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Pesquisa de Satisfação","dataEficacia":"2018-10-16","diaSemana":null,"numeroLNT":26,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Premiação","dataEficacia":"2018-10-19","diaSemana":null,"numeroLNT":27,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Sistema de Lubrificação / Verificação de Nível","dataEficacia":"2018-10-10","diaSemana":null,"numeroLNT":28,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Filtros em Geral Funcionamento","dataEficacia":"2018-10-22","diaSemana":null,"numeroLNT":29,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Filtros em Geral Funcionamento","dataEficacia":"2018-10-23","diaSemana":null,"numeroLNT":30,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"SAC – Solicitação de Ação Corretiva","dataEficacia":"2018-11-01","diaSemana":null,"numeroLNT":31,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Preenchimento de LNT","dataEficacia":"2018-11-01","diaSemana":null,"numeroLNT":32,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Direção Econômica","dataEficacia":"2018-11-07","diaSemana":null,"numeroLNT":33,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Excelência Operacional","dataEficacia":"2018-11-06","diaSemana":null,"numeroLNT":34,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Entrega Técnica Super - Articulado","dataEficacia":"2018-11-14","diaSemana":null,"numeroLNT":35,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Elétrica e Eletrônica B7R","dataEficacia":"2019-02-14","diaSemana":null,"numeroLNT":36,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Premiação","dataEficacia":"2018-12-01","diaSemana":null,"numeroLNT":37,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Básico Excel 2013","dataEficacia":"2018-10-19","diaSemana":null,"numeroLNT":38,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Elétrica e Eletrônica B12M NOVOS","dataEficacia":"2019-03-01","diaSemana":null,"numeroLNT":39,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Sistema de Lubrificação e Revisão B340M NOVOS","dataEficacia":"2019-03-05","diaSemana":null,"numeroLNT":40,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Palestra Sobre Sistema de Monitoramento","dataEficacia":"2019-01-05","diaSemana":null,"numeroLNT":41,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Acessibilidade","dataEficacia":"2019-01-03","diaSemana":null,"numeroLNT":42,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"IMPACT","dataEficacia":"2019-02-18","diaSemana":null,"numeroLNT":43,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Tech-Tool / VCADS","dataEficacia":"2019-04-18","diaSemana":null,"numeroLNT":44,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Carroceria Marcopolo","dataEficacia":"2019-01-21","diaSemana":null,"numeroLNT":45,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Direção Econômica","dataEficacia":"2019-01-25","diaSemana":null,"numeroLNT":46,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Premiação","dataEficacia":"2019-01-26","diaSemana":null,"numeroLNT":47,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Tela de atendimento Help Desk","dataEficacia":"2019-02-01","diaSemana":null,"numeroLNT":48,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Conscientização de Cursos Oferecidos Gratuitamente","dataEficacia":"2019-02-20","diaSemana":null,"numeroLNT":49,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Gerenciamento de Riscos Corporativos & Compliance","dataEficacia":"2018-12-10","diaSemana":null,"numeroLNT":50,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Premiação","dataEficacia":"2019-03-19","diaSemana":null,"numeroLNT":51,"analiseEficacia":"OK","status":null},{"ano":2018,"curso":"Pão de Mel / Panetone","dataEficacia":"2018-12-15","diaSemana":null,"numeroLNT":52,"analiseEficacia":"OK","status":null}],"yearTotals":{"2026":26,"2025":60,"2024":57,"2023":84,"2022":43,"2021":57,"2020":35,"2019":66,"2018":54},"cursosLista":["Atualização de cobradores do transporte coletivo","Condução Inteligente de Transmissão Manual","Condução Inteligente de Transmissão Automática","Conhecimento do Produto","CURSO 5 S QUALIDADE E PRODUTIVIDADE","Curso de Liderança","Curso de Pneus","Direção Defensiva","Direção Econômica","Elétrica e Eletrônica","Excelência Operacional","Formação de NR20","Motor B7R","Palestra Motivacional","Palestra sobre atendimento de Acidente de Trânsito","Pesquisa de satisfação","Premiação de Média Combustivel","Qualidade no Atendimento ao Cliente","Reciclagem atendentes ensino especial","Tec. Operação avançada eco driver","Técnico em Manutenção Mercedes Benz do Brasil","Treinamento auditor da qualidade","Treinamento Categoria Biarticulado","Treinamento Cetegoria Expresso","Treinamento inspetor de frota","Treinamento para setor de lavação","Treinamento Tec Mecedes-Benz","Visita à Fabrica VOLVO","Curso de Preposto na Justiça do Trabalho"]};
+
+// ============================================================
+// ESTADO DA SESSÃO
+// ============================================================
+let usuarioLogado = null;
+let anoFiltrado = null; // null = todos
+let paginaAtual = 1;
+const POR_PAGINA = 20;
+let dadosFiltrados = [];
+let charts = {};
+
+// Registros dinâmicos (criados/atualizados na sessão)
+// Estrutura: [{...campos, _local:true, _analise:{responsavel,resultado,obs,data}}]
+let registrosDinamicos = JSON.parse(localStorage.getItem('lnt_dinamicos') || '[]');
+let overrides = JSON.parse(localStorage.getItem('lnt_overrides') || '{}');
+// overrides[key] = {responsavel, resultado, obs, dataAnalise}  (key = ano+'-'+numeroLNT ou _local+id)
+
+function salvarStorage() {
+  localStorage.setItem('lnt_dinamicos', JSON.stringify(registrosDinamicos));
+  localStorage.setItem('lnt_overrides', JSON.stringify(overrides));
+}
+
+// ============================================================
+// MERGE: dados base + dinâmicos
+// ============================================================
+function getTodosRegistros() {
+  return [...DB_BASE.records, ...registrosDinamicos];
+}
+
+function getOverride(rec) {
+  const k = rec._localId ? 'loc-' + rec._localId : rec.ano + '-' + rec.numeroLNT;
+  return overrides[k] || null;
+}
+
+function setOverride(rec, analise) {
+  const k = rec._localId ? 'loc-' + rec._localId : rec.ano + '-' + rec.numeroLNT;
+  overrides[k] = analise;
+  salvarStorage();
+}
+
+// ============================================================
+// STATUS ENGINE
+// ============================================================
+function hoje() { return new Date().toISOString().slice(0,10); }
+
+function getRefDate() { return document.getElementById('dataReferencia')?.value || hoje(); }
+
+function diffDias(dataStr, refStr) {
+  if (!dataStr || !refStr) return null;
+  return Math.round((new Date(dataStr+'T00:00:00') - new Date(refStr+'T00:00:00')) / 86400000);
+}
+
+function getStatus(rec) {
+  const ovr = getOverride(rec);
+  if (ovr && ovr.resultado === 'OK') return 'ANÁLISE REALIZADO';
+  if (rec.status === 'ANÁLISE REALIZADO' && !ovr) return 'ANÁLISE REALIZADO';
+  const ref = getRefDate();
+  if (!rec.dataEficacia) return 'SEM DATA';
+  const diff = diffDias(rec.dataEficacia, ref);
+  if (diff === null) return 'SEM DATA';
+  if (diff < 0) return 'VENCIDO';
+  if (diff <= 30) return 'VERIFICAR EFICÁCIA!';
+  if (rec.status === 'DENTRO DO PRAZO' || rec.status === 'ANÁLISE REALIZADO') return rec.status;
+  return 'DENTRO DO PRAZO';
+}
+
+function getResponsavel(rec) {
+  const ovr = getOverride(rec);
+  if (ovr) return ovr.responsavel;
+  return rec._responsavel || '';
+}
+
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
+function formatDate(d) {
+  if (!d) return '—';
+  const p = d.slice(0,10).split('-');
+  return p.length < 3 ? d : p[2]+'/'+p[1]+'/'+p[0];
+}
+
+function badgeHTML(s) {
+  const map = {
+    'ANÁLISE REALIZADO': ['b-realizado','✓'],
+    'DENTRO DO PRAZO':   ['b-prazo','◉'],
+    'VERIFICAR EFICÁCIA!': ['b-verificar','⚠'],
+    'VENCIDO':           ['b-vencido','✗'],
+    'SEM DATA':          ['b-pendente','—'],
+  };
+  const [cls,ic] = map[s] || ['b-pendente','?'];
+  return `<span class="badge ${cls}">${ic} ${s}</span>`;
+}
+
+function destroyChart(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function fecharModal(id) { document.getElementById(id).style.display='none'; }
+
+// ============================================================
+// TEMA
+// ============================================================
+function setTheme(name, el) {
+  document.documentElement.removeAttribute('data-theme');
+  if (name !== 'default') document.documentElement.setAttribute('data-theme', name);
+  document.querySelectorAll('.tc').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  localStorage.setItem('lnt_theme', name);
+  // Re-render charts with new colors after theme change
+  setTimeout(() => {
+    const activeTab = document.querySelector('.section.active');
+    if (activeTab) {
+      const id = activeTab.id.replace('tab-','');
+      if (id === 'dashboard') renderDashboard();
+      else if (id === 'historico') renderHistorico();
+      else if (id === 'cursos') renderCursos();
+    }
+  }, 50);
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('lnt_theme') || 'default';
+  const el = document.querySelector(`[data-theme="${saved}"]`) || document.querySelector('.tc-violet');
+  if (el) setTheme(saved, el);
+}
+
+// ============================================================
+// LOGIN
+// ============================================================
+const USERS = { 'lorena': '8586', 'Lorena': '8586', 'LORENA': '8586' };
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  if (USERS[u] === p || (u.toLowerCase() === 'lorena' && p === '8586')) {
+    usuarioLogado = u.charAt(0).toUpperCase() + u.slice(1).toLowerCase();
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('hdrUser').textContent = '👤 ' + usuarioLogado;
+    document.getElementById('cadResponsavel').value = usuarioLogado;
+    initApp();
+  } else {
+    document.getElementById('loginErr').textContent = 'Usuário ou senha incorretos.';
+  }
+}
+
+function doLogout() {
+  if (!confirm('Deseja sair do sistema?')) return;
+  usuarioLogado = null;
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  else if (name === 'registros') { renderAnoChart(); aplicarFiltros(); }
+  else if (name === 'historico') renderHistorico();
+  else if (name === 'cursos') renderCursos();
+  else if (name === 'insights') renderInsights();
+  else if (name === 'cadastro') renderRecentes();
+  else if (name === 'anexos') renderAnexosTab();
+}
+
+function onRefDateChange() {
+  renderDashboard();
+  aplicarFiltros();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function getRecordsByPeriod() {
+  const ref = getRefDate();
+  // For dashboard, use all records filtered by ref date year
+  const refYear = parseInt(ref.slice(0,4));
+  const all = getTodosRegistros();
+  // Show records up to ref date
+  return all.filter(r => {
+    if (!r.dataEficacia) return true;
+    return r.dataEficacia <= ref;
+  });
+}
+
+function limparFiltrosDash() {
+  document.getElementById('dashDataInicio').value = '';
+  document.getElementById('dashDataFim').value = '';
+  const refYear = parseInt(getRefDate().slice(0,4));
+  const dashAnoEl = document.getElementById('dashAno');
+  if (dashAnoEl) dashAnoEl.value = String(refYear);
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const ref = getRefDate();
+  const refYear = parseInt(ref.slice(0,4));
+  const all = getTodosRegistros();
+
+  // Dashboard date filters
+  const dashIni = document.getElementById('dashDataInicio')?.value || '';
+  const dashFim = document.getElementById('dashDataFim')?.value || '';
+  const dashAnoVal = document.getElementById('dashAno')?.value || '';
+  const targetYear = dashAnoVal ? parseInt(dashAnoVal) : refYear;
+
+  // Filter logic: date range overrides year filter if set
+  let periodoRecs, anoRecs;
+  if (dashIni || dashFim) {
+    periodoRecs = all.filter(r => {
+      if (!r.dataEficacia) return true;
+      if (dashIni && r.dataEficacia < dashIni) return false;
+      if (dashFim && r.dataEficacia > dashFim) return false;
+      return true;
+    });
+    anoRecs = periodoRecs;
+  } else {
+    periodoRecs = all.filter(r => r.ano <= targetYear);
+    anoRecs = periodoRecs.filter(r => r.ano === targetYear);
+  }
+
+  const total = anoRecs.length;
+  const realizado = anoRecs.filter(r => getStatus(r) === 'ANÁLISE REALIZADO').length;
+  const prazo     = anoRecs.filter(r => getStatus(r) === 'DENTRO DO PRAZO').length;
+  const verificar = anoRecs.filter(r => getStatus(r) === 'VERIFICAR EFICÁCIA!').length;
+  const vencido   = anoRecs.filter(r => getStatus(r) === 'VENCIDO').length;
+
+  const periodoLabel = (dashIni || dashFim) ? 'no Período' : `em ${targetYear}`;
+  const totalGeral = periodoRecs.length;
+  const acumuladoAnos = [...new Set(periodoRecs.map(r=>r.ano))].length;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card c-accent">
+      <div class="kpi-label">LNTs ${periodoLabel}</div>
+      <div class="kpi-value" style="color:var(--accent2)">${total}</div>
+      <div class="kpi-sub">filtro ativo</div><div class="kpi-icon">📋</div>
+    </div>
+    <div class="kpi-card c-green">
+      <div class="kpi-label">Análise Realizado</div>
+      <div class="kpi-value" style="color:var(--green)">${realizado}</div>
+      <div class="kpi-sub">${total?Math.round(realizado/total*100):0}% do ano</div><div class="kpi-icon">✅</div>
+    </div>
+    <div class="kpi-card c-blue">
+      <div class="kpi-label">Dentro do Prazo</div>
+      <div class="kpi-value" style="color:var(--accent3)">${prazo}</div>
+      <div class="kpi-sub">aguardando eficácia</div><div class="kpi-icon">⏳</div>
+    </div>
+    <div class="kpi-card c-yellow">
+      <div class="kpi-label">Verificar Eficácia</div>
+      <div class="kpi-value" style="color:var(--yellow)">${verificar}</div>
+      <div class="kpi-sub">ação imediata</div><div class="kpi-icon">⚠️</div>
+    </div>
+    <div class="kpi-card c-red">
+      <div class="kpi-label">Vencidos</div>
+      <div class="kpi-value" style="color:var(--red)">${vencido}</div>
+      <div class="kpi-sub">necessita revisão</div><div class="kpi-icon">❌</div>
+    </div>
+    <div class="kpi-card c-accent">
+      <div class="kpi-label">Acumulado Histórico</div>
+      <div class="kpi-value" style="color:var(--accent2)">${totalGeral}</div>
+      <div class="kpi-sub">${acumuladoAnos} anos até ${refYear}</div><div class="kpi-icon">📈</div>
+    </div>
+  `;
+
+  // STATUS DONUT
+  destroyChart('status');
+  charts['status'] = new Chart(document.getElementById('chartStatus').getContext('2d'), {
+    type:'doughnut',
+    data:{
+      labels:['Realizado','No Prazo','Verificar','Vencido'],
+      datasets:[{data:[realizado,prazo,verificar,vencido],
+        backgroundColor:['#22c55e','#38bdf8','#f59e0b','#ef4444'],
+        borderColor:'#1a1d27',borderWidth:3}]
+    },
+    options:{plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11}}}},cutout:'65%'}
+  });
+
+  // MENSAL
+  const byMonth = Array(12).fill(0);
+  anoRecs.forEach(r => { if(r.dataEficacia) byMonth[parseInt(r.dataEficacia.slice(5,7))-1]++; });
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  destroyChart('mensal');
+  charts['mensal'] = new Chart(document.getElementById('chartMensal').getContext('2d'), {
+    type:'bar',
+    data:{labels:meses,datasets:[{label:'LNTs',data:byMonth,
+      backgroundColor:'#6c63ff55',borderColor:'#6c63ff',borderWidth:2,borderRadius:5}]},
+    options:{plugins:{legend:{display:false}},scales:{
+      x:{ticks:{color:'#64748b'},grid:{color:'#2e315055'}},
+      y:{ticks:{color:'#64748b',stepSize:1},grid:{color:'#2e315055'},beginAtZero:true}}}
+  });
+
+  // EVOLUÇÃO HISTÓRICA LINHA
+  const anos = Object.keys(DB_BASE.yearTotals).map(Number).sort();
+  const filtAnos = anos.filter(a => a <= targetYear);
+  const totaisEvolucao = filtAnos.map(a => {
+    if (a < targetYear) return DB_BASE.yearTotals[a] || 0;
+    return all.filter(r=>r.ano===a).length;
+  });
+  destroyChart('evolucao');
+  charts['evolucao'] = new Chart(document.getElementById('chartEvolucao').getContext('2d'), {
+    type:'line',
+    data:{labels:filtAnos,datasets:[{label:'LNTs Realizados',data:totaisEvolucao,
+      borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.1)',fill:true,tension:.4,
+      pointBackgroundColor:'#a78bfa',pointRadius:5}]},
+    options:{plugins:{legend:{display:false}},scales:{
+      x:{ticks:{color:'#64748b'},grid:{color:'#2e315055'}},
+      y:{ticks:{color:'#64748b',stepSize:10},grid:{color:'#2e315055'},beginAtZero:true}}}
+  });
+
+  // RINGS
+  const rings = [
+    {label:`Taxa Conclusão ${periodoLabel}`,val:total?Math.round(realizado/total*100):0,color:'#22c55e'},
+    {label:'LNTs no Prazo / Realizados',val:total?Math.round((realizado+prazo)/total*100):0,color:'#6c63ff'},
+    {label:'Sem Pendências Críticas',val:total?Math.round((total-vencido-verificar)/total*100):0,color:'#38bdf8'},
+  ];
+  document.getElementById('ringsArea').innerHTML = rings.map(r => {
+    const pct = Math.min(Math.max(r.val,0),100);
+    const circ = 2*Math.PI*38;
+    const dash = (pct/100)*circ;
+    return `<div class="ring-wrap">
+      <div style="position:relative;width:90px;height:90px">
+        <svg class="ring" width="90" height="90" viewBox="0 0 90 90">
+          <circle cx="45" cy="45" r="38" fill="none" stroke="#2e3150" stroke-width="7"/>
+          <circle cx="45" cy="45" r="38" fill="none" stroke="${r.color}" stroke-width="7"
+            stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:${r.color}">${r.val}%</div>
+      </div>
+      <div class="ring-label">${r.label}</div>
+    </div>`;
+  }).join('');
+
+  // PRÓXIMOS VENCIMENTOS
+  const proximos = anoRecs
+    .filter(r => { const s=getStatus(r); return s==='DENTRO DO PRAZO'||s==='VERIFICAR EFICÁCIA!'||s==='VENCIDO'; })
+    .map(r => ({...r, diff: diffDias(r.dataEficacia, ref)}))
+    .sort((a,b)=>Math.abs(a.diff)-Math.abs(b.diff)).slice(0,8);
+
+  if (!proximos.length) {
+    document.getElementById('proximosVencimentos').innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div>Nenhum vencimento pendente no período.</div></div>';
+  } else {
+    document.getElementById('proximosVencimentos').innerHTML = '<div class="timeline">' +
+      proximos.map(r => {
+        const s = getStatus(r);
+        const dc = s==='VERIFICAR EFICÁCIA!'?'yellow':s==='VENCIDO'?'red':'green';
+        const dt = r.diff>0?`em ${r.diff} dias`:r.diff===0?'hoje':`há ${Math.abs(r.diff)} dias`;
+        return `<div class="tl-item"><div class="tl-dot ${dc}"></div>
+          <div class="tl-content">${r.curso}</div>
+          <div class="tl-date">${formatDate(r.dataEficacia)} — ${dt} ${badgeHTML(s)}</div></div>`;
+      }).join('') + '</div>';
+  }
+}
+
+// ============================================================
+// REGISTROS — GRÁFICO DE ANOS (linha clicável)
+// ============================================================
+let chartAnoSelInstance = null;
+function renderAnoChart() {
+  const all = getTodosRegistros();
+  const anos = [...new Set(all.map(r=>r.ano))].sort();
+  const totais = anos.map(a => all.filter(r=>r.ano===a).length);
+
+  destroyChart('anosel');
+  chartAnoSelInstance = new Chart(document.getElementById('chartAnosel').getContext('2d'), {
+    type:'line',
+    data:{
+      labels: anos,
+      datasets:[{
+        label:'LNTs por Ano',data:totais,
+        borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.15)',fill:true,tension:.35,
+        pointBackgroundColor: anos.map(a => a===anoFiltrado?'#f59e0b':'#a78bfa'),
+        pointRadius: anos.map(a => a===anoFiltrado?7:4),
+        pointHoverRadius:8
+      }]
+    },
+    options:{
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y} LNTs em ${ctx.label}`}}},
+      scales:{
+        x:{ticks:{color:'#64748b'},grid:{color:'#2e315033'}},
+        y:{ticks:{color:'#64748b',stepSize:10},grid:{color:'#2e315033'},beginAtZero:true}},
+      onClick(e,els){
+        if(els.length){
+          const ano = anos[els[0].index];
+          anoFiltrado = anoFiltrado===ano ? null : ano;
+          document.getElementById('filtroAnoLabel').textContent = anoFiltrado ? `Filtrando: ${anoFiltrado}` : 'Todos os anos';
+          // Sync date filters with selected year
+          if (anoFiltrado) {
+            document.getElementById('filtroDataInicio').value = anoFiltrado + '-01-01';
+            document.getElementById('filtroDataFim').value = anoFiltrado + '-12-31';
+          } else {
+            document.getElementById('filtroDataInicio').value = '';
+            document.getElementById('filtroDataFim').value = '';
+          }
+          renderAnoChart();
+          aplicarFiltros();
+        }
+      }
+    }
+  });
+  charts['anosel'] = chartAnoSelInstance;
+}
+
+function limparAnoFiltro() {
+  anoFiltrado = null;
+  document.getElementById('filtroAnoLabel').textContent = 'Todos os anos';
+  document.getElementById('filtroDataInicio').value = '';
+  document.getElementById('filtroDataFim').value = '';
+  renderAnoChart();
+  aplicarFiltros();
+}
+
+// ============================================================
+// FILTROS + TABELA
+// ============================================================
+function aplicarFiltrosPorData() {
+  // When date range is set, clear year filter to avoid conflict
+  const dataIni = document.getElementById('filtroDataInicio')?.value||'';
+  const dataFim = document.getElementById('filtroDataFim')?.value||'';
+  if (dataIni || dataFim) {
+    anoFiltrado = null;
+    document.getElementById('filtroAnoLabel').textContent = 'Todos os anos';
+    renderAnoChart();
+  }
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  const ref = getRefDate();
+  const termo = (document.getElementById('filtroCurso')?.value||'').toLowerCase();
+  const status = document.getElementById('filtroStatus')?.value||'';
+  const dataIni = document.getElementById('filtroDataInicio')?.value||'';
+  const dataFim = document.getElementById('filtroDataFim')?.value||'';
+
+  const all = getTodosRegistros();
+  dadosFiltrados = all.filter(r => {
+    if (anoFiltrado && r.ano !== anoFiltrado) return false;
+    if (termo && !r.curso.toLowerCase().includes(termo)) return false;
+    if (dataIni && r.dataEficacia && r.dataEficacia < dataIni) return false;
+    if (dataFim && r.dataEficacia && r.dataEficacia > dataFim) return false;
+    if (status) { if (getStatus(r) !== status) return false; }
+    return true;
+  });
+
+  paginaAtual = 1;
+  renderTabela();
+}
+
+function limparFiltros() {
+  ['filtroCurso','filtroDataInicio','filtroDataFim'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('filtroStatus').value='';
+  anoFiltrado = null;
+  document.getElementById('filtroAnoLabel').textContent = 'Todos os anos';
+  renderAnoChart();
+  aplicarFiltros();
+}
+
+let recIdxAbertoAnalise = null;
+
+function renderTabela() {
+  const total = dadosFiltrados.length;
+  const totalPags = Math.max(1, Math.ceil(total/POR_PAGINA));
+  const ini = (paginaAtual-1)*POR_PAGINA;
+  const fim = Math.min(ini+POR_PAGINA,total);
+  const page = dadosFiltrados.slice(ini,fim);
+
+  const tbody = document.getElementById('tabelaCorpo');
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">🔍</div>Nenhum registro encontrado.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = page.map((r,i) => {
+      const s = getStatus(r);
+      const resp = getResponsavel(r);
+      const globalIdx = dadosFiltrados.indexOf(r);
+      const podeAcao = s === 'VERIFICAR EFICÁCIA!' || s === 'VENCIDO' || s === 'DENTRO DO PRAZO';
+      const _ak = anexoKey(r); const _temDoc = anexosKeys.has(_ak);
+      return `<tr>
+        <td><span style="font-size:10px;color:var(--text3);font-weight:700">#${r.numeroLNT||'N'}</span></td>
+        <td><span style="font-size:11px;color:var(--text3)">${r.ano}</span></td>
+        <td style="font-weight:500;font-size:12px">${r.curso}</td>
+        <td style="font-size:11px;color:var(--text2)">${formatDate(r.dataEficacia)}</td>
+        <td style="font-size:10px;color:var(--text3)">${r.diaSemana||'—'}</td>
+        <td>${r.analiseEficacia==='OK'||getStatus(r)==='ANÁLISE REALIZADO'?'<span style="color:var(--green);font-weight:700;font-size:11px">✓ OK</span>':'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+        <td>${badgeHTML(s)}</td>
+        <td style="font-size:11px;color:var(--text2)">${resp||'—'}</td>
+        <td style="white-space:nowrap">${podeAcao?`<button class="action-btn" onclick="abrirAnalise(${globalIdx})">✍ Analisar</button> `:''}<button class="action-btn" title="${_temDoc?('Documento: '+((anexosMeta[_ak]&&anexosMeta[_ak].nome)||'PDF')):'Anexar documento (PDF)'}" onclick="abrirAnexo('${_ak}')"${_temDoc?' style="border-color:var(--green);color:var(--green)"':''}>📎${_temDoc?' ✓':''}</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('paginatorInfo').textContent = `${ini+1}–${fim} de ${total} registros`;
+  const btns = document.getElementById('paginatorBtns');
+  btns.innerHTML = '';
+  for (let p=1; p<=totalPags; p++) {
+    const b = document.createElement('button');
+    b.className = 'page-btn'+(p===paginaAtual?' active':'');
+    b.textContent = p;
+    b.onclick = () => { paginaAtual=p; renderTabela(); };
+    btns.appendChild(b);
+  }
+}
+
+// ============================================================
+// MODAL ANÁLISE
+// ============================================================
+function abrirAnalise(idx) {
+  recIdxAbertoAnalise = idx;
+  const r = dadosFiltrados[idx];
+  document.getElementById('maCurso').value = r.curso;
+  document.getElementById('maData').value = r.dataEficacia ? r.dataEficacia.slice(0,10) : hoje();
+  document.getElementById('maResponsavel').value = usuarioLogado || '';
+  document.getElementById('maResultado').value = 'OK';
+  document.getElementById('maObs').value = '';
+  document.getElementById('maErr').textContent = '';
+  document.getElementById('modalAnalise').style.display = 'flex';
+}
+
+function confirmarAnalise() {
+  const resp = document.getElementById('maResponsavel').value.trim();
+  if (!resp) { document.getElementById('maErr').textContent = 'Informe o nome do responsável.'; return; }
+  const resultado = document.getElementById('maResultado').value;
+  const obs = document.getElementById('maObs').value.trim();
+  const dataVerificacao = document.getElementById('maData').value || hoje();
+  const r = dadosFiltrados[recIdxAbertoAnalise];
+  setOverride(r, { responsavel: resp, resultado, obs, dataAnalise: dataVerificacao });
+  fecharModal('modalAnalise');
+  showToast(`✅ Análise registrada por ${resp}!`);
+  aplicarFiltros();
+  renderDashboard();
+}
+
+// ============================================================
+// HISTÓRICO
+// ============================================================
+function renderHistorico() {
+  const anoIni = parseInt(document.getElementById('histAnoIni')?.value || 2018);
+  const anoFim = parseInt(document.getElementById('histAnoFim')?.value || 2026);
+  const all = getTodosRegistros();
+  const recs = all.filter(r => r.ano >= anoIni && r.ano <= anoFim);
+  const anos = [];
+  for (let a=anoIni; a<=anoFim; a++) anos.push(a);
+  const totais = anos.map(a => recs.filter(r=>r.ano===a).length);
+  const total = totais.reduce((a,b)=>a+b,0);
+  const max = Math.max(...totais); const min = Math.min(...totais.filter(v=>v>0)||[0]);
+  const maiorAno = anos[totais.indexOf(max)];
+  const media = anos.length ? Math.round(total/anos.length) : 0;
+
+  document.getElementById('historicoKpis').innerHTML = `
+    <div class="kpi-card c-accent"><div class="kpi-label">Total no Período</div><div class="kpi-value" style="color:var(--accent2)">${total}</div><div class="kpi-sub">${anoIni}–${anoFim}</div></div>
+    <div class="kpi-card c-green"><div class="kpi-label">Pico</div><div class="kpi-value" style="color:var(--green)">${max}</div><div class="kpi-sub">em ${maiorAno}</div></div>
+    <div class="kpi-card c-blue"><div class="kpi-label">Média Anual</div><div class="kpi-value" style="color:var(--accent3)">${media}</div><div class="kpi-sub">LNTs/ano</div></div>
+    <div class="kpi-card c-yellow"><div class="kpi-label">Anos Analisados</div><div class="kpi-value" style="color:var(--yellow)">${anos.length}</div><div class="kpi-sub">no período</div></div>
+  `;
+
+  destroyChart('historico');
+  charts['historico'] = new Chart(document.getElementById('chartHistorico').getContext('2d'), {
+    type:'bar',
+    data:{labels:anos,datasets:[
+      {label:'LNTs',data:totais,backgroundColor:totais.map((v,i)=>v===max?'#22c55e88':'#6c63ff55'),borderColor:totais.map((v,i)=>v===max?'#22c55e':'#6c63ff'),borderWidth:2,borderRadius:7},
+      {label:'Média',data:totais.map(()=>media),type:'line',borderColor:'#f59e0b',borderDash:[5,3],borderWidth:2,pointRadius:0,fill:false}
+    ]},
+    options:{plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{
+      x:{ticks:{color:'#64748b'},grid:{color:'#2e315033'}},
+      y:{ticks:{color:'#64748b',stepSize:10},grid:{color:'#2e315033'},beginAtZero:true}}}
+  });
+
+  document.getElementById('historicoTimeline').innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:14px">
+      <div class="chart-title">Resumo por Ano (${anoIni}–${anoFim})</div>
+      <div class="timeline" style="margin-top:14px">
+        ${[...anos].reverse().map(a=>{
+          const v=totais[anos.indexOf(a)];
+          const pct=max?Math.round(v/max*100):0;
+          return `<div class="tl-item"><div class="tl-dot ${v===max?'green':''}"></div>
+            <div class="tl-content" style="font-weight:700">${a} — <span style="color:var(--accent2)">${v} LNTs</span></div>
+            <div style="margin-top:5px"><div class="bar-track" style="max-width:260px"><div class="bar-fill" style="width:${pct}%;background:${v===max?'var(--green)':'var(--accent)'}"></div></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// CURSOS
+// ============================================================
+function renderCursos() {
+  const anoIni = parseInt(document.getElementById('cursosAnoIni')?.value || 2018);
+  const anoFim = parseInt(document.getElementById('cursosAnoFim')?.value || 2026);
+  const all = getTodosRegistros();
+  const recs = all.filter(r => r.ano >= anoIni && r.ano <= anoFim);
+  const counter = {};
+  recs.forEach(r => { const k=r.curso.trim(); counter[k]=(counter[k]||0)+1; });
+  const sorted = Object.entries(counter).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  const max = sorted.length ? sorted[0][1] : 1;
+
+  document.getElementById('barrasCursos').innerHTML = sorted.map(([name,count])=>`
+    <div class="bar-row">
+      <div class="bar-label" title="${name}">${name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(count/max*100)}%"></div></div>
+      <div class="bar-val">${count}</div>
+    </div>`).join('');
+
+  document.getElementById('catalogoCursos').innerHTML = DB_BASE.cursosLista.map((c,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 11px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)">
+      <span style="font-size:10px;color:var(--text3);width:18px;text-align:right">${i+1}</span>
+      <span style="font-size:12px">${c}</span>
+    </div>`).join('');
+}
+
+// ============================================================
+// CADASTRO
+// ============================================================
+let localIdCounter = Date.now();
+
+function initCadastroDatalist() {
+  const todos = [...new Set([...DB_BASE.cursosLista, ...DB_BASE.records.map(r=>r.curso)])].sort();
+  document.getElementById('cadCursoList').innerHTML = todos.map(c=>`<option value="${c}">`).join('');
+}
+
+function salvarCadastro() {
+  const curso = document.getElementById('cadCurso').value.trim();
+  const data  = document.getElementById('cadData').value;
+  const resp  = document.getElementById('cadResponsavel').value.trim();
+  const obs   = document.getElementById('cadObs').value.trim();
+  const msg   = document.getElementById('cadMsg');
+
+  if (!curso) { msg.innerHTML = '<span style="color:var(--red)">⚠ Informe o nome do curso.</span>'; return; }
+  if (!data)  { msg.innerHTML = '<span style="color:var(--red)">⚠ Informe a data de eficácia.</span>'; return; }
+  if (!resp)  { msg.innerHTML = '<span style="color:var(--red)">⚠ Informe o responsável pelo cadastro.</span>'; return; }
+
+  const refDate = getRefDate();
+  const ano = parseInt(data.slice(0,4));
+  const diff = diffDias(data, refDate);
+  let status = diff < 0 ? 'VENCIDO' : diff <= 30 ? 'VERIFICAR EFICÁCIA!' : 'DENTRO DO PRAZO';
+
+  const novoReg = {
+    _localId: ++localIdCounter,
+    ano,
+    curso,
+    dataEficacia: data,
+    diaSemana: null,
+    numeroLNT: null,
+    analiseEficacia: null,
+    status,
+    _responsavel: resp,
+    _obs: obs,
+    _cadastradoEm: hoje(),
+    _cadastradoPor: usuarioLogado
+  };
+
+  registrosDinamicos.push(novoReg);
+  salvarStorage();
+
+  msg.innerHTML = `<span style="color:var(--green)">✅ Registro salvo com sucesso! O evento será exibido nas abas Registros e Histórico.</span>`;
+  limparCadastro(false);
+  renderRecentes();
+  showToast('✅ Novo LNT cadastrado com sucesso!');
+}
+
+function limparCadastro(limparMsg=true) {
+  document.getElementById('cadCurso').value = '';
+  document.getElementById('cadData').value = '';
+  document.getElementById('cadObs').value = '';
+  document.getElementById('cadResponsavel').value = usuarioLogado || '';
+  if (limparMsg) document.getElementById('cadMsg').innerHTML = '';
+}
+
+function renderRecentes() {
+  const lista = [...registrosDinamicos].reverse().slice(0,10);
+  const el = document.getElementById('recentesList');
+  if (!lista.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:12px 0">Nenhum registro adicionado nesta sessão ainda.</div>';
+    return;
+  }
+  el.innerHTML = lista.map(r => `
+    <div class="rec-item">
+      <div>
+        <div class="rec-curso">${r.curso}</div>
+        <div class="rec-meta">Eficácia: ${formatDate(r.dataEficacia)} · Por: ${r._responsavel} · ${badgeHTML(getStatus(r))}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ============================================================
+// INSIGHTS
+// ============================================================
+function renderInsights() {
+  const ref = getRefDate();
+  const refYear = parseInt(ref.slice(0,4));
+  const all = getTodosRegistros();
+  const anoRecs = all.filter(r=>r.ano===refYear);
+  const anos = Object.keys(DB_BASE.yearTotals).map(Number).sort();
+  const totais = anos.map(a => DB_BASE.yearTotals[a]);
+
+  const t2024 = DB_BASE.yearTotals['2024']||0;
+  const t2025 = DB_BASE.yearTotals['2025']||0;
+  const variacao = t2024>0?Math.round((t2025-t2024)/t2024*100):0;
+
+  const counter = {};
+  all.forEach(r=>{const k=r.curso.trim();counter[k]=(counter[k]||0)+1;});
+  const topCurso = Object.entries(counter).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+
+  const verificar = anoRecs.filter(r=>getStatus(r)==='VERIFICAR EFICÁCIA!');
+  const vencidos  = anoRecs.filter(r=>getStatus(r)==='VENCIDO');
+  const prazo     = anoRecs.filter(r=>getStatus(r)==='DENTRO DO PRAZO');
+  const dinamicos = registrosDinamicos.length;
+
+  const insights = [
+    {icon:'📈',title:`Tendência 2024→2025`,text:`Volume passou de ${t2024} para ${t2025} LNTs (${variacao>0?'+':''}${variacao}%). ${variacao>0?'Evolução positiva.':'Atenção: redução na frequência.'}`},
+    {icon:'🏆',title:'Curso Mais Recorrente',text:`"${topCurso[0]}" lidera com ${topCurso[1]} edições no histórico total.`},
+    {icon:'⚠️',title:'Atenção — Verificar Eficácia',text:verificar.length?`${verificar.length} LNT(s) exigem verificação imediata: ${verificar.slice(0,3).map(r=>r.curso).join(', ')}${verificar.length>3?'...':'.'}` : 'Nenhum LNT em estado crítico no momento.'},
+    {icon:'❌',title:'LNTs Vencidos',text:vencidos.length?`${vencidos.length} LNT(s) estão vencidos em ${refYear}. Acione revisão ou arquivamento.`:'Sem LNTs vencidos no período atual. ✅'},
+    {icon:'📅',title:'Agenda Pendente',text:`${prazo.length} LNT(s) aguardam verificação de eficácia nos próximos meses em ${refYear}.`},
+    {icon:'➕',title:'Novos Registros (Sessão)',text:dinamicos?`${dinamicos} novo(s) LNT(s) cadastrado(s) nesta sessão e integrado(s) à base histórica.`:'Nenhum novo registro adicionado nesta sessão ainda.'},
+  ];
+
+  document.getElementById('insightsGrid').innerHTML = insights.map(i=>`
+    <div class="insight-card">
+      <div class="insight-icon">${i.icon}</div>
+      <div><div class="insight-title">${i.title}</div><div class="insight-text">${i.text}</div></div>
+    </div>`).join('');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+// ============================================================
+// ANEXOS (PDF) DA LNT — vinculados ao registro de origem
+// Gravados no BANCO MySQL via anexos.php (disponíveis em qualquer computador)
+// ============================================================
+let anexosKeys = new Set();
+let anexosMeta = {};
+let anexoKeyAberto = null;
+const ANEXO_APP = 'lnt';
+const ANEXO_MAX = 8 * 1024 * 1024; // 8 MB (limite seguro para gravar no banco)
+
+function anexoKey(r){ return r._localId ? ('loc-'+r._localId) : (r.ano+'-'+r.numeroLNT); }
+
+// URL do endpoint PHP (mesma pasta do index.html do portal, mesmo dentro do iframe)
+function anexoApiUrl(){
+  try{
+    if(window.parent && window.parent !== window){
+      var base = window.parent.location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
+      return base + 'anexos.php';
+    }
+  }catch(e){}
+  return 'anexos.php';
+}
+function _b64FromFile(file){
+  return new Promise(function(res,rej){
+    var fr=new FileReader();
+    fr.onload=function(){ var s=String(fr.result); var i=s.indexOf(','); res(i>=0?s.slice(i+1):s); };
+    fr.onerror=function(){ rej(fr.error); };
+    fr.readAsDataURL(file);
+  });
+}
+function _blobFromB64(b64, tipo){
+  var bin=atob(b64||''); var len=bin.length; var arr=new Uint8Array(len);
+  for(var i=0;i<len;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr], {type: tipo||'application/pdf'});
+}
+function _anexoApi(action, query, postBody){
+  var url=anexoApiUrl()+'?action='+encodeURIComponent(action);
+  if(query){ for(var k in query){ url += '&'+encodeURIComponent(k)+'='+encodeURIComponent(query[k]); } }
+  var opt = postBody ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(postBody)} : {};
+  return fetch(url, opt).then(function(r){ return r.text(); }).then(function(t){
+    var d; try{ d=JSON.parse(t); }catch(e){ throw new Error('Servidor indisponível ou anexos.php não configurado.'); }
+    if(!d.ok) throw new Error(d.erro||'Falha no servidor.');
+    return d;
+  });
+}
+// Primitivas com a MESMA assinatura de antes — agora gravando no banco MySQL
+function idbPut(obj){
+  return _b64FromFile(obj.blob).then(function(b64){
+    return _anexoApi('anexo_save', null, {app:ANEXO_APP, key:obj.key, nome:obj.nome, tipo:obj.tipo||'application/pdf', tamanho:obj.tamanho, dados:b64});
+  }).then(function(){ return true; });
+}
+function idbGet(key){
+  return _anexoApi('anexo_get', {app:ANEXO_APP, key:key}, null).then(function(d){
+    if(!d.item) return null;
+    var it=d.item;
+    return {key:key, nome:it.nome, tipo:it.tipo, tamanho:it.tamanho, ts:it.ts, blob:_blobFromB64(it.dados, it.tipo)};
+  });
+}
+function idbDel(key){
+  return _anexoApi('anexo_del', null, {app:ANEXO_APP, key:key}).then(function(){ return true; });
+}
+function idbAll(){
+  return _anexoApi('anexo_list', {app:ANEXO_APP}, null).then(function(d){
+    return (d.items||[]).map(function(it){ return {key:it.key, nome:it.nome, tipo:it.tipo, tamanho:it.tamanho, ts:it.ts}; });
+  });
+}
+
+async function carregarAnexos(){
+  try{
+    const all = await idbAll();
+    anexosKeys = new Set(all.map(d=>d.key));
+    anexosMeta = {};
+    all.forEach(d=>{ anexosMeta[d.key] = {nome:d.nome, tamanho:d.tamanho, ts:d.ts}; });
+    if(document.getElementById('tab-registros')?.classList.contains('active')) renderTabela();
+    if(document.getElementById('tab-anexos')?.classList.contains('active')) renderAnexosTab();
+  }catch(e){ console.warn('Anexos indisponíveis:', e); }
+}
+
+function formatTamanho(b){ if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+
+function abrirAnexo(key){
+  anexoKeyAberto = key;
+  const rec = getTodosRegistros().find(r=>anexoKey(r)===key);
+  const ctx = rec ? ('LNT #'+(rec.numeroLNT||'-')+'  \u00b7  '+rec.ano+'  \u00b7  '+rec.curso) : key;
+  document.getElementById('anexoCtx').value = ctx;
+  renderAnexoModal();
+  document.getElementById('modalAnexo').style.display = 'flex';
+}
+
+function renderAnexoModal(){
+  const meta = anexosMeta[anexoKeyAberto];
+  const area = document.getElementById('anexoAtual');
+  if(meta){
+    area.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px">'+
+        '<span style="font-size:26px">\U0001F4C4</span>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+meta.nome+'</div>'+
+          '<div style="font-size:11px;color:var(--text2)">'+formatTamanho(meta.tamanho)+' \u00b7 anexado em '+formatDate(new Date(meta.ts).toISOString())+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'+
+        '<button class="btn btn-green" onclick="abrirAnexoDoc()">\U0001F441 Abrir</button>'+
+        '<button class="btn btn-outline" onclick="baixarAnexoDoc()">\u2b07 Baixar</button>'+
+        '<button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="removerAnexoDoc()">\U0001F5D1 Remover</button>'+
+      '</div>';
+  } else {
+    area.innerHTML = '<div style="text-align:center;color:var(--text2);font-size:13px;padding:14px 0">Nenhum documento anexado a este registro.</div>';
+  }
+}
+
+function selecionarAnexo(input){
+  const f = input.files && input.files[0];
+  input.value = '';
+  if(!f) return;
+  const ehPdf = f.type==='application/pdf' || /\.pdf$/i.test(f.name);
+  if(!ehPdf){ showToast('\u26a0 Selecione um arquivo PDF.','warn'); return; }
+  if(f.size > ANEXO_MAX){ showToast('\u26a0 PDF muito grande (m\u00e1x. 25 MB).','warn'); return; }
+  const ts = Date.now();
+  idbPut({ key:anexoKeyAberto, nome:f.name, tipo:f.type||'application/pdf', tamanho:f.size, blob:f, ts })
+    .then(()=>{
+      anexosKeys.add(anexoKeyAberto);
+      anexosMeta[anexoKeyAberto] = {nome:f.name, tamanho:f.size, ts};
+      renderAnexoModal(); renderTabela();
+      showToast('\U0001F4CE Documento anexado ao registro!');
+    })
+    .catch(e=>showToast('\u26a0 Erro ao salvar o documento.','err'));
+}
+
+async function abrirAnexoDoc(){
+  try{ const d=await idbGet(anexoKeyAberto); if(!d){ showToast('\u26a0 Documento n\u00e3o encontrado.','err'); return; }
+    const url=URL.createObjectURL(d.blob); window.open(url,'_blank'); setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(e){ showToast('\u26a0 Erro ao abrir o documento.','err'); }
+}
+async function baixarAnexoDoc(){
+  try{ const d=await idbGet(anexoKeyAberto); if(!d){ showToast('\u26a0 Documento n\u00e3o encontrado.','err'); return; }
+    const url=URL.createObjectURL(d.blob); const a=document.createElement('a'); a.href=url; a.download=d.nome||'documento.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(e){ showToast('\u26a0 Erro ao baixar o documento.','err'); }
+}
+async function removerAnexoDoc(){
+  if(!confirm('Remover o documento anexado a este registro?')) return;
+  try{ await idbDel(anexoKeyAberto); anexosKeys.delete(anexoKeyAberto); delete anexosMeta[anexoKeyAberto]; renderAnexoModal(); renderTabela(); showToast('\U0001F5D1 Documento removido.','err'); }
+  catch(e){ showToast('\u26a0 Erro ao remover o documento.','err'); }
+}
+
+// ============================================================
+// ABA ANEXOS — incluir e visualizar PDF por registro
+// ============================================================
+let anexoPreviewURL = null;
+function escAnexo(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderAnexosTab(){ renderAnexoSelect(); renderAnexosLista(); }
+function renderAnexoSelect(){
+  var sel=document.getElementById('anexoSelect'); if(!sel) return;
+  var q=((document.getElementById('anexoBusca')||{}).value||'').toLowerCase().trim();
+  var todos=getTodosRegistros().slice();
+  todos.sort(function(a,b){ return (b.ano-a.ano) || ((b.numeroLNT||0)-(a.numeroLNT||0)); });
+  var filtr=todos.filter(function(r){ if(!q) return true; return (String(r.curso||'').toLowerCase().indexOf(q)>=0) || String(r.ano).indexOf(q)>=0 || String(r.numeroLNT||'').indexOf(q)>=0; });
+  var MAX=400; var lim=filtr.slice(0,MAX);
+  sel.innerHTML = lim.length ? lim.map(function(r){ var k=anexoKey(r); var has=anexosKeys.has(k); return '<option value="'+k+'">'+(has?'\U0001F4CE ':'')+'LNT #'+(r.numeroLNT||'-')+' \u00b7 '+r.ano+' \u00b7 '+escAnexo(String(r.curso||'').slice(0,70))+'</option>'; }).join('') : '<option value="">Nenhum registro encontrado</option>';
+}
+function anexarPeloTab(){
+  var key=(document.getElementById('anexoSelect')||{}).value;
+  var inp=document.getElementById('anexoFileTab');
+  var f=inp&&inp.files&&inp.files[0];
+  var msg=document.getElementById('anexoTabMsg');
+  if(!key){ msg.innerHTML='<span style="color:var(--red)">\u26a0 Selecione o registro de origem.</span>'; return; }
+  if(!f){ msg.innerHTML='<span style="color:var(--red)">\u26a0 Escolha um arquivo PDF.</span>'; return; }
+  var ehPdf=f.type==='application/pdf' || /\.pdf$/i.test(f.name);
+  if(!ehPdf){ msg.innerHTML='<span style="color:var(--red)">\u26a0 O arquivo precisa ser PDF.</span>'; return; }
+  if(f.size>ANEXO_MAX){ msg.innerHTML='<span style="color:var(--red)">\u26a0 PDF muito grande (m\u00e1x. 25 MB).</span>'; return; }
+  var ts=Date.now();
+  idbPut({ key:key, nome:f.name, tipo:f.type||'application/pdf', tamanho:f.size, blob:f, ts:ts }).then(function(){
+    anexosKeys.add(key); anexosMeta[key]={nome:f.name,tamanho:f.size,ts:ts};
+    inp.value='';
+    msg.innerHTML='<span style="color:var(--green)">\u2705 Documento anexado ao registro!</span>';
+    renderAnexosLista(); renderAnexoSelect(); if(typeof renderTabela==='function') renderTabela();
+    showToast('\U0001F4CE Documento anexado!');
+  }).catch(function(e){ msg.innerHTML='<span style="color:var(--red)">\u26a0 '+(e&&e.message?e.message:'Erro ao salvar.')+'</span>'; });
+}
+function renderAnexosLista(){
+  var tb=document.getElementById('anexosListaCorpo'); if(!tb) return;
+  var keys=Object.keys(anexosMeta);
+  if(!keys.length){ tb.innerHTML='<tr><td colspan="5"><div class="empty"><div class="empty-icon">\U0001F4C4</div>Nenhum documento anexado ainda.</div></td></tr>'; return; }
+  var byRec={}; getTodosRegistros().forEach(function(r){ byRec[anexoKey(r)]=r; });
+  keys.sort(function(a,b){ return (anexosMeta[b].ts||0)-(anexosMeta[a].ts||0); });
+  tb.innerHTML=keys.map(function(k){ var m=anexosMeta[k], r=byRec[k]; var reg=r?('LNT #'+(r.numeroLNT||'-')+' \u00b7 '+r.ano+' \u00b7 '+escAnexo(String(r.curso||'').slice(0,55))):escAnexo(k); return '<tr>'+
+    '<td style="font-size:12px">'+reg+'</td>'+
+    '<td style="font-size:12px;color:var(--text2)">'+escAnexo(m.nome)+'</td>'+
+    '<td style="font-size:11px;color:var(--text3)">'+formatTamanho(m.tamanho)+'</td>'+
+    '<td style="font-size:11px;color:var(--text3)">'+formatDate(new Date(m.ts).toISOString())+'</td>'+
+    '<td style="white-space:nowrap">'+
+      '<button class="action-btn" onclick="visualizarAnexo(\''+k+'\')">\U0001F441 Visualizar</button> '+
+      '<button class="action-btn" onclick="baixarAnexoPorKey(\''+k+'\')">\u2b07</button> '+
+      '<button class="action-btn" style="color:var(--red);border-color:var(--red)" onclick="removerAnexoPorKey(\''+k+'\')">\U0001F5D1</button>'+
+    '</td></tr>'; }).join('');
+}
+function visualizarAnexo(key){
+  idbGet(key).then(function(d){ if(!d){ showToast('\u26a0 Documento n\u00e3o encontrado.','err'); return; }
+    if(anexoPreviewURL){ try{URL.revokeObjectURL(anexoPreviewURL);}catch(e){} }
+    anexoPreviewURL=URL.createObjectURL(d.blob);
+    document.getElementById('anexoPreviewNome').textContent=d.nome||'documento.pdf';
+    document.getElementById('anexoPreviewFrame').src=anexoPreviewURL;
+    var c=document.getElementById('anexoPreviewCard'); c.style.display='block'; try{c.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}
+  }).catch(function(e){ showToast('\u26a0 Erro ao abrir o documento.','err'); });
+}
+function abrirAnexoPreviewNovaAba(){ if(anexoPreviewURL) window.open(anexoPreviewURL,'_blank'); }
+function fecharAnexoPreview(){ var c=document.getElementById('anexoPreviewCard'); if(c) c.style.display='none'; var fr=document.getElementById('anexoPreviewFrame'); if(fr) fr.src='about:blank'; if(anexoPreviewURL){ try{URL.revokeObjectURL(anexoPreviewURL);}catch(e){} anexoPreviewURL=null; } }
+function baixarAnexoPorKey(key){ idbGet(key).then(function(d){ if(!d){ showToast('\u26a0 N\u00e3o encontrado.','err'); return; } var u=URL.createObjectURL(d.blob), a=document.createElement('a'); a.href=u; a.download=d.nome||'documento.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(u);},60000); }).catch(function(){ showToast('\u26a0 Erro ao baixar.','err'); }); }
+async function removerAnexoPorKey(key){ if(!confirm('Remover o documento deste registro?')) return; try{ await idbDel(key); anexosKeys.delete(key); delete anexosMeta[key]; renderAnexosLista(); if(typeof renderTabela==='function') renderTabela(); showToast('\U0001F5D1 Documento removido.','err'); }catch(e){ showToast('\u26a0 Erro ao remover.','err'); } }
+
+function initApp() {
+  const el = document.getElementById('dataReferencia');
+  el.value = hoje();
+  // Initialize dashboard year filter with current year
+  const refYear = parseInt(hoje().slice(0,4));
+  const dashAnoEl = document.getElementById('dashAno');
+  if (dashAnoEl) {
+    dashAnoEl.value = String(refYear);
+    // Update options to mark current year as selected
+    Array.from(dashAnoEl.options).forEach(opt => {
+      opt.selected = opt.value === String(refYear);
+    });
+  }
+  initTheme();
+  initCadastroDatalist();
+  renderDashboard();
+  renderAnoChart();
+  aplicarFiltros();
+  carregarAnexos();
+}
+
+// Enter no login
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ============================================================
+// AUTO-LOGIN no Portal Redentor: se estiver embutido (iframe),
+// abre direto apos o login do portal, sem pedir senha de novo.
+// Standalone (aberto sozinho) mantem a tela de login normal.
+// ============================================================
+(function(){
+  var embutido=false; try{ embutido = (window.self !== window.top); }catch(e){ embutido = true; }
+  if(!embutido) return;
+  function entrar(){
+    var u=document.getElementById('loginUser'), p=document.getElementById('loginPass');
+    if(u&&p&&typeof doLogin==='function'){ u.value='lorena'; p.value='8586'; try{ doLogin(); }catch(e){} }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', entrar);
+  else entrar();
+})();
+</script>
+<script>
+/* ☁ Receptor do painel Drive do Redentor Hub */
+window.addEventListener("message",function(ev){
+  try{
+    var d=ev.data;
+    if(!(d&&d.hubDrive==="import"&&d.buf))return;
+    var f=new File([d.buf],d.nome||"planilha.xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var inp=document.querySelector("input[type=file][accept*=xls i]")||document.querySelector("input[type=file][accept*=sheet i]")||document.querySelector("input[type=file]");
+    if(inp){
+      try{
+        var dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files;
+        try{ev.source.postMessage({hubDrive:"ok"},"*");}catch(e){}
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+        return;
+      }catch(e){}
+    }
+    /* sem importador nativo: o Hub mostra o aviso adequado */
+  }catch(e){}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+==========================================================
+  TV INDOOR — cinco melhorias + correcao de horario
+==========================================================
+
+1. HORARIO 3 HORAS ADIANTADO — corrigido
+   O atualizador mostrava 18h01 para um envio das 15h01.
+   Os arquivos de auxilio/ nao definiam o fuso, e o servidor
+   usa UTC por padrao. Agora usam America/Sao_Paulo.
+
+   (A linha teve de entrar DEPOIS do declare(strict_types),
+   que por regra do PHP e a primeira instrucao do arquivo.)
+
+2. COMUNICADO URGENTE — refeito
+   Eram TRES window.prompt seguidos, o segundo pedindo para
+   digitar numeros separados por virgula a partir de uma
+   lista. Numa emergencia, provavelmente pelo celular.
+
+   Agora e uma tela so:
+     texto com contador (avisa quando fica longo demais)
+     telas como caixas marcaveis, com Todas / Nenhuma
+     duracao em lista, nao digitada
+     previa antes de disparar
+     confirmacao dizendo em quantas telas vai entrar
+
+3. TROCAR O LINK DA TV
+   Botao "Novo link" na linha de cada TV. Existe porque link
+   vaza: alguem manda por WhatsApp para conferir e ele passa
+   a circular. Antes a unica saida era excluir a TV e
+   recriar, perdendo o historico.
+   Confirmacao dupla — a tela para de funcionar na hora.
+
+4. DUPLICAR LISTA
+   Botao ao lado de Excluir. Copia itens, ordem, duracao,
+   dias da semana e horarios.
+   NAO copia as TVs de proposito: duas listas na mesma tela
+   brigariam pelo espaco.
+
+5. HISTORICO DE ALTERACOES
+   Em Relatorio -> Historico de alteracoes. Registra quem fez
+   o que: incluir, excluir, disparar urgente, trocar link,
+   vincular aparelho. Ultimas 200 acoes.
+   Cores por tipo: excluir em vermelho, urgente em dourado.
+
+6. NOMES DAS ABAS
+   "Agenda"     -> Agenda contabil
+   "Calendario" -> Programacao
+   Eram duas coisas diferentes com nomes que nao diziam qual
+   era qual. Quem procurava "quando essa midia passa" clicava
+   em Agenda e errava.
+
+NAO CONTEM
+  index.html, auth.php, dados.php, apps/auxilio.html,
+  config.php, db_config.php
+
+DEPOIS DE SUBIR
+  Ctrl+Shift+R no painel.

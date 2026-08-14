@@ -1,0 +1,3 @@
+Coloque aqui o arquivo logo.png (a logo da empresa, fundo transparente, altura mínima 80px).
+A faixa azul do topo procura por assets/logo.png; se o arquivo não existir, mostra só o nome
+da empresa, sem quebrar a página.

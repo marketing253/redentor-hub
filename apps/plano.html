@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plano de Ação — Projetos IA</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2230;--border:#21262d;--text:#e6edf3;--text2:#adbac7;--muted:#8b949e;--blue:#3b82f6;--green:#10b981;--amber:#f59e0b;--red:#ef4444;--violet:#6366f1;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+button{font-family:inherit;cursor:pointer;}
+/* login */
+#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0d14,#0f1117,#111827);z-index:100;padding:16px;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;width:100%;max-width:360px;box-shadow:0 20px 50px #00000080;}
+.login-card h1{font-size:20px;margin-bottom:4px;text-align:center;}
+.login-card .sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:22px;}
+.login-card label{display:block;font-size:12px;color:var(--text2);margin:12px 0 5px;}
+.login-card input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:13px;outline:none;}
+.login-card input:focus{border-color:var(--violet);}
+.login-card button{width:100%;background:var(--violet);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;margin-top:18px;}
+#login-error{color:var(--red);font-size:12px;text-align:center;margin-top:10px;min-height:16px;}
+/* app */
+#app{display:none;min-height:100vh;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
+.topbar h1{font-size:17px;display:flex;align-items:center;gap:8px;}
+.topbar .right{display:flex;align-items:center;gap:12px;}
+.btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s;}
+.btn:hover{border-color:var(--violet);}
+.btn.primary{background:var(--violet);border-color:var(--violet);color:#fff;}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff;}
+.btn.sm{padding:4px 9px;font-size:12px;}
+.btn.ghost{background:transparent;}
+.wrap{max-width:1400px;margin:0 auto;padding:24px;}
+.proj-desc{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;}
+.proj-desc .ic{font-size:20px;}
+.proj-desc .txt{flex:1;font-size:13px;color:var(--text2);line-height:1.5;}
+.proj-desc .txt b{color:var(--text);}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px;}
+@media(max-width:1000px){.stats{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.stat .v{font-size:22px;font-weight:700;line-height:1;}
+.stat .l{font-size:11px;color:var(--muted);margin-top:6px;}
+.progress-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:22px;}
+.progress-wrap .lab{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:8px;}
+.pbar{height:12px;background:var(--surface2);border-radius:20px;overflow:hidden;}
+.pbar>div{height:100%;background:linear-gradient(90deg,var(--violet),#818cf8);border-radius:20px;transition:width .4s;}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.toolbar input,.toolbar select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;outline:none;}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--violet);}
+.toolbar .search{flex:1;min-width:180px;}
+.tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.tbl-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--surface2);text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text2);}
+tr:hover td{background:#ffffff05;}
+td.multiline{white-space:pre-line;max-width:280px;font-size:12px;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.b-ok{background:#10b98122;color:#34d399;}
+.b-run{background:#f59e0b22;color:#fbbf24;}
+.b-pend{background:#6b728022;color:#9ca3af;}
+.mini-bar{width:70px;height:7px;background:var(--surface2);border-radius:20px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px;}
+.mini-bar>div{height:100%;background:var(--violet);}
+.num-cell{font-weight:700;color:var(--violet);}
+.acts{white-space:nowrap;}
+.empty{text-align:center;padding:40px;color:var(--muted);}
+/* modal */
+.overlay{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:620px;max-height:90vh;overflow:auto;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);}
+.modal-head h3{font-size:16px;}
+.modal-head .x{background:none;border:none;color:var(--muted);font-size:22px;}
+.modal-body{padding:20px;}
+.fld{margin-bottom:14px;}
+.fld label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;}
+.fld input,.fld textarea,.fld select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;}
+.fld textarea{min-height:70px;resize:vertical;}
+.fld input:focus,.fld textarea:focus,.fld select:focus{border-color:var(--violet);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border);}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;z-index:200;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 8px 24px #00000066;}
+.toast.show{opacity:1;bottom:30px;}.tabs-nav{display:flex;gap:8px;margin:0 0 20px;}.tabbtn{background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;transition:.15s;}.tabbtn:hover{border-color:var(--violet);color:var(--text);}.tabbtn.active{background:var(--violet);border-color:var(--violet);color:#fff;}.dash-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;margin-bottom:14px;}@media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}.dash-card h4{font-size:13px;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.4px;}.donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}.dleg{display:flex;flex-direction:column;gap:8px;}.dleg span{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);}.dleg i{width:12px;height:12px;border-radius:3px;display:inline-block;}.rbar{margin-bottom:12px;}.rbar .rl{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px;}.rbar .rl b{color:var(--text);}.rbar .rt{height:9px;background:var(--surface2);border-radius:20px;overflow:hidden;}.rbar .rt>div{height:100%;background:linear-gradient(90deg,var(--green),#34d399);border-radius:20px;}.rbar .pendtag{background:#f59e0b22;color:#fbbf24;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:600;}.pitem{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}.pitem:last-child{border-bottom:none;}.pitem .pn{font-weight:700;color:var(--violet);min-width:28px;}.pitem .pt{flex:1;min-width:160px;}.pitem .pt .a{color:var(--text);font-weight:500;font-size:13px;}.pitem .pt .q{color:var(--muted);font-size:11px;margin-top:2px;}.pitem .pb{width:110px;}.pitem .pb .t{height:7px;background:var(--surface2);border-radius:20px;overflow:hidden;}.pitem .pb .t>div{height:100%;background:var(--amber);}.pitem .pb small{color:var(--muted);font-size:10px;}.pitem .pacts{white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🎯 Plano de Ação</h1>
+    <div class="sub">Planejamento de Projetos IA — Redentor</div>
+    <label>Usuário</label>
+    <input type="text" id="login-user" placeholder="usuário" onkeydown="if(event.key==='Enter')doLogin()">
+    <label>Senha</label>
+    <input type="password" id="login-pass" placeholder="senha" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <h1>🎯 Plano de Ação <span style="color:var(--muted);font-weight:400;font-size:13px">· Projetos IA</span></h1>
+    <div class="right">
+      <button class="btn primary" onclick="openModal()">+ Nova Atividade</button>
+      <button class="btn ghost" onclick="exportCSV()" title="Exportar CSV">⬇ CSV</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="tabs-nav">
+      <button class="tabbtn active" id="tb-dash" onclick="switchTab('dash',this)">&#128202; Dashboard</button>
+      <button class="tabbtn" id="tb-ativ" onclick="switchTab('ativ',this)">&#128203; Atividades</button>
+    </div>
+    <div id="tab-dash">
+    <div class="proj-desc">
+      <span class="ic">📌</span>
+      <div class="txt"><b>Descrição do Projeto:</b> <span id="projDesc"></span>
+        <button class="btn sm ghost" style="margin-left:8px" onclick="editDesc()">✎</button>
+      </div>
+    </div>
+
+    <div class="stats" id="statsBox"></div>
+
+    <div class="progress-wrap">
+      <div class="lab"><span>Progresso geral do plano</span><span id="pgTxt">0%</span></div>
+      <div class="pbar"><div id="pgBar" style="width:0%"></div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dash-card"><h4>Status das atividades</h4><div class="donut-wrap"><div id="donutBox"></div><div class="dleg" id="donutLegend"></div></div></div>
+      <div class="dash-card"><h4>Pend&ecirc;ncias por respons&aacute;vel</h4><div id="respBars"></div></div>
+    </div>
+    <div class="dash-card" style="margin-bottom:6px"><h4>&#9888; Pend&ecirc;ncias em destaque <span style="text-transform:none;color:var(--muted);font-weight:400">(mais paradas primeiro)</span></h4><div id="pendList"></div></div>
+    </div><!-- fim tab-dash -->
+    <div id="tab-ativ" style="display:none">
+    <div class="toolbar">
+      <input class="search" id="q" placeholder="🔎 Buscar atividade, responsável..." oninput="render()">
+      <select id="fStatus" onchange="render()">
+        <option value="">Todos os status</option>
+        <option value="Concluída">Concluída</option>
+        <option value="Em andamento">Em andamento</option>
+        <option value="Pendente">Pendente</option>
+      </select>
+    </div>
+
+    <div class="tbl-card">
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr>
+            <th>Nº</th><th>Atividade</th><th>Quem</th><th>O que</th><th>Como</th>
+            <th>R$</th><th>Eficácia / Resultado</th><th>% Concl.</th><th>Status</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    </div><!-- fim tab-ativ -->
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="mTitle">Nova Atividade</h3><button class="x" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="grid2">
+        <div class="fld"><label>Nº</label><input type="number" id="mNum"></div>
+        <div class="fld"><label>% Concluída (0 a 100)</label><input type="number" id="mPct" min="0" max="100"></div>
+      </div>
+      <div class="fld"><label>Atividade *</label><input type="text" id="mAtiv" placeholder="Nome da atividade"></div>
+      <div class="grid2">
+        <div class="fld"><label>Quem (responsável)</label><input type="text" id="mQuem"></div>
+        <div class="fld"><label>R$ (custo)</label><input type="number" id="mCusto" step="0.01" min="0"></div>
+      </div>
+      <div class="fld"><label>O que</label><textarea id="mOque"></textarea></div>
+      <div class="fld"><label>Como</label><textarea id="mComo"></textarea></div>
+      <div class="fld"><label>Eficácia / Resultado</label><textarea id="mEfic"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveItem()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DB_KEY='plano_acao_v1';
+var SEED={"descricao": "Criar mecanismo com auxilio de IA que possa ser implementado para ajudar em processos internos", "itens": [{"num": 1, "atividade": "Criação do Grupo de What APP", "quem": "Rodrigo", "oque": "Definição dos Participantes", "como": "Foi criado o Grupo IA Redentor\nFoi criado o Grupo IA Treinamentos em 28/02\nFoi criado o Grupo IA só Vídeos 12/03\nDefinidos pela direção", "custo": 0.0, "eficacia": "Grupo envolvido no processo", "pct": 100, "id": 1}, {"num": 2, "atividade": "Reuniões", "quem": "", "oque": "", "como": "", "custo": 0, "eficacia": "Reuniões acontecendo conforme previsto", "pct": 0, "id": 2}, {"num": 3, "atividade": "Treinamento da equipe de IA", "quem": "Todos", "oque": "Participar de Imersão IA", "como": "Fazer a inscrição de todos os participanetes no Evento Imersão IA 2ª Edição", "custo": 2787.78, "eficacia": "treianamento Realizado", "pct": 100, "id": 3}, {"num": 4, "atividade": "Definição de IA", "quem": "Todos", "oque": "", "como": "Realizar testes\nOrçar \nIdentidicar qual IA será utilizada.\nCopitot\nChatGPT\nGemini\nPlataforma que comtempla várias IA's", "custo": 0.0, "eficacia": "Realizados diversos testes", "pct": 100, "id": 4}, {"num": 5, "atividade": "Difinir e adquirir a IA", "quem": "Claudinho", "oque": "Verificar Custo e disponibilidade", "como": "Definido que a melhor opção é o GEMINI\nJá tem (Itacir, Claudinho, MKT, Gustavo e Recrutamento) Vamos usar as que já tem", "custo": 0, "eficacia": "Além do Gemini foi realizada a aquisição do CHAGPT", "pct": 100, "id": 5}, {"num": 6, "atividade": "Estabelecer uma IA para reuniões", "quem": "Todos", "oque": "Pesquisar e testar", "como": "Em mecanisnos de busca na internet\nRealizar testes com as mais recomendadas\nMeet Geek, TLDV, Notta e Tac Tic", "custo": 0.0, "eficacia": "Utilização do TacTic", "pct": 100, "id": 6}, {"num": 7, "atividade": "Iniciar o uso", "quem": "Todos", "oque": "IA Definida", "como": "Reunião com gravação e transcrição usando o Tac Tic", "custo": 59.9, "eficacia": "", "pct": 100, "id": 7}, {"num": 8, "atividade": "Identificar a necessidade", "quem": "Todos", "oque": "Qual é a Dor", "como": "> Necessidade de uma plataforma de Treinamento\n> Fazer a classificação dos candidatos, elencando os melhores atraves do curriculo\n> Auxílio na primeira etapa da entrevista\n> Identificação e avaliação dos documentos trazidos pelo candidato\n> Avaliar a entrevista", "custo": 0, "eficacia": "", "pct": 80, "id": 8}, {"num": 9, "atividade": "Pesquisa plataforma para treinamento", "quem": "Freire", "oque": "Pesquisar, testar e orçar", "como": "Em mecanisnos de busca na internet\nRealizar testes com as mais recomendadas\nAlura R$ 1500 - Mobiliza R$890,00 - Twigo R$ 890", "custo": 0, "eficacia": "", "pct": 99, "id": 9}, {"num": 10, "atividade": "Definir Plataforma para treinamento", "quem": "Rodrigo", "oque": "Escolha da mais adequada", "como": "Atraves das análises das plataformas e orientações do Freire", "custo": 0, "eficacia": "Aguardando a produção dos vídeos para Aquisição", "pct": 1, "id": 10}, {"num": 11, "atividade": "Aquisição de equipamentos", "quem": "Claudinho", "oque": "Orçar e comprar Computador", "como": "Substituição do computador do marketing\nComputador do MKT foi para Recrutamento\nAquisição de CX de som e Web cam para o recrutamento", "custo": 14000.0, "eficacia": "Adiquiridos equipamentos", "pct": 100, "id": 11}, {"num": 12, "atividade": "Criar modelo de formulário para entrevista", "quem": "Freire Lorena Matheus", "oque": "Elaborar Formulário", "como": "Para Motorista e Cobrador\nObedecendo os critérios estabelecidos e os principais pontos da entrevista. Incluindo informações da LGPD", "custo": 0, "eficacia": "Criado modelo de formulário para a Entrevista", "pct": 100, "id": 12}, {"num": 13, "atividade": "Validar o modelo", "quem": "Itacir", "oque": "validar de acordo com LGPD", "como": "Criar texto padrão para todos os formulários que fazem coletas de dados", "custo": 0, "eficacia": "", "pct": 100, "id": 13}, {"num": 14, "atividade": "Revisar o modelo do roteiro da entrevista", "quem": "Itacir\nPatricia\nLorena\nLluiz\nMatheus", "oque": "Ajustar para a Realidade", "como": "Reunião e definição das questões para a entrevista", "custo": 0, "eficacia": "", "pct": 100, "id": 14}, {"num": 15, "atividade": "Definir e Treinar o(a) entrevistador(a)", "quem": "Sueli Lorena Matheus", "oque": "Treinamento", "como": "Simular uma entrevista na sala da Patricia", "custo": 0, "eficacia": "", "pct": 100, "id": 15}, {"num": 16, "atividade": "Criar método de inserção entrevista no RS", "quem": "Claudinho", "oque": "Maneira de incluir no RS", "como": "Definir como os resultados das entrevistas (cadidato)serão inseridos no sistema RS1", "custo": 0, "eficacia": "", "pct": 0, "id": 16}, {"num": 17, "atividade": "Criar conta no Google", "quem": "Itacir", "oque": "Difinir pessoas", "como": "Foram criadas as contas para Marketing e Recrutamento na plataforma", "custo": 172.0, "eficacia": "", "pct": 100, "id": 17}, {"num": 18, "atividade": "Participar da Imersão IA 2ª Edição", "quem": "Todos", "oque": "Evento", "como": "Na UP - Palestras durante todo o dia 15/04", "custo": 2800.0, "eficacia": "O evento não  satisfez as expectativas do grupo", "pct": 100, "id": 18}, {"num": 19, "atividade": "Paritipar do Café NetWork", "quem": "Todos", "oque": "Evento", "como": "Na UniSENAI 09/04", "custo": 0, "eficacia": "Aproveitamento mais intenso, oportunidade do FIEP desenvolver uma pós in company", "pct": 100, "id": 19}, {"num": 20, "atividade": "Verificar os contratos Google ChatGPT", "quem": "Todos", "oque": "Analisar os contratos", "como": "Através de leitura e análise", "custo": 0, "eficacia": "", "pct": 5, "id": 20}, {"num": 21, "atividade": "Aquisição ChatGPT e TacTiq", "quem": "Claudinho", "oque": "Compra", "como": "Duas licenças do TacTiq e uma ChatGPT", "custo": 4240.0, "eficacia": "Realizar o acompanhamento", "pct": 100, "id": 21}, {"num": 22, "atividade": "Reunião Elaborar DIPIA (RIPD)", "quem": "Todos", "oque": "Método", "como": "Seguindo orientações LGPD e Normas com  aprovação jurídica", "custo": 0, "eficacia": "", "pct": 0, "id": 22}, {"num": 23, "atividade": "Teste no google forms", "quem": "Luiz", "oque": "Coleta de documentos", "como": "Através de perguntas pertinentes a contratação. E de acordo com a LGPD", "custo": 0, "eficacia": "", "pct": 75, "id": 23}, {"num": 24, "atividade": "Sugestão de melhorias no RS", "quem": "Claudinho lorena", "oque": "Teste Prático", "como": "desenvolvido APP teste prático pelo Google (Walder)\nExportar informação no RS via Tablet - Vaiser integrado o app no RS1", "custo": 200.0, "eficacia": "", "pct": 70, "id": 24}, {"num": 25, "atividade": "Forms para 5s e Avaliações de Treinamento", "quem": "Freire Ricardo Lorena", "oque": "Elaborar Formulário", "como": "1) Feito avaliação do forms mecânica básica\n2) Feito avaliação do forms Direção defensiva", "custo": 0, "eficacia": "", "pct": 100, "id": 25}, {"num": 26, "atividade": "Teste Guia Exame Periódico", "quem": "Claudinho lorena RS", "oque": "Automatizar", "como": "Feito testes e e vai ser reavaliado Questionário Dra.Marcia", "custo": 0, "eficacia": "", "pct": 30, "id": 26}, {"num": 27, "atividade": "Aquisiçao do treinamento do Danilo Gato", "quem": "Freire\nClaudinho", "oque": "Treianamento", "como": "Aquisição anual do Curso prossicionais do futuro", "custo": 904.0, "eficacia": "", "pct": 100, "id": 27}, {"num": 28, "atividade": "Avaliar melhorias com o Jorge", "quem": "Lorena Luiz Matheus", "oque": "Automatizar", "como": "Melhorias no fluxo AVALIAÇÃO FINAL DE SELEÇÃO – GERAL", "custo": 0, "eficacia": "", "pct": 0, "id": 28}, {"num": 29, "atividade": "Avaliação de desligamento, verificar qual aplicação no RS", "quem": "Luiz", "oque": "Automatizar", "como": "Criar formulário de entrevista de desligamento - Luiz criou no Google Forms - Acrescentar este formulário no RS", "custo": 0, "eficacia": "", "pct": 50, "id": 29}, {"num": 30, "atividade": "Análise na aplicação requisição de canditado Envolver Ambulatório e médica RH-Jorge", "quem": "Claudinho", "oque": "Automatizar", "como": "Análise das abas no RS", "custo": 0, "eficacia": "", "pct": 100, "id": 30}, {"num": 31, "atividade": "Piloto divulgação IA Para colaboradores", "quem": "Equipe", "oque": "Apresentar a I.A", "como": "Feito treinamento conm as turmas iniciais", "custo": 0, "eficacia": "", "pct": 100, "id": 31}, {"num": 32, "atividade": "Criar fluixo de divulgação para uso e IA", "quem": "Equipe", "oque": "Apresentar a I.A", "como": "1 - Veriricar disponibilidade e incluir datas\n2 - convocação das turmas\n3 - Divulgação (interna)", "custo": 0, "eficacia": "", "pct": 20, "id": 32}, {"num": 33, "atividade": "Adequar o aplicativo \"Teste Pratico Motorista\" para funcionamento na Redentor", "quem": "Claudinho Walder", "oque": "Achar solução para implementação", "como": "Criar conta para armazenamento, dos dados e possibilidade de transferência para RS", "custo": 0, "eficacia": "", "pct": 70, "id": 33}, {"num": 34, "atividade": "Chamar Higashi para uma reuniçao no nosso grupo de I.A", "quem": "Lorena", "oque": "Conhecimento", "como": "Chamar Higashi para uma reunião de I.A.", "custo": 0, "eficacia": "", "pct": 0, "id": 34}, {"num": 35, "atividade": "Aquisição do N8N", "quem": "Freire/Claudinho", "oque": "Automatizar", "como": "Software para criação de agente para automatizar, e-mail, lembrete, WhatssApp", "custo": 365.0, "eficacia": "", "pct": 100, "id": 35}, {"num": 36, "atividade": "Automação de mensagem de aniversario", "quem": "Freire", "oque": "Automação", "como": "Criado automação para envio de mensagem nos grupos Redentor Informa e Manutenção Informa, dos aniversariantes do dia", "custo": 0, "eficacia": "", "pct": 100, "id": 36}, {"num": 37, "atividade": "Teste de Automação", "quem": "Freire", "oque": "Automação", "como": "Testando algumas automação como agenda de e-mail Outlook porem precisa ser o 365 para infomar agenda do treinamento", "custo": 0, "eficacia": "", "pct": 100, "id": 37}, {"num": 38, "atividade": "Criar grupo Redentor Informar Adm", "quem": "Freire/Claudio", "oque": "Automação", "como": "Para envio de mensagem vídeos de I.A Aniversariantes e outros informativos administrativos", "custo": 0, "eficacia": "", "pct": 0, "id": 38}, {"num": 39, "atividade": "Criar Grupo SGQ", "quem": "Freire/Claudio/Itacir", "oque": "Automação", "como": "Utilizar o Grupo Reunião", "custo": 0, "eficacia": "", "pct": 0, "id": 39}, {"num": 40, "atividade": "Aplicativo abastecimento", "quem": "Lorena", "oque": "Automação", "como": "Projeto elaborado com sucesso , contudo devido a NR-20 Abordaremos outra metodologia", "custo": 3400.0, "eficacia": "Aguardando a instalação das novas bombas", "pct": 100, "id": 40}, {"num": 41, "atividade": "Reunião com a Elci RS", "quem": "Lorena Claudinho", "oque": "Automação", "como": "- Requisição do Candidado\n- Filtro de documentos por responsável\n- Inclusão de contadores de tempo por etapa\n- 91439", "custo": 0, "eficacia": "", "pct": 0, "id": 41}, {"num": 42, "atividade": "Retormar as reuniões mensais de IA", "quem": "Equipe", "oque": "Alinhamento", "como": "Todas as 1ª terça feira do mês as 09:00", "custo": 0, "eficacia": "", "pct": 1, "id": 42}, {"num": 43, "atividade": "Criação do novo Site", "quem": "Freire\\Itacir", "oque": "Desenvolvimento", "como": "", "custo": 0, "eficacia": "", "pct": 40, "id": 43}, {"num": 44, "atividade": "Agendar reunião com a Elcy  Ítem 16", "quem": "Claudinho", "oque": "Desenvolvimento", "como": "Criar mecanismos de inserção dos dados da entrevista e resultados de teste no RS", "custo": 0, "eficacia": "", "pct": 0, "id": 44}, {"num": 45, "atividade": "Agendar reunião ciom Prof. Albino", "quem": "Sueli", "oque": "Alinhamento", "como": "Para entender o mecanismo aplicado em outras empresas", "custo": 0, "eficacia": "", "pct": 0, "id": 45}, {"num": 46, "atividade": "Redentor HUB", "quem": "Claudinho/Freire", "oque": "Alinhamento", "como": "Transcrição de reuniões - Liberar para Ricardo / RH", "custo": 0, "eficacia": "", "pct": 50, "id": 46}, {"num": 47, "atividade": "Agendamento", "quem": "Claudinho", "oque": "Desenvolvimento", "como": "Realizar Automação para encaminhar horario via Totem Web", "custo": 0, "eficacia": "", "pct": 0, "id": 47}]};
+var state={descricao:'',itens:[]};
+var editId=null;
+
+function load(){
+  try{ var s=localStorage.getItem(DB_KEY); if(s){ state=JSON.parse(s); } else { state=JSON.parse(JSON.stringify(SEED)); save(); } }
+  catch(e){ state=JSON.parse(JSON.stringify(SEED)); }
+  if(!state.itens) state.itens=[];
+}
+function save(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(state)); }catch(e){} }
+
+function statusOf(p){ p=+p||0; if(p>=100)return 'Concluída'; if(p>0)return 'Em andamento'; return 'Pendente'; }
+function badgeOf(s){ if(s==='Concluída')return '<span class="badge b-ok">✔ Concluída</span>'; if(s==='Em andamento')return '<span class="badge b-run">◐ Em andamento</span>'; return '<span class="badge b-pend">○ Pendente</span>'; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function money(v){ v=+v||0; return v? ('R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})) : '—'; }
+
+function computeStats(){
+  var t=state.itens.length;
+  var ok=state.itens.filter(function(i){return statusOf(i.pct)==='Concluída';}).length;
+  var run=state.itens.filter(function(i){return statusOf(i.pct)==='Em andamento';}).length;
+  var pend=state.itens.filter(function(i){return statusOf(i.pct)==='Pendente';}).length;
+  var custo=state.itens.reduce(function(a,i){return a+(+i.custo||0);},0);
+  var media=t? Math.round(state.itens.reduce(function(a,i){return a+(+i.pct||0);},0)/t):0;
+  var s=[
+    {v:t,l:'Atividades',c:'var(--text)'},
+    {v:ok,l:'Concluídas',c:'var(--green)'},
+    {v:run,l:'Em andamento',c:'var(--amber)'},
+    {v:pend,l:'Pendentes',c:'var(--muted)'},
+    {v:media+'%',l:'Progresso médio',c:'var(--violet)'},
+    {v:money(custo),l:'Custo total',c:'var(--blue)',small:true}
+  ];
+  document.getElementById('statsBox').innerHTML=s.map(function(x){return '<div class="stat"><div class="v" style="color:'+x.c+';'+(x.small?'font-size:16px':'')+'">'+x.v+'</div><div class="l">'+x.l+'</div></div>';}).join('');
+  document.getElementById('pgTxt').textContent=media+'%';
+  document.getElementById('pgBar').style.width=media+'%';
+}
+
+function switchTab(t,btn){
+  document.getElementById('tab-dash').style.display=(t==='dash')?'block':'none';
+  document.getElementById('tab-ativ').style.display=(t==='ativ')?'block':'none';
+  document.querySelectorAll('.tabbtn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+}
+function donutSVG(parts,center,sub){
+  var total=parts.reduce(function(a,p){return a+p.val;},0)||1;
+  var r=54,C=2*Math.PI*r,off=0,seg='';
+  parts.forEach(function(p){
+    var len=(p.val/total)*C;
+    if(len>0) seg+='<circle r="'+r+'" cx="70" cy="70" fill="none" stroke="'+p.color+'" stroke-width="18" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 70 70)" stroke-linecap="butt"/>';
+    off+=len;
+  });
+  return '<svg width="140" height="140" viewBox="0 0 140 140">'+seg+
+    '<text x="70" y="66" text-anchor="middle" fill="#e6edf3" font-size="24" font-weight="700">'+center+'</text>'+
+    '<text x="70" y="86" text-anchor="middle" fill="#8b949e" font-size="10">'+sub+'</text></svg>';
+}
+function quickDone(id){
+  var it=state.itens.find(function(x){return x.id===id;});
+  if(!it) return;
+  if(!confirm('Marcar "'+it.atividade+'" como 100% conclu\u00edda?')) return;
+  it.pct=100; save(); render(); toast('\u2705 Atividade conclu\u00edda!');
+}
+function renderDash(){
+  var ok=state.itens.filter(function(i){return statusOf(i.pct)==='Conclu\u00edda';}).length;
+  var run=state.itens.filter(function(i){return statusOf(i.pct)==='Em andamento';}).length;
+  var pend=state.itens.filter(function(i){return statusOf(i.pct)==='Pendente';}).length;
+  var t=state.itens.length||1;
+  var media=Math.round(state.itens.reduce(function(a,i){return a+(+i.pct||0);},0)/t);
+  var db=document.getElementById('donutBox');
+  if(db) db.innerHTML=donutSVG([
+    {val:ok,color:'#10b981'},{val:run,color:'#f59e0b'},{val:pend,color:'#6b7280'}
+  ], media+'%','do plano');
+  var lg=document.getElementById('donutLegend');
+  if(lg) lg.innerHTML=
+    '<span><i style="background:#10b981"></i>Conclu\u00eddas: <b style="color:#e6edf3">'+ok+'</b></span>'+
+    '<span><i style="background:#f59e0b"></i>Em andamento: <b style="color:#e6edf3">'+run+'</b></span>'+
+    '<span><i style="background:#6b7280"></i>Pendentes: <b style="color:#e6edf3">'+pend+'</b></span>';
+  // por responsável
+  var por={};
+  state.itens.forEach(function(i){
+    var q=(i.quem||'\u2014').trim()||'\u2014';
+    if(!por[q])por[q]={tot:0,ok:0};
+    por[q].tot++; if(statusOf(i.pct)==='Conclu\u00edda')por[q].ok++;
+  });
+  var arr=Object.keys(por).map(function(q){return {q:q,tot:por[q].tot,ok:por[q].ok,pend:por[q].tot-por[q].ok};});
+  arr.sort(function(a,b){return b.pend-a.pend || b.tot-a.tot;});
+  var rb=document.getElementById('respBars');
+  if(rb) rb.innerHTML=arr.slice(0,8).map(function(r){
+    var pct=Math.round(r.ok/r.tot*100);
+    return '<div class="rbar"><div class="rl"><span><b>'+escR(r.q)+'</b> \u00b7 '+r.ok+'/'+r.tot+' conclu\u00eddas</span><span class="pendtag">'+r.pend+' pendente'+(r.pend===1?'':'s')+'</span></div><div class="rt"><div style="width:'+pct+'%"></div></div></div>';
+  }).join('') || '<div style="color:var(--muted);font-size:13px">Sem dados.</div>';
+  // pendências em destaque
+  var pl=document.getElementById('pendList');
+  if(pl){
+    var pends=state.itens.filter(function(i){return statusOf(i.pct)!=='Conclu\u00edda';});
+    pends.sort(function(a,b){return (a.pct-b.pct)||(a.num-b.num);});
+    pl.innerHTML=pends.slice(0,10).map(function(i){
+      var p=+i.pct||0;
+      return '<div class="pitem"><span class="pn">#'+i.num+'</span>'+
+        '<div class="pt"><div class="a">'+escR(i.atividade)+'</div><div class="q">'+escR(i.quem||'Sem respons\u00e1vel')+(i.custo?' \u00b7 '+money(i.custo):'')+'</div></div>'+
+        '<div class="pb"><div class="t"><div style="width:'+p+'%"></div></div><small>'+p+'%</small></div>'+
+        '<div class="pacts"><button class="btn sm green" onclick="quickDone('+i.id+')">\u2714 Concluir</button> <button class="btn sm ghost" onclick="openModal('+i.id+')">\u270e</button></div>'+
+      '</div>';
+    }).join('') || '<div style="color:#34d399;font-size:14px;padding:8px 0">\uD83C\uDF89 Nenhuma pend\u00eancia \u2014 tudo conclu\u00eddo!</div>';
+  }
+}
+function escR(x){ return esc(x); }
+function render(){
+  document.getElementById('projDesc').textContent=state.descricao||'—';
+  computeStats();
+  var q=(document.getElementById('q').value||'').toLowerCase().trim();
+  var fs=document.getElementById('fStatus').value;
+  var rows=state.itens.slice().sort(function(a,b){return (a.num||0)-(b.num||0);});
+  var body=rows.filter(function(i){
+    var st=statusOf(i.pct);
+    if(fs && st!==fs) return false;
+    if(!q) return true;
+    return (i.atividade+' '+i.quem+' '+i.oque+' '+i.como+' '+i.eficacia).toLowerCase().indexOf(q)>=0;
+  }).map(function(i){
+    var st=statusOf(i.pct); var p=+i.pct||0;
+    return '<tr>'+
+      '<td class="num-cell">'+esc(i.num)+'</td>'+
+      '<td style="color:var(--text);font-weight:500;min-width:150px">'+esc(i.atividade)+'</td>'+
+      '<td>'+esc(i.quem)+'</td>'+
+      '<td class="multiline">'+esc(i.oque)+'</td>'+
+      '<td class="multiline">'+esc(i.como)+'</td>'+
+      '<td style="white-space:nowrap">'+money(i.custo)+'</td>'+
+      '<td class="multiline">'+esc(i.eficacia)+'</td>'+
+      '<td style="white-space:nowrap"><span class="mini-bar"><div style="width:'+p+'%"></div></span>'+p+'%</td>'+
+      '<td>'+badgeOf(st)+'</td>'+
+      '<td class="acts"><button class="btn sm ghost" onclick="openModal('+i.id+')">✎</button> <button class="btn sm ghost" onclick="delItem('+i.id+')" style="color:var(--red)">✕</button></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('tbody').innerHTML=body || '<tr><td colspan="10"><div class="empty">Nenhuma atividade encontrada.</div></td></tr>';
+  renderDash();
+}
+
+function openModal(id){
+  editId=id||null;
+  var it=id? state.itens.find(function(x){return x.id===id;}) : null;
+  document.getElementById('mTitle').textContent=id?'Editar Atividade':'Nova Atividade';
+  document.getElementById('mNum').value=it?it.num:(state.itens.reduce(function(m,x){return Math.max(m,x.num||0);},0)+1);
+  document.getElementById('mPct').value=it?it.pct:0;
+  document.getElementById('mAtiv').value=it?it.atividade:'';
+  document.getElementById('mQuem').value=it?it.quem:'';
+  document.getElementById('mCusto').value=it?it.custo:'';
+  document.getElementById('mOque').value=it?it.oque:'';
+  document.getElementById('mComo').value=it?it.como:'';
+  document.getElementById('mEfic').value=it?it.eficacia:'';
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+function saveItem(){
+  var ativ=document.getElementById('mAtiv').value.trim();
+  if(!ativ){ toast('⚠ Informe a atividade.'); return; }
+  var obj={
+    num:parseInt(document.getElementById('mNum').value)||0,
+    pct:Math.max(0,Math.min(100,parseInt(document.getElementById('mPct').value)||0)),
+    atividade:ativ,
+    quem:document.getElementById('mQuem').value.trim(),
+    custo:parseFloat(document.getElementById('mCusto').value)||0,
+    oque:document.getElementById('mOque').value.trim(),
+    como:document.getElementById('mComo').value.trim(),
+    eficacia:document.getElementById('mEfic').value.trim()
+  };
+  if(editId){ var it=state.itens.find(function(x){return x.id===editId;}); Object.assign(it,obj); }
+  else { obj.id=(state.itens.reduce(function(m,x){return Math.max(m,x.id||0);},0)+1); state.itens.push(obj); }
+  save(); render(); closeModal(); toast('✅ Atividade salva!');
+}
+function delItem(id){ if(!confirm('Excluir esta atividade?'))return; state.itens=state.itens.filter(function(x){return x.id!==id;}); save(); render(); toast('🗑 Excluída.'); }
+function editDesc(){ var d=prompt('Descrição do projeto:', state.descricao||''); if(d!==null){ state.descricao=d.trim(); save(); render(); } }
+
+function exportCSV(){
+  var head=['Nº','Atividade','Quem','O que','Como','R$','Eficácia','% Concluída','Status'];
+  var rows=state.itens.slice().sort(function(a,b){return (a.num||0)-(b.num||0);}).map(function(i){
+    return [i.num,i.atividade,i.quem,i.oque,i.como,(+i.custo||0),i.eficacia,i.pct,statusOf(i.pct)]
+      .map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""').replace(/\n/g,' ')+'"';}).join(';');
+  });
+  var csv='\uFEFF'+head.join(';')+'\n'+rows.join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='plano_de_acao.csv'; a.click();
+  toast('⬇ CSV exportado.');
+}
+
+var toastT;
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove('show');},2600); }
+
+function doLogin(){
+  var u=(document.getElementById('login-user').value||'').trim().toLowerCase();
+  var p=(document.getElementById('login-pass').value||'').trim();
+  if((u==='lorena'&&p==='8586')||(u&&p&&u===p)){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    load(); render();
+  } else { document.getElementById('login-error').textContent='Usuário ou senha inválidos.'; }
+}
+
+/* Auto-login ao abrir dentro do Portal (iframe): abre direto */
+(function(){
+  var emb; try{ emb=(window.self!==window.top); }catch(e){ emb=true; }
+  if(!emb) return;
+  function entrar(){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    load(); render();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',entrar); else entrar();
+})();
+</script>
+<script>
+/* ☁ Receptor do painel Drive do Redentor Hub */
+window.addEventListener("message",function(ev){
+  try{
+    var d=ev.data;
+    if(!(d&&d.hubDrive==="import"&&d.buf))return;
+    var f=new File([d.buf],d.nome||"planilha.xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var inp=document.querySelector("input[type=file][accept*=xls i]")||document.querySelector("input[type=file][accept*=sheet i]")||document.querySelector("input[type=file]");
+    if(inp){
+      try{
+        var dt=new DataTransfer(); dt.items.add(f); inp.files=dt.files;
+        try{ev.source.postMessage({hubDrive:"ok"},"*");}catch(e){}
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+        return;
+      }catch(e){}
+    }
+    /* sem importador nativo: o Hub mostra o aviso adequado */
+  }catch(e){}
+});
+</script>
+</body>
+</html>

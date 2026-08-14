@@ -1,0 +1,23 @@
+========================================================
+  TV INDOOR — pacote de atualização
+========================================================
+
+SÓ arquivos do TV Indoor. NÃO contém index.html, nem
+apps/auxilio.html, nem auth.php ou dados.php.
+
+  NA RAIZ (public_html):
+    tvindoor.php  widget.php  player.php  qr.php
+    comum.php  t.php  tv.php  backup_auto.php
+
+  EM public_html/apps:
+    tvindoor.html  aniversariantes-teste.html
+
+ATENÇÃO: o index.html vai SEPARADO desta vez, porque a
+chave de permissão da agenda fica na tela de usuários do
+portal. Suba os dois.
+
+DEPOIS DE SUBIR
+  Portal -> Configurações -> Usuários -> Permissões:
+  ligue "TV Indoor — pode lançar na agenda contábil"
+  para as pessoas da contabilidade.
+  Depois, "Recarregar TVs" no painel do TV Indoor.

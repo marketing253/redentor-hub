@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reuniões</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2230;--border:#21262d;--text:#e6edf3;--text2:#adbac7;--muted:#8b949e;--roxo:#8b5cf6;--roxo2:#a78bfa;--green:#10b981;--amber:#f59e0b;--red:#ef4444;}
+body.claro{--bg:#f4f6fa;--surface:#ffffff;--surface2:#eef2fb;--border:#e2e6ee;--text:#111827;--text2:#374151;--muted:#6b7280;--roxo:#7c3aed;--roxo2:#8b5cf6;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+button{font-family:inherit;cursor:pointer;}
+#gate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--bg);z-index:100;padding:20px;text-align:center;color:var(--muted);}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;flex-wrap:wrap;gap:10px;}
+.topbar h1{font-size:17px;}
+.topbar .who{font-size:12px;color:var(--muted);}
+.btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;transition:.15s;}
+.btn:hover{border-color:var(--roxo);}
+.btn.primary{background:var(--roxo);border-color:var(--roxo);color:#fff;}
+.btn.sm{padding:4px 9px;font-size:12px;}
+.btn.danger{color:var(--red);border-color:#ef444455;}
+.wrap{max-width:1050px;margin:0 auto;padding:22px;}
+.sec-title{display:flex;align-items:center;gap:10px;margin:22px 0 10px;font-size:13px;color:var(--text2);font-weight:600;}
+.sec-title .linha{flex:1;height:1px;background:var(--border);}
+.vazio{color:var(--muted);font-size:13px;padding:8px 2px;}
+.re{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--roxo);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+.re.passada{border-left-color:var(--border);opacity:.75;}
+.re-hd{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;}
+.re-tit{font-weight:700;font-size:15px;}
+.re-meta{font-size:12px;color:var(--text2);margin-top:3px;}
+.re-meta b{color:var(--roxo2);font-family:monospace;}
+.re-obs{font-size:12.5px;color:var(--muted);margin-top:7px;white-space:pre-line;}
+.re-acts{white-space:nowrap;display:flex;gap:6px;}
+.anx{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px;}
+.anx-t{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;margin-bottom:7px;}
+.anx-it{display:flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;margin-bottom:6px;font-size:12.5px;}
+.anx-ic{font-size:16px;}
+.anx-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.anx-sz{color:var(--muted);font-size:11px;white-space:nowrap;}
+.anx-add{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--border);color:var(--muted);border-radius:9px;padding:6px 12px;font-size:12px;transition:.15s;}
+.anx-add:hover{border-color:var(--roxo);color:var(--roxo2);}
+.overlay{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:540px;max-height:92vh;overflow:auto;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);}
+.modal-head h3{font-size:16px;}
+.modal-head .x{background:none;border:none;color:var(--muted);font-size:22px;}
+.modal-body{padding:20px;}
+.fld{margin-bottom:13px;}
+.fld label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;}
+.fld input,.fld textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;}
+.fld input:focus,.fld textarea:focus{border-color:var(--roxo);}
+.fld textarea{min-height:64px;resize:vertical;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border);}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:10px;font-size:13px;z-index:200;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 10px 30px #00000040;}
+.toast.show{opacity:1;bottom:30px;}
+.hoje-badge{font-size:10px;font-weight:700;border-radius:20px;padding:2px 9px;background:#8b5cf622;color:var(--roxo2);white-space:nowrap;}
+@media(max-width:640px){.g2,.g3{grid-template-columns:1fr;}}
+/* ── Pastas ── */
+.pastas{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 14px;}
+.pchip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:7px 15px;font-size:13px;cursor:pointer;transition:.15s;user-select:none;}
+.pchip:hover{border-color:var(--roxo);}
+.pchip.on{background:var(--roxo);border-color:var(--roxo);color:#fff;font-weight:600;}
+.pchip .n{font-size:11px;opacity:.75;}
+.pchip .del{margin-left:2px;font-size:14px;opacity:.55;padding:0 2px;}
+.pchip .del:hover{opacity:1;}
+.pchip.add{border-style:dashed;color:var(--muted);}
+.pchip.add:hover{color:var(--roxo2);}
+/* ── Visualizador em tela cheia ── */
+#viewer{position:fixed;inset:0;background:#05070d;z-index:300;display:none;flex-direction:column;}
+#viewer.show{display:flex;}
+.vw-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#0b0f1a;border-bottom:1px solid #1c2230;color:#e6edf3;flex-wrap:wrap;}
+.vw-top .tt{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+.vw-btn{background:#1c2230;border:1px solid #2a3142;color:#e6edf3;border-radius:8px;padding:7px 13px;font-size:13px;}
+.vw-btn:hover{border-color:#8b5cf6;}
+.vw-stage{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+#pdfCanvas{max-width:100%;max-height:100%;box-shadow:0 10px 50px #000c;}
+#pptxBox{width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;}
+.vw-nav{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:88px;border:none;background:#00000088;color:#fff;font-size:30px;cursor:pointer;border-radius:12px;z-index:5;transition:.15s;line-height:1;}
+.vw-nav:hover{background:#8b5cf6cc;}
+.vw-nav.prev{left:14px;}
+.vw-nav.next{right:14px;}
+.vw-nav:disabled{opacity:.25;cursor:default;}
+.vw-count{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:#000000aa;color:#fff;font-size:13px;font-family:monospace;padding:6px 16px;border-radius:20px;z-index:5;}
+.vw-msg{color:#8b949e;font-size:14px;text-align:center;padding:30px;max-width:440px;}
+@media(max-width:640px){.vw-nav{width:42px;height:70px;font-size:24px;}.vw-nav.prev{left:6px;}.vw-nav.next{right:6px;}}
+</style>
+</head>
+<body>
+<div id="gate">Abra este sistema pelo Redentor Hub.</div>
+
+<div id="app">
+  <div class="topbar">
+    <div><h1>&#129309; Reuni&otilde;es</h1><div class="who" id="whoBox"></div></div>
+    <button class="btn primary" onclick="openModal()">+ Nova reuni&atilde;o</button>
+  </div>
+  <div class="wrap">
+    <div class="pastas" id="pastasBar"></div>
+    <div class="sec-title">&#11088; HOJE E PR&Oacute;XIMAS <span class="linha"></span></div>
+    <div id="proxBox"><div class="vazio">Carregando…</div></div>
+    <div class="sec-title">&#128340; J&Aacute; REALIZADAS <span class="linha"></span></div>
+    <div id="passBox"><div class="vazio">—</div></div>
+  </div>
+</div>
+
+<!-- Modal criar/editar -->
+<div class="overlay" id="ov">
+  <div class="modal">
+    <div class="modal-head"><h3 id="mTit">Nova reuni&atilde;o</h3><button class="x" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="fld"><label>T&iacute;tulo da reuni&atilde;o *</label><input id="fTit" maxlength="120" placeholder="Ex.: Apresenta&ccedil;&atilde;o de resultados &agrave; diretoria"></div>
+      <div class="g3">
+        <div class="fld"><label>Data *</label><input id="fData" type="date"></div>
+        <div class="fld"><label>In&iacute;cio *</label><input id="fIni" type="time" step="900"></div>
+        <div class="fld"><label>T&eacute;rmino</label><input id="fFim" type="time" step="900"></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>Local / Sala</label><input id="fLoc" maxlength="80" placeholder="Ex.: Sala Jo&atilde;o Gulin"></div>
+        <div class="fld"><label>Participantes</label><input id="fPart" maxlength="200" placeholder="Nomes separados por v&iacute;rgula"></div>
+      </div>
+      <div class="fld"><label>Pasta</label><select id="fPasta" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;"></select></div>
+      <div class="fld"><label>Pauta / Observa&ccedil;&otilde;es</label><textarea id="fObs" maxlength="1000"></textarea></div>
+      <div class="fld" style="margin-bottom:0"><label>Apresenta&ccedil;&atilde;o (anexos)</label>
+        <div style="font-size:11.5px;color:var(--muted)">Salve a reuni&atilde;o primeiro; depois use <b>&#128206; Anexar apresenta&ccedil;&atilde;o</b> no card para enviar o PowerPoint (.pptx) ou PDF — at&eacute; 16&nbsp;MB por arquivo.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" id="btnSalvar" onclick="salvar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInp" accept=".ppt,.pptx,.pdf,.pps,.ppsx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="display:none">
+<div class="toast" id="toast"></div>
+
+<!-- Visualizador de apresentação em tela cheia -->
+<div id="viewer">
+  <div class="vw-top">
+    <div class="tt" id="vwTitle">Apresentação</div>
+    <button class="vw-btn" id="vwFsBtn" onclick="vwFullscreen()">&#x26F6; Tela cheia</button>
+    <button class="vw-btn" onclick="vwBaixar()">&#11015; Baixar</button>
+    <button class="vw-btn" onclick="vwFechar()">&#10005; Fechar (Esc)</button>
+  </div>
+  <div class="vw-stage" id="vwStage">
+    <button class="vw-nav prev" id="vwPrev" onclick="vwIr(-1)">&#8249;</button>
+    <canvas id="pdfCanvas" style="display:none"></canvas>
+    <div id="pptxBox" style="display:none"></div>
+    <div class="vw-msg" id="vwMsg" style="display:none"></div>
+    <button class="vw-nav next" id="vwNext" onclick="vwIr(1)">&#8250;</button>
+    <div class="vw-count" id="vwCount" style="display:none"></div>
+  </div>
+</div>
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/pptx-preview.bundle.js"></script>
+
+<script>
+'use strict';
+var ME={nome:'',username:'',admin:false};
+var DADOS_KEY='reunioes_v1';
+var lista=[]; var pastas=[]; var pastaSel='todas'; var editId=null; var anexoAlvo=null; var anexosCache={}; // key -> meta[]
+
+/* ===== ponte com o Hub ===== */
+function hubApi(){ try{ return window.parent&&window.parent.dadosApi?window.parent.dadosApi:null; }catch(e){ return null; } }
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(function(){t.classList.remove('show');},2800);}
+function fmtData(d){var x=new Date(d+'T00:00:00');return isNaN(x)?d:x.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});}
+function fmtTam(b){return b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';}
+function hojeISO(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+
+/* ===== tema acompanha o Hub (claro/escuro, inclusive trocando ao vivo) ===== */
+(function(){
+  function aplicar(){ try{ var dark=window.parent.document.body.classList.contains('theme-dark'); document.body.classList.toggle('claro',!dark); }catch(e){} }
+  try{
+    aplicar();
+    var mo=new MutationObserver(aplicar);
+    mo.observe(window.parent.document.body,{attributes:true,attributeFilter:['class']});
+  }catch(e){}
+})();
+
+/* ===== dados ===== */
+async function load(){
+  var api=hubApi(); if(!api) return;
+  try{
+    var d=await api('get',{key:DADOS_KEY},null);
+    var v=d&&d.value?JSON.parse(d.value):null;
+    if(Array.isArray(v)){ lista=v; pastas=[]; }                 /* formato antigo -> migra */
+    else if(v&&typeof v==='object'){ lista=v.reunioes||[]; pastas=v.pastas||[]; }
+    else { lista=[]; pastas=[]; }
+  }catch(e){ lista=[]; pastas=[]; }
+  renderPastas(); render();
+  carregarAnexosTodos();
+}
+async function persist(){
+  var api=hubApi(); if(!api){ toast('\u26A0 Sem conexão com o Hub.'); return false; }
+  try{ await api('set',null,{key:DADOS_KEY,value:JSON.stringify({pastas:pastas,reunioes:lista})}); return true; }
+  catch(e){ toast('\u26A0 Falha ao salvar: '+(e.message||'')); return false; }
+}
+
+/* ===== pastas ===== */
+function renderPastas(){
+  var bar=document.getElementById('pastasBar'); if(!bar) return;
+  function cont(pid){ return lista.filter(function(r){ return pid==='todas'?true:(pid==='geral'?!r.pasta:r.pasta===pid); }).length; }
+  var html='<span class="pchip'+(pastaSel==='todas'?' on':'')+'" onclick="selPasta(\'todas\')">\uD83D\uDCC1 Todas <span class="n">'+cont('todas')+'</span></span>';
+  html+='<span class="pchip'+(pastaSel==='geral'?' on':'')+'" onclick="selPasta(\'geral\')">\uD83D\uDCC2 Geral <span class="n">'+cont('geral')+'</span></span>';
+  pastas.forEach(function(pa){
+    html+='<span class="pchip'+(pastaSel===pa.id?' on':'')+'" onclick="selPasta(\''+pa.id+'\')">\uD83D\uDCC2 '+esc(pa.nome)+' <span class="n">'+cont(pa.id)+'</span>'+
+      (ME.admin||pa.criadoPor===ME.username?'<span class="del" title="Excluir pasta" onclick="event.stopPropagation();delPasta(\''+pa.id+'\')">\u00D7</span>':'')+'</span>';
+  });
+  html+='<span class="pchip add" onclick="novaPasta()">+ Nova pasta</span>';
+  bar.innerHTML=html;
+}
+function selPasta(id){ pastaSel=id; renderPastas(); render(); }
+async function novaPasta(){
+  var n=prompt('Nome da nova pasta (ex.: IA):'); if(!n) return;
+  n=n.trim(); if(!n) return;
+  if(n.length>40){ toast('\u26A0 Nome muito longo (máx. 40).'); return; }
+  var dup=pastas.some(function(pa){return pa.nome.toLowerCase()===n.toLowerCase();})||['todas','geral'].indexOf(n.toLowerCase())>=0;
+  if(dup){ toast('\u26A0 Já existe uma pasta com esse nome.'); return; }
+  var id='p'+Date.now().toString(36);
+  pastas.push({id:id,nome:n,criadoPor:ME.username});
+  if(await persist()){ pastaSel=id; renderPastas(); render(); toast('\uD83D\uDCC2 Pasta "'+n+'" criada!'); }
+}
+async function delPasta(id){
+  var pa=pastas.find(function(x){return x.id===id;}); if(!pa) return;
+  var qtd=lista.filter(function(r){return r.pasta===id;}).length;
+  if(!confirm('Excluir a pasta "'+pa.nome+'"?'+(qtd?'\nAs '+qtd+' reunião(ões) dela voltam para a pasta Geral.':''))) return;
+  pastas=pastas.filter(function(x){return x.id!==id;});
+  lista.forEach(function(r){ if(r.pasta===id) r.pasta=''; });
+  if(pastaSel===id) pastaSel='todas';
+  if(await persist()){ renderPastas(); render(); toast('Pasta excluída.'); }
+}
+
+/* ===== anexos (anexos.php, app=reunioes) ===== */
+function anxUrl(action,extra){ var u='../anexos.php?action='+action+'&app=reunioes'; if(extra)for(var k in extra)u+='&'+k+'='+encodeURIComponent(extra[k]); return u; }
+async function carregarAnexosTodos(){
+  try{
+    var r=await fetch(anxUrl('anexo_list'),{credentials:'same-origin'});
+    var d=await r.json(); if(!d.ok) return;
+    anexosCache={};
+    (d.items||[]).forEach(function(it){
+      var m=/^reuniao_([a-z0-9]+)_/.exec(it.key); if(!m) return;
+      (anexosCache[m[1]]=anexosCache[m[1]]||[]).push(it);
+    });
+    render();
+  }catch(e){}
+}
+function anexar(id){
+  anexoAlvo=id;
+  document.getElementById('fileInp').value='';
+  document.getElementById('fileInp').click();
+}
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('fileInp').addEventListener('change',async function(){
+    var f=this.files&&this.files[0]; if(!f||!anexoAlvo) return;
+    if(f.size>16*1024*1024){ toast('\u26A0 Arquivo excede 16 MB.'); return; }
+    toast('\u23F3 Enviando '+f.name+'…');
+    var b64=await new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){res(String(r.result).split(',')[1]);}; r.onerror=rej; r.readAsDataURL(f); });
+    var key='reuniao_'+anexoAlvo+'_'+Date.now().toString(36);
+    try{
+      var r=await fetch(anxUrl('anexo_save'),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({app:'reunioes',key:key,nome:f.name,tipo:f.type||'application/octet-stream',dados:b64})});
+      var d=await r.json();
+      if(d.ok){ toast('\u2705 Apresenta\u00e7\u00e3o anexada!'); carregarAnexosTodos(); }
+      else toast('\u26A0 '+(d.erro||'Falha no envio.'));
+    }catch(e){ toast('\u26A0 Falha no envio.'); }
+  });
+});
+async function baixarAnexo(key,nome){
+  try{
+    toast('\u23F3 Baixando…');
+    var r=await fetch(anxUrl('anexo_get',{key:key}),{credentials:'same-origin'});
+    var d=await r.json();
+    if(!d.ok||!d.item){ toast('\u26A0 Anexo n\u00e3o encontrado.'); return; }
+    var bin=atob(d.item.dados), arr=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    var blob=new Blob([arr],{type:d.item.tipo||'application/octet-stream'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome||d.item.nome||'apresentacao';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},4000);
+  }catch(e){ toast('\u26A0 Falha ao baixar.'); }
+}
+async function removerAnexo(key){
+  if(!confirm('Remover este anexo?'))return;
+  try{
+    var r=await fetch(anxUrl('anexo_del'),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({app:'reunioes',key:key})});
+    var d=await r.json();
+    if(d.ok){ toast('Anexo removido.'); carregarAnexosTodos(); } else toast('\u26A0 '+(d.erro||'Falha.'));
+  }catch(e){ toast('\u26A0 Falha ao remover.'); }
+}
+
+/* ===== CRUD ===== */
+function openModal(id){
+  editId=id||null;
+  document.getElementById('mTit').textContent=id?'Editar reunião':'Nova reunião';
+  var r=id?lista.find(function(x){return x.id===id;}):null;
+  document.getElementById('fTit').value=r?r.titulo:'';
+  document.getElementById('fData').value=r?r.data:hojeISO();
+  document.getElementById('fIni').value=r?r.inicio:'';
+  document.getElementById('fFim').value=r?(r.fim||''):'';
+  document.getElementById('fLoc').value=r?(r.local||''):'';
+  document.getElementById('fPart').value=r?(r.part||''):'';
+  document.getElementById('fObs').value=r?(r.obs||''):'';
+  var sel=document.getElementById('fPasta');
+  sel.innerHTML='<option value="">\uD83D\uDCC2 Geral</option>'+pastas.map(function(pa){return '<option value="'+pa.id+'">\uD83D\uDCC2 '+esc(pa.nome)+'</option>';}).join('');
+  sel.value=r?(r.pasta||''):(pastaSel!=='todas'&&pastaSel!=='geral'?pastaSel:'');
+  document.getElementById('ov').classList.add('show');
+  document.getElementById('fTit').focus();
+}
+function closeModal(){document.getElementById('ov').classList.remove('show');}
+async function salvar(){
+  var t=document.getElementById('fTit').value.trim();
+  var d=document.getElementById('fData').value;
+  var i=document.getElementById('fIni').value;
+  var f=document.getElementById('fFim').value;
+  if(!t||!d||!i){ toast('\u26A0 Preencha título, data e início.'); return; }
+  if(f&&f<=i){ toast('\u26A0 O término precisa ser depois do início.'); return; }
+  var btn=document.getElementById('btnSalvar'); btn.disabled=true;
+  if(editId){
+    var r=lista.find(function(x){return x.id===editId;});
+    if(r){ r.titulo=t;r.data=d;r.inicio=i;r.fim=f;r.local=document.getElementById('fLoc').value.trim();r.part=document.getElementById('fPart').value.trim();r.obs=document.getElementById('fObs').value.trim();r.pasta=document.getElementById('fPasta').value; }
+  } else {
+    lista.push({ id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      titulo:t,data:d,inicio:i,fim:f,
+      local:document.getElementById('fLoc').value.trim(),
+      part:document.getElementById('fPart').value.trim(),
+      obs:document.getElementById('fObs').value.trim(),
+      pasta:document.getElementById('fPasta').value,
+      criadoPor:ME.username, criadoNome:ME.nome, criadoEm:new Date().toISOString() });
+  }
+  var ok=await persist(); btn.disabled=false;
+  if(ok){ toast(editId?'\u2705 Reunião atualizada.':'\u2705 Reunião criada! Use \uD83D\uDCCE para anexar a apresentação.'); closeModal(); renderPastas(); render(); }
+}
+async function excluir(id){
+  var r=lista.find(function(x){return x.id===id;}); if(!r)return;
+  if(!confirm('Excluir a reunião "'+r.titulo+'"?\n(Os anexos dela também deixarão de aparecer.)'))return;
+  lista=lista.filter(function(x){return x.id!==id;});
+  if(await persist()){ toast('Reunião excluída.'); renderPastas(); render(); }
+}
+function podeEditar(r){ return ME.admin||r.criadoPor===ME.username; }
+
+/* ===== render ===== */
+function cardHTML(r,passada){
+  var anx=(anexosCache[r.id]||[]);
+  var anexosHtml=anx.map(function(a){
+    var pp=/\.(pptx?|ppsx?)$/i.test(a.nome);
+    return '<div class="anx-it"><span class="anx-ic">'+(pp?'\uD83D\uDCFD':'\uD83D\uDCC4')+'</span>'+
+      '<span class="anx-nm" title="'+esc(a.nome)+'">'+esc(a.nome)+'</span>'+
+      '<span class="anx-sz">'+fmtTam(a.tamanho)+'</span>'+
+      '<button class="btn sm" style="border-color:#8b5cf655;color:var(--roxo2)" onclick="vwAbrir(\''+a.key+'\')">\uD83D\uDC41 Visualizar</button>'+
+      '<button class="btn sm" onclick="baixarAnexo(\''+a.key+'\',\''+esc(a.nome).replace(/'/g,'&#39;')+'\')">\u2B07 Baixar</button>'+
+      (podeEditar(r)?'<button class="btn sm danger" onclick="removerAnexo(\''+a.key+'\')">\u00D7</button>':'')+
+      '</div>';
+  }).join('');
+  var hoje=r.data===hojeISO();
+  return '<div class="re'+(passada?' passada':'')+'">'+
+    '<div class="re-hd"><div>'+
+      '<div class="re-tit">'+esc(r.titulo)+(hoje?' <span class="hoje-badge">HOJE</span>':'')+(r.pasta&&pastaSel!==r.pasta?' <span class="hoje-badge" style="background:#8b5cf615">\uD83D\uDCC2 '+esc(nomePasta(r.pasta))+'</span>':'')+'</div>'+
+      '<div class="re-meta"><b>'+esc(r.inicio)+(r.fim?'\u2013'+esc(r.fim):'')+'</b> \u00B7 '+fmtData(r.data)+
+        (r.local?' \u00B7 \uD83D\uDCCD '+esc(r.local):'')+
+        (r.part?' \u00B7 \uD83D\uDC65 '+esc(r.part):'')+
+        ' \u00B7 por '+esc(r.criadoNome||r.criadoPor||'?')+'</div>'+
+      (r.obs?'<div class="re-obs">'+esc(r.obs)+'</div>':'')+
+    '</div>'+
+    '<div class="re-acts">'+(podeEditar(r)?
+      '<button class="btn sm" onclick="openModal(\''+r.id+'\')">\u270E Editar</button>'+
+      '<button class="btn sm danger" onclick="excluir(\''+r.id+'\')">\u00D7</button>':'')+
+    '</div></div>'+
+    '<div class="anx"><div class="anx-t">\uD83D\uDCCE APRESENTA\u00C7\u00C3O / ANEXOS'+(anx.length?' ('+anx.length+')':'')+'</div>'+
+      anexosHtml+
+      (podeEditar(r)?'<button class="anx-add" onclick="anexar(\''+r.id+'\')">\uD83D\uDCCE Anexar apresenta\u00e7\u00e3o (.pptx / .pdf)</button>':(anx.length?'':'<div class="vazio">Nenhum anexo.</div>'))+
+    '</div></div>';
+}
+function naPasta(r){ if(pastaSel==='todas')return true; if(pastaSel==='geral')return !r.pasta; return r.pasta===pastaSel; }
+function nomePasta(id){ var pa=pastas.find(function(x){return x.id===id;}); return pa?pa.nome:''; }
+function render(){
+  var hoje=hojeISO();
+  var ord=function(a,b){return (a.data+a.inicio).localeCompare(b.data+b.inicio);};
+  var prox=lista.filter(function(r){return r.data>=hoje&&naPasta(r);}).sort(ord);
+  var pass=lista.filter(function(r){return r.data<hoje&&naPasta(r);}).sort(ord).reverse().slice(0,20);
+  document.getElementById('proxBox').innerHTML=prox.map(function(r){return cardHTML(r,false);}).join('')||'<div class="vazio">Nenhuma reunião marcada. Clique em <b>+ Nova reunião</b>.</div>';
+  document.getElementById('passBox').innerHTML=pass.map(function(r){return cardHTML(r,true);}).join('')||'<div class="vazio">—</div>';
+}
+
+/* ===== Visualizador em tela cheia (PDF e PPTX) ===== */
+var VW={tipo:null,pdf:null,pag:1,tot:1,pptx:null,bytes:null,nome:''};
+if(window.pdfjsLib){ try{ pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js'; }catch(e){} }
+
+function vwMostrar(el){ ['pdfCanvas','pptxBox','vwMsg'].forEach(function(id){ document.getElementById(id).style.display=(id===el?(id==='pdfCanvas'?'block':(id==='pptxBox'?'flex':'block')):'none'); }); }
+function vwCount(){ var c=document.getElementById('vwCount'); c.style.display='block'; c.textContent='Slide '+VW.pag+' / '+VW.tot;
+  document.getElementById('vwPrev').disabled=(VW.pag<=1); document.getElementById('vwNext').disabled=(VW.pag>=VW.tot); }
+
+function vwFsEl(){ return document.fullscreenElement||document.webkitFullscreenElement||null; }
+function vwFullscreen(){
+  var v=document.getElementById('viewer');
+  if(vwFsEl()){
+    (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+  } else {
+    var req=v.requestFullscreen||v.webkitRequestFullscreen;
+    if(req){ try{ var pr=req.call(v); if(pr&&pr.catch)pr.catch(function(){}); }catch(e){} }
+  }
+}
+function vwFsSync(){
+  var b=document.getElementById('vwFsBtn');
+  if(b) b.innerHTML=vwFsEl()?'\u2716 Sair da tela cheia':'\u26F6 Tela cheia';
+  /* re-ajustar o slide ao novo tamanho da tela */
+  if(document.getElementById('viewer').classList.contains('show')){
+    if(VW.tipo==='pdf'&&VW.pdf){ vwPdfPag(); }
+    else if(VW.tipo==='pptx'&&VW.pptx&&VW.bytes){ var _pg=VW.pag; vwPptx(VW.bytes).then(function(){ if(_pg>1) vwPptxGo(_pg-1); }); }
+  }
+}
+document.addEventListener('fullscreenchange',vwFsSync);
+document.addEventListener('webkitfullscreenchange',vwFsSync);
+
+async function vwAbrir(key){
+  vwFullscreen(); /* gesto do clique: entra direto em tela cheia */
+  try{
+    document.getElementById('viewer').classList.add('show');
+    document.body.style.overflow='hidden';
+    vwMostrar('vwMsg'); document.getElementById('vwMsg').textContent='\u23F3 Carregando apresentação…';
+    document.getElementById('vwCount').style.display='none';
+    var r=await fetch(anxUrl('anexo_get',{key:key}),{credentials:'same-origin'});
+    var d=await r.json();
+    if(!d.ok||!d.item){ document.getElementById('vwMsg').textContent='\u26A0 Anexo não encontrado.'; return; }
+    var bin=atob(d.item.dados), arr=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    VW.bytes=arr; VW.nome=d.item.nome||'apresentacao'; VW.mime=d.item.tipo||'application/octet-stream';
+    document.getElementById('vwTitle').textContent=VW.nome;
+    if(/\.pdf$/i.test(VW.nome)||/pdf/i.test(VW.mime)) await vwPdf(arr);
+    else if(/\.(pptx|ppsx)$/i.test(VW.nome)) await vwPptx(arr);
+    else { vwMostrar('vwMsg'); document.getElementById('vwMsg').innerHTML='Este formato não tem visualização em tela ('+esc(VW.nome.split('.').pop().toUpperCase())+').<br><br>Dica: arquivos <b>.ppt</b> antigos podem ser salvos como <b>.pptx</b> ou <b>PDF</b> no PowerPoint para ganhar o preview. Use o botão <b>Baixar</b> acima.'; document.getElementById('vwCount').style.display='none'; }
+  }catch(e){ vwMostrar('vwMsg'); document.getElementById('vwMsg').textContent='\u26A0 Falha ao carregar: '+(e.message||''); }
+}
+
+/* --- PDF: página a página no canvas --- */
+async function vwPdf(bytes){
+  if(!window.pdfjsLib){ document.getElementById('vwMsg').textContent='\u26A0 Visualizador PDF não carregado.'; return; }
+  VW.tipo='pdf';
+  VW.pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+  VW.tot=VW.pdf.numPages; VW.pag=1;
+  vwMostrar('pdfCanvas');
+  await vwPdfPag();
+}
+async function vwPdfPag(){
+  var page=await VW.pdf.getPage(VW.pag);
+  var stage=document.getElementById('vwStage');
+  var v1=page.getViewport({scale:1});
+  var sw=(stage.clientWidth||window.innerWidth||800)-30, sh=(stage.clientHeight||((window.innerHeight||600)-60))-30;
+  if(!(sw>100))sw=(window.innerWidth||800)-30; if(!(sh>100))sh=(window.innerHeight||600)-90;
+  var esc_=Math.max(Math.min(sw/v1.width,sh/v1.height),0.1)*(window.devicePixelRatio||1);
+  var vp=page.getViewport({scale:esc_});
+  var cv=document.getElementById('pdfCanvas');
+  cv.width=vp.width; cv.height=vp.height;
+  cv.style.width=(vp.width/(window.devicePixelRatio||1))+'px';
+  cv.style.height=(vp.height/(window.devicePixelRatio||1))+'px';
+  await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+  vwCount();
+}
+
+/* --- PPTX: renderização nativa com passador --- */
+function vwPptxReparar(px){
+  /* Repara ligações internas de arquivos fora do padrão: slide->layout->master->tema */
+  if(!px) return;
+  var stubTheme={clrScheme:{},borderScheme:[],defaultColor:'#000000',getColor:function(){return '#000000';},getLineStyle:function(){return {color:{}};}};
+  if(!px.themes.length) px.themes.push(stubTheme);
+  var stubMaster={background:{type:'none'},nodes:[],theme:px.themes[0],colorMap:{},defaultTextStyle:{},textStyles:{titleStyle:{},bodyStyle:{},otherStyle:{}},tableStyles:{},
+    getColorThemeName:function(t){return t;},getNodeByType:function(){},getNodeByIdx:function(){},getNodeInheritAttrsByType:function(){},getNodeInheritAttrsByIdx:function(){}};
+  if(!px.slideMaster.length) px.slideMaster.push(stubMaster);
+  px.slideMaster.forEach(function(m){ if(!m.theme) m.theme=px.themes[0]; });
+  var m0=px.slideMaster[0];
+  var stubLayout={background:{type:'none'},nodes:[],slideMaster:m0,
+    getColorThemeName:function(t){return m0.getColorThemeName?m0.getColorThemeName(t):t;},
+    getNodeByType:function(){},getNodeByIdx:function(){},getNodeInheritAttrsByType:function(){},getNodeInheritAttrsByIdx:function(){}};
+  if(!px.slideLayouts.length) px.slideLayouts.push(stubLayout);
+  px.slideLayouts.forEach(function(l){ if(!l.slideMaster) l.slideMaster=m0; });
+  px.slides.forEach(function(s){ if(!s.slideLayout) s.slideLayout=px.slideLayouts[0]; });
+  if(!px.width) px.width=960;
+  if(!px.height) px.height=540;
+}
+function vwPptxGo(idx){
+  try{ VW.pptx.renderSingleSlide(idx); }
+  catch(e){ toast('\u26A0 O slide '+(idx+1)+' tem um elemento que não deu para desenhar.'); }
+  VW.pag=idx+1; vwCount();
+}
+async function vwPptx(bytes){
+  if(!window.pptxPreview){ document.getElementById('vwMsg').textContent='\u26A0 Visualizador PPTX não carregado.'; return; }
+  VW.tipo='pptx';
+  vwMostrar('pptxBox');
+  var box=document.getElementById('pptxBox'); box.innerHTML='';
+  var stage=document.getElementById('vwStage');
+  /* aguarda a transição de tela (fullscreen) assentar para medir certo */
+  await new Promise(function(r){ setTimeout(r,150); });
+  var w=(stage.clientWidth||window.innerWidth||800)-30;
+  var h=(stage.clientHeight||((window.innerHeight||600)-60))-30;
+  if(!(w>200)) w=Math.max((window.innerWidth||800)-30,320);
+  if(!(h>150)) h=Math.max((window.innerHeight||600)-90,240);
+  try{
+    VW.pptx=pptxPreview.init(box,{width:w,height:h,mode:'slide'});
+    await VW.pptx.load(bytes.buffer);
+    vwPptxReparar(VW.pptx.pptx);
+    if(!VW.pptx.slideCount) throw new Error('sem slides');
+  }catch(e){
+    try{ console.error('[Reunioes] preview PPTX falhou:', e); }catch(_){ }
+    VW.tipo=null; VW.pptx=null; box.innerHTML='';
+    vwMostrar('vwMsg');
+    document.getElementById('vwMsg').innerHTML='\u26A0 Não consegui montar a visualização deste PowerPoint (estrutura fora do padrão).<br><br>Use o botão <b>\u2B07 Baixar</b> acima para abrir no PowerPoint — ou anexe também uma versão em <b>PDF</b>, que sempre tem preview perfeito.';
+    document.getElementById('vwCount').style.display='none';
+    return;
+  }
+  VW.tot=VW.pptx.slideCount||1;
+  vwPptxGo(0);
+}
+
+function vwIr(dir){
+  if(VW.tipo==='pdf'){
+    var np=VW.pag+dir; if(np<1||np>VW.tot)return;
+    VW.pag=np; vwPdfPag();
+  } else if(VW.tipo==='pptx'&&VW.pptx){
+    var ni=VW.pag-1+dir;
+    if(ni<0||ni>=VW.tot)return;
+    vwPptxGo(ni);
+  }
+}
+function vwFechar(){
+  if(vwFsEl()){ try{ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }catch(e){} }
+  document.getElementById('viewer').classList.remove('show');
+  document.body.style.overflow='';
+  try{ if(VW.pptx&&VW.pptx.destroy)VW.pptx.destroy(); }catch(e){}
+  try{ if(VW.pdf)VW.pdf.destroy(); }catch(e){}
+  VW={tipo:null,pdf:null,pag:1,tot:1,pptx:null,bytes:null,nome:''};
+  document.getElementById('pptxBox').innerHTML='';
+}
+function vwBaixar(){
+  if(!VW.bytes)return;
+  var blob=new Blob([VW.bytes],{type:VW.mime});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=VW.nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},4000);
+}
+document.addEventListener('keydown',function(ev){
+  if(!document.getElementById('viewer').classList.contains('show'))return;
+  if(ev.key==='ArrowRight'||ev.key===' '||ev.key==='PageDown'){ ev.preventDefault(); vwIr(1); }
+  else if(ev.key==='ArrowLeft'||ev.key==='PageUp'){ ev.preventDefault(); vwIr(-1); }
+  else if(ev.key==='Escape'){ if(!vwFsEl()) vwFechar(); }
+  else if(ev.key==='f'||ev.key==='F'){ vwFullscreen(); }
+});
+/* toque: deslizar para passar slide no celular */
+(function(){ var x0=null;
+  var st=document.getElementById('vwStage');
+  if(!st)return;
+  st.addEventListener('touchstart',function(e){ x0=e.touches[0].clientX; },{passive:true});
+  st.addEventListener('touchend',function(e){ if(x0===null)return; var dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>45) vwIr(dx<0?1:-1); x0=null; },{passive:true});
+})();
+
+/* ===== boot ===== */
+(function(){
+  var emb; try{ emb=(window.self!==window.top); }catch(e){ emb=true; }
+  if(!emb){ document.getElementById('gate').style.display='flex'; document.getElementById('app').style.display='none'; return; }
+  try{
+    var cs=window.parent.currentSession||{};
+    ME={nome:cs.name||'',username:cs.username||'',admin:cs.role==='admin'};
+    document.getElementById('whoBox').textContent=ME.nome?('Conectado como '+ME.nome):'';
+  }catch(e){}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',load); else load();
+})();
+</script>
+</body>
+</html>
