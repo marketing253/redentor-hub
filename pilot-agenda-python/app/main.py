@@ -3,11 +3,14 @@ main.py — API das ferramentas em Python: Agenda, Chamados, Plano de
 Ação e Biarticulado. Um serviço só, um banco só, publicado sozinho a
 cada git push.
 """
+import base64
 from typing import List
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import Response
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 
@@ -204,6 +207,134 @@ def excluir_biart(registro_id: int, db: Session = Depends(get_db)):
     if not r:
         raise HTTPException(status_code=404, detail="Registro não encontrado.")
     db.delete(r)
+    db.commit()
+    return None
+
+
+# ══════════════════════════════════════ Reuniões ════════════════
+@app.get("/api/reunioes", response_model=List[schemas.Reuniao])
+def listar_reunioes(db: Session = Depends(get_db)):
+    return db.query(models.Reuniao).order_by(desc(models.Reuniao.data)).all()
+
+
+@app.post("/api/reunioes", response_model=schemas.Reuniao, status_code=201)
+def criar_reuniao(r: schemas.ReuniaoCriar, db: Session = Depends(get_db)):
+    novo = models.Reuniao(**r.model_dump())
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+
+@app.put("/api/reunioes/{reuniao_id}", response_model=schemas.Reuniao)
+def atualizar_reuniao(reuniao_id: int, dados: schemas.ReuniaoAtualizar, db: Session = Depends(get_db)):
+    r = db.query(models.Reuniao).filter(models.Reuniao.id == reuniao_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Reunião não encontrada.")
+    for campo, valor in dados.model_dump(exclude_unset=True).items():
+        setattr(r, campo, valor)
+    db.commit()
+    db.refresh(r)
+    return r
+
+
+@app.delete("/api/reunioes/{reuniao_id}", status_code=204)
+def excluir_reuniao(reuniao_id: int, db: Session = Depends(get_db)):
+    r = db.query(models.Reuniao).filter(models.Reuniao.id == reuniao_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Reunião não encontrada.")
+    db.query(models.ReuniaoAnexo).filter(models.ReuniaoAnexo.reuniao_id == reuniao_id).delete()
+    db.delete(r)
+    db.commit()
+    return None
+
+
+class AnexoEnviar(BaseModel):
+    nome: str
+    tipo: str
+    dados: str  # base64
+
+
+@app.get("/api/reunioes/{reuniao_id}/anexos", response_model=List[schemas.ReuniaoAnexoInfo])
+def listar_anexos(reuniao_id: int, db: Session = Depends(get_db)):
+    return (
+        db.query(models.ReuniaoAnexo)
+        .filter(models.ReuniaoAnexo.reuniao_id == reuniao_id)
+        .order_by(desc(models.ReuniaoAnexo.criado_em))
+        .all()
+    )
+
+
+@app.post("/api/reunioes/{reuniao_id}/anexos", response_model=schemas.ReuniaoAnexoInfo, status_code=201)
+def enviar_anexo(reuniao_id: int, anexo: AnexoEnviar, db: Session = Depends(get_db)):
+    try:
+        conteudo = base64.b64decode(anexo.dados, validate=True)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Conteúdo em base64 inválido.")
+    if len(conteudo) > 16 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo excede 16 MB.")
+    novo = models.ReuniaoAnexo(
+        reuniao_id=reuniao_id, nome=anexo.nome, tipo=anexo.tipo,
+        tamanho=len(conteudo), conteudo=conteudo,
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+
+@app.get("/api/anexos/{anexo_id}")
+def baixar_anexo(anexo_id: int, db: Session = Depends(get_db)):
+    a = db.query(models.ReuniaoAnexo).filter(models.ReuniaoAnexo.id == anexo_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="Anexo não encontrado.")
+    return Response(content=a.conteudo, media_type=a.tipo,
+                     headers={"Content-Disposition": f'inline; filename="{a.nome}"'})
+
+
+@app.delete("/api/anexos/{anexo_id}", status_code=204)
+def excluir_anexo(anexo_id: int, db: Session = Depends(get_db)):
+    a = db.query(models.ReuniaoAnexo).filter(models.ReuniaoAnexo.id == anexo_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="Anexo não encontrado.")
+    db.delete(a)
+    db.commit()
+    return None
+
+
+# ══════════════════════════════════════ Salas ═══════════════════
+@app.get("/api/salas/agendamentos", response_model=List[schemas.SalaAgendamento])
+def listar_agendamentos(db: Session = Depends(get_db)):
+    return db.query(models.SalaAgendamento).order_by(asc(models.SalaAgendamento.data), asc(models.SalaAgendamento.inicio)).all()
+
+
+@app.post("/api/salas/agendamentos", response_model=schemas.SalaAgendamento, status_code=201)
+def criar_agendamento(a: schemas.SalaAgendamentoCriar, db: Session = Depends(get_db)):
+    novo = models.SalaAgendamento(**a.model_dump())
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+
+@app.put("/api/salas/agendamentos/{agendamento_id}", response_model=schemas.SalaAgendamento)
+def atualizar_agendamento(agendamento_id: int, dados: schemas.SalaAgendamentoAtualizar, db: Session = Depends(get_db)):
+    a = db.query(models.SalaAgendamento).filter(models.SalaAgendamento.id == agendamento_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
+    for campo, valor in dados.model_dump(exclude_unset=True).items():
+        setattr(a, campo, valor)
+    db.commit()
+    db.refresh(a)
+    return a
+
+
+@app.delete("/api/salas/agendamentos/{agendamento_id}", status_code=204)
+def excluir_agendamento(agendamento_id: int, db: Session = Depends(get_db)):
+    a = db.query(models.SalaAgendamento).filter(models.SalaAgendamento.id == agendamento_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
+    db.delete(a)
     db.commit()
     return None
 

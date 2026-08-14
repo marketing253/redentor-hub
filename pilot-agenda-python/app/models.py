@@ -4,7 +4,7 @@ models.py — formato das tabelas no banco de dados.
 Um serviço só, várias ferramentas: Agenda, Chamados, Plano de Ação e
 Biarticulado. Cada uma com sua tabela, todas no mesmo banco Postgres.
 """
-from sqlalchemy import Column, Integer, String, Date, Time, Text, DateTime, Float, func
+from sqlalchemy import Column, Integer, String, Date, Time, Text, DateTime, Float, LargeBinary, func
 from app.database import Base
 
 
@@ -71,3 +71,47 @@ class BiartRegistro(Base):
     processo = Column(String(100), nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
     atualizado_em = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class Reuniao(Base):
+    __tablename__ = "reunioes"
+    id = Column(Integer, primary_key=True, index=True)
+    titulo = Column(String(200), nullable=False)
+    data = Column(Date, nullable=False)
+    inicio = Column(String(5), nullable=False)   # "HH:MM", igual ao app original
+    fim = Column(String(5), nullable=True)
+    local = Column(String(150), nullable=True)
+    participantes = Column(String(400), nullable=True)
+    observacoes = Column(Text, nullable=True)
+    pasta = Column(String(100), nullable=True)
+    criado_por = Column(String(80), nullable=True)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ReuniaoAnexo(Base):
+    """Anexos de reunião guardados no próprio banco (mesmo princípio do
+    anexos.php antigo: BLOB no banco), só que sem depender do Hub PHP."""
+    __tablename__ = "reuniao_anexos"
+    id = Column(Integer, primary_key=True, index=True)
+    reuniao_id = Column(Integer, nullable=False, index=True)
+    nome = Column(String(255), nullable=False)
+    tipo = Column(String(120), nullable=False)
+    tamanho = Column(Integer, nullable=False)
+    conteudo = Column(LargeBinary, nullable=False)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class SalaAgendamento(Base):
+    """As salas em si (João Gulin / Angelo Gulin) ficam fixas no código
+    do front, igual já era — só os agendamentos vêm do banco."""
+    __tablename__ = "salas_agendamentos"
+    id = Column(Integer, primary_key=True, index=True)
+    sala_id = Column(String(30), nullable=False, index=True)
+    data = Column(Date, nullable=False)
+    inicio = Column(String(5), nullable=False)
+    fim = Column(String(5), nullable=False)
+    responsavel = Column(String(120), nullable=False)
+    evento = Column(String(200), nullable=False)
+    observacoes = Column(Text, nullable=True)
+    criado_por = Column(String(80), nullable=True)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())

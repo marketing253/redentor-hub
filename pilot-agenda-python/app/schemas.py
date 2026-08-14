@@ -135,3 +135,79 @@ class BiartAtualizar(BaseModel):
 class Biart(BiartBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+
+
+# ── Reuniões ────────────────────────────────────────────────────
+class ReuniaoBase(BaseModel):
+    titulo: str
+    data: date
+    inicio: str
+    fim: Optional[str] = None
+    local: Optional[str] = None
+    participantes: Optional[str] = None
+    observacoes: Optional[str] = None
+    pasta: Optional[str] = None
+
+
+class ReuniaoCriar(ReuniaoBase):
+    criado_por: Optional[str] = None
+
+
+class ReuniaoAtualizar(BaseModel):
+    titulo: Optional[str] = None
+    data: Optional[date] = None
+    inicio: Optional[str] = None
+    fim: Optional[str] = None
+    local: Optional[str] = None
+    participantes: Optional[str] = None
+    observacoes: Optional[str] = None
+    pasta: Optional[str] = None
+
+
+class Reuniao(ReuniaoBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    criado_por: Optional[str] = None
+    criado_em: Optional[datetime] = None
+
+
+class ReuniaoAnexoInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    reuniao_id: int
+    nome: str
+    tipo: str
+    tamanho: int
+    criado_em: Optional[datetime] = None
+
+
+# ── Salas ───────────────────────────────────────────────────────
+class SalaAgendamentoBase(BaseModel):
+    sala_id: str
+    data: date
+    inicio: str
+    fim: str
+    responsavel: str
+    evento: str
+    observacoes: Optional[str] = None
+
+
+class SalaAgendamentoCriar(SalaAgendamentoBase):
+    criado_por: Optional[str] = None
+
+
+class SalaAgendamentoAtualizar(BaseModel):
+    sala_id: Optional[str] = None
+    data: Optional[date] = None
+    inicio: Optional[str] = None
+    fim: Optional[str] = None
+    responsavel: Optional[str] = None
+    evento: Optional[str] = None
+    observacoes: Optional[str] = None
+
+
+class SalaAgendamento(SalaAgendamentoBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    criado_por: Optional[str] = None
+    criado_em: Optional[datetime] = None

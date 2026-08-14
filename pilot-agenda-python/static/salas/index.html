@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agendamento de Salas — Redentor (piloto Python)</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .salas-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+  @media(max-width:640px){.salas-grid{grid-template-columns:1fr}}
+  .sala-card{border-left:4px solid var(--cor,var(--ouro-cl))}
+  .sala-nome{font-size:15px;font-weight:700;margin-bottom:10px}
+  .item{border-bottom:1px solid var(--sup2);padding:10px 0;font-size:13px}
+  .item:last-child{border:0}
+  .item-hora{font-family:monospace;font-weight:700;color:var(--ouro-cl)}
+  .item-ev{font-weight:600;margin-top:2px}
+  .item-resp{color:var(--txt2);font-size:12px}
+  .item-del{float:right;background:none;border:none;color:var(--neg);cursor:pointer;font-size:12px}
+</style>
+</head>
+<body>
+<div class="marca"><b>📅 Agendamento de Salas</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="wrap">
+  <div class="card">
+    <h2>Nova reserva</h2>
+    <div class="linha">
+      <div><label>Sala</label>
+        <select id="fSala"><option value="joao">🟠 Sala João Gulin</option><option value="angelo">🟢 Sala Angelo Gulin</option></select>
+      </div>
+      <div><label>Data</label><input id="fData" type="date"></div>
+    </div>
+    <div class="linha">
+      <div><label>Início</label><input id="fInicio" type="time"></div>
+      <div><label>Fim</label><input id="fFim" type="time"></div>
+    </div>
+    <label>Evento</label>
+    <input id="fEvento" placeholder="Ex.: Treinamento NR-35">
+    <label>Responsável</label>
+    <input id="fResp" placeholder="Seu nome">
+    <label>Observações (opcional)</label>
+    <textarea id="fObs"></textarea>
+    <button class="btn ouro" onclick="salvar()">Reservar</button>
+  </div>
+
+  <div class="salas-grid" id="salasGrid"></div>
+</div>
+
+<script>
+const API = '';
+const SALAS = {
+  joao:   {nome: 'Sala João Gulin',   cor: '#f97316'},
+  angelo: {nome: 'Sala Angelo Gulin', cor: '#22c55e'},
+};
+let ITENS = [];
+
+async function carregar(){
+  const r = await fetch(`${API}/api/salas/agendamentos`);
+  ITENS = await r.json();
+  render();
+}
+
+function render(){
+  const hoje = new Date().toISOString().slice(0,10);
+  document.getElementById('salasGrid').innerHTML = Object.keys(SALAS).map(salaId => {
+    const s = SALAS[salaId];
+    const itens = ITENS.filter(i => i.sala_id === salaId && i.data >= hoje)
+      .sort((a,b) => (a.data+a.inicio).localeCompare(b.data+b.inicio));
+    return `<div class="card sala-card" style="--cor:${s.cor}">
+      <div class="sala-nome">${escapeHtml(s.nome)}</div>
+      ${itens.length ? itens.map(i => `
+        <div class="item">
+          <button class="item-del" onclick="excluir(${i.id})">🗑</button>
+          <span class="item-hora">${i.data.slice(8,10)}/${i.data.slice(5,7)} ${i.inicio}–${i.fim}</span>
+          <div class="item-ev">${escapeHtml(i.evento)}</div>
+          <div class="item-resp">${escapeHtml(i.responsavel)}</div>
+        </div>
+      `).join('') : '<div class="vazio">Nenhuma reserva futura.</div>'}
+    </div>`;
+  }).join('');
+}
+
+async function salvar(){
+  const data = document.getElementById('fData').value;
+  const inicio = document.getElementById('fInicio').value;
+  const fim = document.getElementById('fFim').value;
+  const evento = document.getElementById('fEvento').value.trim();
+  const responsavel = document.getElementById('fResp').value.trim();
+  if(!data || !inicio || !fim || !evento || !responsavel){ alert('Preencha todos os campos.'); return; }
+  if(fim <= inicio){ alert('O fim precisa ser depois do início.'); return; }
+  await fetch(`${API}/api/salas/agendamentos`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      sala_id: document.getElementById('fSala').value, data, inicio, fim, evento, responsavel,
+      observacoes: document.getElementById('fObs').value.trim() || null
+    })
+  });
+  ['fData','fInicio','fFim','fEvento','fResp','fObs'].forEach(id => document.getElementById(id).value = '');
+  carregar();
+}
+
+async function excluir(id){
+  if(!confirm('Cancelar esta reserva?')) return;
+  await fetch(`${API}/api/salas/agendamentos/${id}`, {method: 'DELETE'});
+  carregar();
+}
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+
+carregar();
+</script>
+</body>
+</html>

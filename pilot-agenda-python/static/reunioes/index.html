@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reuniões — Redentor (piloto Python)</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .item{border-bottom:1px solid var(--sup2);padding:14px 0}
+  .item:last-child{border:0}
+  .item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .item-tit{font-weight:600;font-size:14px}
+  .item-meta{font-size:12px;color:var(--txt2);margin-top:3px}
+  .item-obs{font-size:13px;color:var(--txt2);margin-top:6px;white-space:pre-wrap}
+  .acoes{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .acoes button,.acoes label{background:transparent;border:1px solid #2c3260;color:var(--txt2);
+    border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+  .anexo{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ouro-cl);margin-top:4px}
+  .anexo button{background:none;border:none;color:var(--neg);cursor:pointer;font-size:12px}
+  .pastas{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .pasta-chip{background:var(--sup);border:1px solid var(--sup2);color:var(--txt2);
+    border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer}
+  .pasta-chip.ativa{background:var(--azul);color:#fff;border-color:var(--azul)}
+</style>
+</head>
+<body>
+<div class="marca"><b>📋 Reuniões</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="wrap">
+  <div class="card">
+    <h2>Nova reunião</h2>
+    <label>Título</label>
+    <input id="fTitulo" placeholder="Pauta da reunião">
+    <div class="linha">
+      <div><label>Data</label><input id="fData" type="date"></div>
+      <div><label>Início</label><input id="fInicio" type="time"></div>
+      <div><label>Fim (opcional)</label><input id="fFim" type="time"></div>
+    </div>
+    <div class="linha">
+      <div><label>Local</label><input id="fLocal"></div>
+      <div><label>Pasta (opcional)</label><input id="fPasta" placeholder="Ex.: Diretoria"></div>
+      <div><label>Seu nome</label><input id="fCriadoPor"></div>
+    </div>
+    <label>Participantes (opcional)</label>
+    <input id="fPart" placeholder="Nomes separados por vírgula">
+    <label>Observações (opcional)</label>
+    <textarea id="fObs"></textarea>
+    <button class="btn ouro" onclick="salvar()">Criar reunião</button>
+  </div>
+
+  <div class="pastas" id="pastas"></div>
+  <div class="card">
+    <h2>Reuniões</h2>
+    <div id="lista"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let ITENS = [];
+let PASTA_ATIVA = 'todas';
+
+async function carregar(){
+  const r = await fetch(`${API}/api/reunioes`);
+  ITENS = await r.json();
+  renderPastas();
+  render();
+}
+
+function renderPastas(){
+  const pastas = ['todas', ...new Set(ITENS.map(r => r.pasta).filter(Boolean))];
+  document.getElementById('pastas').innerHTML = pastas.map(p => `
+    <button class="pasta-chip ${p === PASTA_ATIVA ? 'ativa' : ''}" onclick="selecionarPasta('${escapeAttr(p)}')">${p === 'todas' ? 'Todas' : escapeHtml(p)}</button>
+  `).join('');
+}
+function selecionarPasta(p){ PASTA_ATIVA = p; renderPastas(); render(); }
+
+async function render(){
+  const filtrados = ITENS.filter(r => PASTA_ATIVA === 'todas' || r.pasta === PASTA_ATIVA);
+  const lista = document.getElementById('lista');
+  if(!filtrados.length){ lista.innerHTML = '<div class="vazio">Nenhuma reunião ainda.</div>'; return; }
+  lista.innerHTML = filtrados.map(r => `
+    <div class="item">
+      <div class="item-top">
+        <div>
+          <div class="item-tit">${escapeHtml(r.titulo)}</div>
+          <div class="item-meta">${r.data.slice(8,10)}/${r.data.slice(5,7)}/${r.data.slice(0,4)} · ${r.inicio}${r.fim ? '–'+r.fim : ''}${r.local ? ' · '+escapeHtml(r.local) : ''}${r.pasta ? ' · 📁 '+escapeHtml(r.pasta) : ''}</div>
+        </div>
+        <button onclick="excluir(${r.id})" style="background:transparent;border:1px solid #2c3260;color:var(--neg);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">🗑</button>
+      </div>
+      ${r.participantes ? `<div class="item-meta">👥 ${escapeHtml(r.participantes)}</div>` : ''}
+      ${r.observacoes ? `<div class="item-obs">${escapeHtml(r.observacoes)}</div>` : ''}
+      <div class="acoes">
+        <label>📎 Anexar<input type="file" style="display:none" onchange="anexar(${r.id}, this)"></label>
+      </div>
+      <div id="anexos${r.id}"></div>
+    </div>
+  `).join('');
+  filtrados.forEach(r => carregarAnexos(r.id));
+}
+
+async function carregarAnexos(reuniaoId){
+  const r = await fetch(`${API}/api/reunioes/${reuniaoId}/anexos`);
+  const anexos = await r.json();
+  const box = document.getElementById('anexos'+reuniaoId);
+  if(!box) return;
+  box.innerHTML = anexos.map(a => `
+    <div class="anexo">
+      <a href="${API}/api/anexos/${a.id}" target="_blank" style="color:var(--ouro-cl)">📄 ${escapeHtml(a.nome)}</a>
+      <span style="color:var(--txt3)">(${(a.tamanho/1024).toFixed(0)} KB)</span>
+      <button onclick="excluirAnexo(${a.id}, ${reuniaoId})">excluir</button>
+    </div>
+  `).join('');
+}
+
+async function anexar(reuniaoId, input){
+  const f = input.files && input.files[0];
+  if(!f) return;
+  if(f.size > 16*1024*1024){ alert('Arquivo acima de 16 MB.'); return; }
+  const b64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(f);
+  });
+  await fetch(`${API}/api/reunioes/${reuniaoId}/anexos`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({nome: f.name, tipo: f.type || 'application/octet-stream', dados: b64})
+  });
+  carregarAnexos(reuniaoId);
+  input.value = '';
+}
+
+async function excluirAnexo(anexoId, reuniaoId){
+  if(!confirm('Excluir este anexo?')) return;
+  await fetch(`${API}/api/anexos/${anexoId}`, {method: 'DELETE'});
+  carregarAnexos(reuniaoId);
+}
+
+async function salvar(){
+  const titulo = document.getElementById('fTitulo').value.trim();
+  const data = document.getElementById('fData').value;
+  const inicio = document.getElementById('fInicio').value;
+  if(!titulo || !data || !inicio){ alert('Preencha ao menos título, data e início.'); return; }
+  await fetch(`${API}/api/reunioes`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      titulo, data, inicio,
+      fim: document.getElementById('fFim').value || null,
+      local: document.getElementById('fLocal').value.trim() || null,
+      pasta: document.getElementById('fPasta').value.trim() || null,
+      participantes: document.getElementById('fPart').value.trim() || null,
+      observacoes: document.getElementById('fObs').value.trim() || null,
+      criado_por: document.getElementById('fCriadoPor').value.trim() || null
+    })
+  });
+  ['fTitulo','fData','fInicio','fFim','fLocal','fPasta','fPart','fObs'].forEach(id => document.getElementById(id).value = '');
+  carregar();
+}
+
+async function excluir(id){
+  if(!confirm('Excluir esta reunião? Os anexos dela também somem.')) return;
+  await fetch(`${API}/api/reunioes/${id}`, {method: 'DELETE'});
+  carregar();
+}
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+function escapeAttr(s){ return String(s).replace(/'/g,"&#39;"); }
+
+carregar();
+</script>
+</body>
+</html>

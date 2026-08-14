@@ -8,12 +8,14 @@
    ============================================================ */
 $__cronsec = @include __DIR__.'/cron_secrets.php';
 $CHAVE = $__cronsec['painel_sala'] ?? '';
-/* ATENÇÃO — legado do Agendamento de Salas: os IDs internos são CRUZADOS
-   (id 'angelo' = Sala João Gulin | id 'joao' = Sala Angelo Gulin).
-   O link usa o nome amigável; 'sid' abaixo é o id interno gravado nas reservas. */
+/* Agendamento de Salas migrou pro piloto em Python (VPS/EasyPanel) — este
+   painel de porta agora busca os agendamentos de lá em vez do banco MySQL
+   antigo. A ligação crossed de IDs que existia antes (legado) não existe
+   mais: 'joao' é sempre a Sala João Gulin, sem inversão. */
+const SALAS_API = 'https://redentor-red.5o1fz1.easypanel.host/api/salas/agendamentos';
 $SALAS = array(
-  'joao'   => array('nome'=>'Sala João Gulin',   'sid'=>'angelo', 'cor'=>'#f97316', 'corSoft'=>'rgba(249,115,22,.14)'),
-  'angelo' => array('nome'=>'Sala Angelo Gulin', 'sid'=>'joao',   'cor'=>'#22c55e', 'corSoft'=>'rgba(34,197,94,.14)')
+  'joao'   => array('nome'=>'Sala João Gulin',   'cor'=>'#f97316', 'corSoft'=>'rgba(249,115,22,.14)'),
+  'angelo' => array('nome'=>'Sala Angelo Gulin', 'cor'=>'#22c55e', 'corSoft'=>'rgba(34,197,94,.14)')
 );
 $k = isset($_GET['k']) ? $_GET['k'] : '';
 $sala = isset($_GET['sala']) ? strtolower(trim($_GET['sala'])) : '';
@@ -21,35 +23,34 @@ if($CHAVE === '' || !hash_equals($CHAVE, $k) || !isset($SALAS[$sala])){ http_res
 
 if(isset($_GET['json'])){
   header('Content-Type: application/json; charset=utf-8');
-  mysqli_report(MYSQLI_REPORT_OFF);
-  require __DIR__.'/db_config.php';
-  $db = @portal_db();
   $hoje = date('Y-m-d');
   $out = array('ok'=>true, 'sala'=>$sala, 'hoje'=>$hoje, 'agora'=>date('H:i'), 'eventos'=>array());
-  if($db){
-    $st = $db->prepare("SELECT valor FROM portal_dados WHERE chave=? LIMIT 1");
-    $key = 'salas_agendamentos_v1';
-    $st->bind_param('s', $key); $st->execute();
-    $st->bind_result($valor);
-    if($st->fetch() && $valor){
-      $arr = json_decode($valor, true);
-      if(is_array($arr)){
-        foreach($arr as $r){
-          if(!is_array($r)) continue;
-          if((isset($r['salaId'])?$r['salaId']:'') !== $SALAS[$sala]['sid']) continue;
-          if((isset($r['data'])?$r['data']:'') !== $hoje) continue;
-          $out['eventos'][] = array(
-            'evento' => isset($r['evento']) ? $r['evento'] : 'Reserva',
-            'inicio' => isset($r['inicio']) ? $r['inicio'] : '',
-            'fim' => isset($r['fim']) ? $r['fim'] : '',
-            'responsavel' => isset($r['responsavel']) ? $r['responsavel'] : ''
-          );
-        }
-        usort($out['eventos'], function($a,$b){ return strcmp($a['inicio'],$b['inicio']); });
+  $ch = curl_init(SALAS_API);
+  curl_setopt_array($ch, array(CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>6, CURLOPT_CONNECTTIMEOUT=>4));
+  $resp = curl_exec($ch);
+  $falhouCurl = ($resp === false) ? curl_error($ch) : null;
+  curl_close($ch);
+  if($falhouCurl !== null){
+    $out['ok'] = false; $out['erro'] = 'Sem conexão com o serviço de salas: '.$falhouCurl;
+  } else {
+    $arr = json_decode($resp, true);
+    if(is_array($arr)){
+      foreach($arr as $r){
+        if(!is_array($r)) continue;
+        if((isset($r['sala_id'])?$r['sala_id']:'') !== $sala) continue;
+        if((isset($r['data'])?$r['data']:'') !== $hoje) continue;
+        $out['eventos'][] = array(
+          'evento' => isset($r['evento']) ? $r['evento'] : 'Reserva',
+          'inicio' => isset($r['inicio']) ? $r['inicio'] : '',
+          'fim' => isset($r['fim']) ? $r['fim'] : '',
+          'responsavel' => isset($r['responsavel']) ? $r['responsavel'] : ''
+        );
       }
+      usort($out['eventos'], function($a,$b){ return strcmp($a['inicio'],$b['inicio']); });
+    } else {
+      $out['ok'] = false; $out['erro'] = 'Resposta inválida do serviço de salas.';
     }
-    $st->close();
-  } else { $out['ok']=false; $out['erro']='sem banco'; }
+  }
   echo json_encode($out, JSON_UNESCAPED_UNICODE);
   exit;
 }
