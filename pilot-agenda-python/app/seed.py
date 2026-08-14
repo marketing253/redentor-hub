@@ -52,3 +52,40 @@ def rodar_seed(db: Session):
                 processo=r.get("processo") or None,
             ))
         db.commit()
+
+    if db.query(models.Acidente).count() == 0:
+        with open(os.path.join(_DIR, "acidentes_seed.json"), encoding="utf-8") as f:
+            dados = json.load(f)
+        F = dados.get("F", {})
+        keys = F.get("keys", [])
+        # "keys" são campos categóricos: cada um tem um F[chave] (índice por
+        # registro) e um F[chave+"_vals"] (lista de valores únicos) — assim
+        # o arquivo original não repetia o mesmo texto milhares de vezes.
+        # culpado/evitavel/vitima/perdakm já vêm como 0/1 direto por registro.
+        total = len(F.get("culpado", []))
+        for i in range(total):
+            campos = {}
+            for k in keys:
+                idxs = F.get(k, [])
+                vals = F.get(k + "_vals", [])
+                idx = idxs[i] if i < len(idxs) else None
+                campos[k] = vals[idx] if (idx is not None and 0 <= idx < len(vals)) else None
+            db.add(models.Acidente(
+                data=_data_ou_none(campos.get("data")),
+                colaborador=campos.get("colaborador"),
+                equipamento=campos.get("equipamento"),
+                linha=campos.get("linha"),
+                atendente=campos.get("atendente"),
+                avaliacao=campos.get("avaliacao"),
+                evitado=campos.get("evitado"),
+                clima=campos.get("clima"),
+                tipo_dia=campos.get("tipo_dia"),
+                hora=campos.get("hora"),
+                culpado=bool(F.get("culpado", [])[i]) if i < len(F.get("culpado", [])) else False,
+                evitavel=bool(F.get("evitavel", [])[i]) if i < len(F.get("evitavel", [])) else False,
+                vitima=bool(F.get("vitima", [])[i]) if i < len(F.get("vitima", [])) else False,
+                perdakm=bool(F.get("perdakm", [])[i]) if i < len(F.get("perdakm", [])) else False,
+            ))
+            if i % 500 == 0:
+                db.flush()
+        db.commit()

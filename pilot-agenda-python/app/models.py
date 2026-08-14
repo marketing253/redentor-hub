@@ -4,7 +4,7 @@ models.py — formato das tabelas no banco de dados.
 Um serviço só, várias ferramentas: Agenda, Chamados, Plano de Ação e
 Biarticulado. Cada uma com sua tabela, todas no mesmo banco Postgres.
 """
-from sqlalchemy import Column, Integer, String, Date, Time, Text, DateTime, Float, LargeBinary, func
+from sqlalchemy import Column, Integer, String, Date, Time, Text, DateTime, Float, Boolean, LargeBinary, func
 from app.database import Base
 
 
@@ -99,6 +99,28 @@ class ReuniaoAnexo(Base):
     tamanho = Column(Integer, nullable=False)
     conteudo = Column(LargeBinary, nullable=False)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Acidente(Base):
+    """Registro individual de acidente — importado do painel antigo
+    (que guardava tudo compactado num JSON só). Um registro por linha
+    da planilha original."""
+    __tablename__ = "acidentes"
+    id = Column(Integer, primary_key=True, index=True)
+    data = Column(Date, nullable=True, index=True)
+    colaborador = Column(String(150), nullable=True, index=True)
+    equipamento = Column(String(60), nullable=True, index=True)
+    linha = Column(String(60), nullable=True, index=True)
+    atendente = Column(String(150), nullable=True)
+    avaliacao = Column(String(80), nullable=True)
+    evitado = Column(String(120), nullable=True)
+    clima = Column(String(40), nullable=True)
+    tipo_dia = Column(String(40), nullable=True)
+    hora = Column(String(20), nullable=True)
+    culpado = Column(Boolean, nullable=False, default=False)
+    evitavel = Column(Boolean, nullable=False, default=False)
+    vitima = Column(Boolean, nullable=False, default=False)
+    perdakm = Column(Boolean, nullable=False, default=False)
 
 
 class SalaAgendamento(Base):

@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, func
 
 from app.database import engine, get_db, SessionLocal, Base
 from app import models, schemas
@@ -337,6 +337,63 @@ def excluir_agendamento(agendamento_id: int, db: Session = Depends(get_db)):
     db.delete(a)
     db.commit()
     return None
+
+
+# ══════════════════════════════════════ Acidentes (só leitura) ══
+from typing import Optional as _Optional
+
+
+@app.get("/api/acidentes/resumo")
+def resumo_acidentes(db: Session = Depends(get_db)):
+    total = db.query(models.Acidente).count()
+    culpados = db.query(models.Acidente).filter(models.Acidente.culpado.is_(True)).count()
+    evitaveis = db.query(models.Acidente).filter(models.Acidente.evitavel.is_(True)).count()
+    vitimas = db.query(models.Acidente).filter(models.Acidente.vitima.is_(True)).count()
+    n_motoristas = db.query(models.Acidente.colaborador).distinct().count()
+    n_veiculos = db.query(models.Acidente.equipamento).distinct().count()
+    n_linhas = db.query(models.Acidente.linha).distinct().count()
+    return {
+        "total": total, "culpados": culpados, "evitaveis": evitaveis,
+        "vitimas": vitimas, "n_motoristas": n_motoristas,
+        "n_veiculos": n_veiculos, "n_linhas": n_linhas,
+    }
+
+
+@app.get("/api/acidentes", response_model=List[schemas.Acidente])
+def listar_acidentes(
+    db: Session = Depends(get_db),
+    linha: _Optional[str] = None,
+    colaborador: _Optional[str] = None,
+    ano: _Optional[int] = None,
+    limit: int = 200,
+    offset: int = 0,
+):
+    q = db.query(models.Acidente)
+    if linha:
+        q = q.filter(models.Acidente.linha == linha)
+    if colaborador:
+        q = q.filter(models.Acidente.colaborador.ilike(f"%{colaborador}%"))
+    if ano:
+        q = q.filter(func.extract("year", models.Acidente.data) == ano)
+    return (
+        q.order_by(desc(models.Acidente.data))
+        .offset(offset).limit(min(limit, 1000))
+        .all()
+    )
+
+
+@app.get("/api/acidentes/linhas")
+def listar_linhas_acidentes(db: Session = Depends(get_db)):
+    """Ranking de linhas por quantidade de acidentes, pro gráfico de barras."""
+    rows = (
+        db.query(models.Acidente.linha, func.count(models.Acidente.id).label("qtd"))
+        .filter(models.Acidente.linha.isnot(None))
+        .group_by(models.Acidente.linha)
+        .order_by(desc("qtd"))
+        .limit(15)
+        .all()
+    )
+    return [{"linha": r[0], "qtd": r[1]} for r in rows]
 
 
 # Serve as páginas estáticas (uma pasta por ferramenta) na raiz do site.

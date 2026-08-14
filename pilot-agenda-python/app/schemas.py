@@ -211,3 +211,23 @@ class SalaAgendamento(SalaAgendamentoBase):
     id: int
     criado_por: Optional[str] = None
     criado_em: Optional[datetime] = None
+
+
+# ── Acidentes (só leitura — histórico importado) ────────────────
+class Acidente(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    data: Optional[date] = None
+    colaborador: Optional[str] = None
+    equipamento: Optional[str] = None
+    linha: Optional[str] = None
+    atendente: Optional[str] = None
+    avaliacao: Optional[str] = None
+    evitado: Optional[str] = None
+    clima: Optional[str] = None
+    tipo_dia: Optional[str] = None
+    hora: Optional[str] = None
+    culpado: bool
+    evitavel: bool
+    vitima: bool
+    perdakm: bool

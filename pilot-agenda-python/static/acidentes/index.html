@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acidentes — Redentor (piloto Python)</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:var(--sup);border:1px solid var(--sup2);border-radius:12px;padding:14px 16px}
+  .kpi b{display:block;font-size:24px}
+  .kpi span{font-size:11px;color:var(--txt2);text-transform:uppercase}
+  .kpi.alerta b{color:var(--neg)}
+  .barra-linha{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
+  .barra-linha .nome{width:110px;flex-shrink:0;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .barra-linha .barra{flex:1;height:16px;background:var(--sup2);border-radius:4px;overflow:hidden}
+  .barra-linha .barra i{display:block;height:100%;background:var(--azul-claro)}
+  .barra-linha .qtd{width:36px;text-align:right;color:var(--ouro-cl);font-weight:600}
+  .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .filtros input,.filtros select{width:auto;min-width:160px}
+  .tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+  .tag.sim{background:#3a1e1c;color:var(--neg)}
+  .tag.nao{background:var(--sup2);color:var(--txt3)}
+</style>
+</head>
+<body>
+<div class="marca"><b>🚨 Painel de Acidentes</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <h2>Linhas com mais acidentes</h2>
+    <div id="rankLinhas"></div>
+  </div>
+
+  <div class="card">
+    <h2>Registros</h2>
+    <div class="filtros">
+      <input id="fColab" placeholder="Buscar motorista..." oninput="carregarLista()">
+      <select id="fLinha" onchange="carregarLista()"><option value="">Todas as linhas</option></select>
+      <input id="fAno" type="number" placeholder="Ano" style="width:90px" oninput="carregarLista()">
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Data</th><th>Motorista</th><th>Linha</th><th>Veículo</th><th>Culpado</th><th>Evitável</th><th>Vítima</th></tr></thead>
+      <tbody id="corpo"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+
+async function carregarResumo(){
+  const r = await fetch(`${API}/api/acidentes/resumo`);
+  const k = await r.json();
+  const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><b>${k.total.toLocaleString('pt-BR')}</b><span>Acidentes</span></div>
+    <div class="kpi alerta"><b>${pct(k.culpados,k.total)}%</b><span>Culpados</span></div>
+    <div class="kpi alerta"><b>${pct(k.evitaveis,k.total)}%</b><span>Evitáveis</span></div>
+    <div class="kpi alerta"><b>${k.vitimas}</b><span>Com vítima</span></div>
+    <div class="kpi"><b>${k.n_motoristas}</b><span>Motoristas</span></div>
+    <div class="kpi"><b>${k.n_veiculos}</b><span>Veículos</span></div>
+    <div class="kpi"><b>${k.n_linhas}</b><span>Linhas</span></div>
+  `;
+}
+
+async function carregarLinhas(){
+  const r = await fetch(`${API}/api/acidentes/linhas`);
+  const linhas = await r.json();
+  const max = Math.max(...linhas.map(l => l.qtd), 1);
+  document.getElementById('rankLinhas').innerHTML = linhas.map(l => `
+    <div class="barra-linha">
+      <span class="nome">${escapeHtml(l.linha||'—')}</span>
+      <div class="barra"><i style="width:${l.qtd/max*100}%"></i></div>
+      <span class="qtd">${l.qtd}</span>
+    </div>
+  `).join('');
+  const sel = document.getElementById('fLinha');
+  linhas.forEach(l => {
+    const op = document.createElement('option');
+    op.value = l.linha; op.textContent = l.linha;
+    sel.appendChild(op);
+  });
+}
+
+async function carregarLista(){
+  const params = new URLSearchParams();
+  const colab = document.getElementById('fColab').value.trim();
+  const linha = document.getElementById('fLinha').value;
+  const ano = document.getElementById('fAno').value;
+  if(colab) params.set('colaborador', colab);
+  if(linha) params.set('linha', linha);
+  if(ano) params.set('ano', ano);
+  params.set('limit', '200');
+  const r = await fetch(`${API}/api/acidentes?${params}`);
+  const itens = await r.json();
+  document.getElementById('corpo').innerHTML = itens.map(a => `
+    <tr>
+      <td>${a.data ? a.data.slice(8,10)+'/'+a.data.slice(5,7)+'/'+a.data.slice(0,4) : '—'}</td>
+      <td>${escapeHtml(a.colaborador||'—')}</td>
+      <td>${escapeHtml(a.linha||'—')}</td>
+      <td>${escapeHtml(a.equipamento||'—')}</td>
+      <td><span class="tag ${a.culpado?'sim':'nao'}">${a.culpado?'Sim':'Não'}</span></td>
+      <td><span class="tag ${a.evitavel?'sim':'nao'}">${a.evitavel?'Sim':'Não'}</span></td>
+      <td><span class="tag ${a.vitima?'sim':'nao'}">${a.vitima?'Sim':'Não'}</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" class="vazio">Nenhum registro com esse filtro.</td></tr>';
+}
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
+
+carregarResumo();
+carregarLinhas();
+carregarLista();
+</script>
+</body>
+</html>
