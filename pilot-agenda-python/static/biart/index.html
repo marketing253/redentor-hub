@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biarticulado — Redentor (piloto Python)</title>
+<style>
+  :root{
+    --azul:#3B4192; --azul-esc:#2A2F6C;
+    --ouro:#C08A28; --ouro-cl:#D9A83F;
+    --bg:#0C0E1C; --sup:#12152C; --sup2:#191D3A;
+    --txt:#F1EFE7; --txt2:#9EA2C0; --txt3:#6A6F98;
+    --pos:#57C98B; --neg:#E0576E;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+  .marca{background:linear-gradient(120deg,var(--azul-esc),var(--azul));
+    border-bottom:2px solid var(--ouro);padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+  .marca b{font-size:17px}
+  .marca a{color:#c7cbee;font-size:12px;text-decoration:none}
+  .wrap{max-width:1000px;margin:0 auto;padding:22px 18px 60px}
+  .stats{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .stat{background:var(--sup);border:1px solid var(--sup2);border-radius:10px;padding:10px 16px;flex:1;min-width:120px}
+  .stat b{display:block;font-size:20px}
+  .stat span{font-size:11px;color:var(--txt2);text-transform:uppercase}
+  input{width:100%;background:var(--sup2);border:1px solid #2c3260;color:var(--txt);
+    border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--txt2);font-size:11px;text-transform:uppercase;
+    padding:8px 10px;border-bottom:1px solid var(--sup2)}
+  td{padding:9px 10px;border-bottom:1px solid var(--sup2)}
+  .status{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+  .status.venc{background:#3a1e1c;color:var(--neg)}
+  .status.ok{background:#17301f;color:var(--pos)}
+  .status.concl{background:#191d3a;color:var(--txt2)}
+</style>
+</head>
+<body>
+<div class="marca"><b>🚌 Treinamento Biarticulado</b><a href="/">← voltar</a></div>
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <input id="busca" placeholder="Buscar por nome ou CPD..." oninput="render()">
+  <table>
+    <thead><tr><th>CPD</th><th>Nome</th><th>Sexo</th><th>Data</th><th>Autorização</th><th>Situação</th></tr></thead>
+    <tbody id="corpo"></tbody>
+  </table>
+</div>
+
+<script>
+const API = '';
+let REGISTROS = [];
+
+async function carregar(){
+  const r = await fetch(`${API}/api/biart`);
+  REGISTROS = await r.json();
+  render();
+}
+
+function situacao(r){
+  if(r.processo === 'Processo Concluído') return {texto: 'Concluído', classe: 'concl'};
+  if(!r.data) return {texto: 'Dentro do prazo', classe: 'ok'};
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const d = new Date(r.data+'T00:00:00');
+  const dias = Math.floor((hoje - d) / 86400000);
+  return dias >= 31 ? {texto:'Prazo vencido', classe:'venc'} : {texto:'Dentro do prazo', classe:'ok'};
+}
+
+function render(){
+  const busca = document.getElementById('busca').value.trim().toLowerCase();
+  const filtrados = REGISTROS.filter(r =>
+    !busca || (r.nome||'').toLowerCase().includes(busca) || (r.cpd||'').includes(busca)
+  );
+  const vencidos = REGISTROS.filter(r => situacao(r).classe === 'venc').length;
+  const concluidos = REGISTROS.filter(r => situacao(r).classe === 'concl').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${REGISTROS.length}</b><span>Total</span></div>
+    <div class="stat"><b>${concluidos}</b><span>Concluídos</span></div>
+    <div class="stat"><b style="color:var(--neg)">${vencidos}</b><span>Prazo vencido</span></div>
+  `;
+  document.getElementById('corpo').innerHTML = filtrados.map(r => {
+    const s = situacao(r);
+    return `<tr>
+      <td>${escapeHtml(r.cpd||'—')}</td>
+      <td>${escapeHtml(r.nome)}</td>
+      <td>${escapeHtml(r.sexo||'—')}</td>
+      <td>${r.data ? r.data.slice(8,10)+'/'+r.data.slice(5,7)+'/'+r.data.slice(0,4) : '—'}</td>
+      <td>${escapeHtml(r.autorizacao||'—')}</td>
+      <td><span class="status ${s.classe}">${s.texto}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : s;
+  return d.innerHTML;
+}
+
+carregar();
+</script>
+</body>
+</html>

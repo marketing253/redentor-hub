@@ -3,168 +3,43 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agenda — Redentor (piloto Python)</title>
+<title>Ferramentas — Redentor (piloto Python)</title>
 <style>
   :root{
-    --azul:#3B4192; --azul-esc:#2A2F6C; --azul-fun:#1C1F45;
-    --ouro:#C08A28; --ouro-cl:#D9A83F; --ouro-pl:#ECDBAE;
+    --azul:#3B4192; --azul-esc:#2A2F6C;
+    --ouro:#C08A28; --ouro-cl:#D9A83F;
     --bg:#0C0E1C; --sup:#12152C; --sup2:#191D3A;
-    --txt:#F1EFE7; --txt2:#9EA2C0; --txt3:#6A6F98;
-    --pos:#57C98B; --neg:#E0576E;
+    --txt:#F1EFE7; --txt2:#9EA2C0;
   }
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);
     font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
   .marca{background:linear-gradient(120deg,var(--azul-esc),var(--azul));
-    border-bottom:2px solid var(--ouro);padding:16px 22px}
-  .marca b{font-size:17px;letter-spacing:.3px}
+    border-bottom:2px solid var(--ouro);padding:18px 22px}
+  .marca b{font-size:18px;letter-spacing:.3px}
   .marca span{display:block;font-size:12px;color:#c7cbee;margin-top:2px}
-  .wrap{max-width:640px;margin:0 auto;padding:22px 18px 60px}
-  .card{background:var(--sup);border:1px solid var(--sup2);border-radius:12px;
-    padding:18px;margin-bottom:16px}
-  h2{font-size:15px;margin:0 0 12px;color:var(--txt)}
-  label{display:block;font-size:12px;color:var(--txt2);margin:10px 0 4px;
-    text-transform:uppercase;letter-spacing:.5px}
-  input,textarea{width:100%;background:var(--sup2);border:1px solid #2c3260;
-    color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;
-    font-family:inherit;box-sizing:border-box}
-  textarea{resize:vertical;min-height:60px}
-  .linha{display:flex;gap:10px}
-  .linha > div{flex:1}
-  .btn{background:var(--azul);color:#fff;border:0;border-radius:8px;
-    padding:10px 18px;font-size:14px;cursor:pointer;margin-top:14px}
-  .btn:hover{filter:brightness(1.15)}
-  .btn.ouro{background:var(--ouro-cl);color:#1b1e24;font-weight:600}
-  .ev{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
-    border-bottom:1px solid var(--sup2)}
-  .ev:last-child{border:0}
-  .ev-data{min-width:52px;text-align:center;background:var(--sup2);
-    border-radius:8px;padding:6px 4px;font-size:11px;color:var(--ouro-cl);
-    font-weight:700}
-  .ev-data b{display:block;font-size:18px;color:var(--txt)}
-  .ev-corpo{flex:1}
-  .ev-tit{font-weight:600;font-size:14px}
-  .ev-hora{color:var(--txt2);font-size:12px;margin-top:2px}
-  .ev-desc{color:var(--txt2);font-size:13px;margin-top:4px;white-space:pre-wrap}
-  .ev-del{background:transparent;border:1px solid #3a3f60;color:var(--neg);
-    border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
-  .vazio{color:var(--txt3);font-size:13px;text-align:center;padding:20px 0}
-  #loginBox{max-width:340px;margin:60px auto;text-align:center}
-  #loginBox p{color:var(--txt2);font-size:13px}
+  .wrap{max-width:760px;margin:0 auto;padding:30px 18px 60px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  a.card{display:block;background:var(--sup);border:1px solid var(--sup2);border-left:3px solid var(--ouro-cl);
+    border-radius:12px;padding:18px;text-decoration:none;color:var(--txt);transition:.15s}
+  a.card:hover{border-color:var(--ouro-cl);transform:translateY(-2px)}
+  a.card .ic{font-size:26px;margin-bottom:8px}
+  a.card b{display:block;font-size:15px;margin-bottom:4px}
+  a.card span{font-size:12px;color:var(--txt2)}
 </style>
 </head>
 <body>
-
-<div id="loginBox" class="card" style="display:none">
-  <h2>Quem é você?</h2>
-  <p>Digite seu usuário do Hub pra ver sua agenda. (Piloto — sem senha ainda.)</p>
-  <input id="loginUser" placeholder="seu.usuario">
-  <button class="btn ouro" onclick="entrar()" style="width:100%">Entrar</button>
+<div class="marca">
+  <b>Ferramentas — Redentor</b>
+  <span>Piloto em Python · migração módulo por módulo</span>
 </div>
-
-<div id="app" style="display:none">
-  <div class="marca">
-    <b>Agenda — Redentor</b>
-    <span>Piloto em Python · logado como <b id="quemSou"></b> · <a href="#" onclick="sair();return false" style="color:#c7cbee">trocar</a></span>
-  </div>
-  <div class="wrap">
-    <div class="card">
-      <h2>Novo compromisso</h2>
-      <label>Título</label>
-      <input id="fTitulo" placeholder="Ex.: Reunião com a contabilidade">
-      <div class="linha">
-        <div><label>Data</label><input id="fData" type="date"></div>
-        <div><label>Hora (opcional)</label><input id="fHora" type="time"></div>
-      </div>
-      <label>Descrição (opcional)</label>
-      <textarea id="fDesc" placeholder="Detalhes, local, quem participa..."></textarea>
-      <button class="btn" onclick="salvar()">Adicionar</button>
-    </div>
-    <div class="card">
-      <h2>Seus compromissos</h2>
-      <div id="lista"></div>
-    </div>
+<div class="wrap">
+  <div class="grid">
+    <a class="card" href="/agenda/"><div class="ic">📆</div><b>Minha Agenda</b><span>Compromissos pessoais, por usuário</span></a>
+    <a class="card" href="/chamados/"><div class="ic">🛠</div><b>Chamados</b><span>Abertura e acompanhamento de chamados</span></a>
+    <a class="card" href="/plano/"><div class="ic">🎯</div><b>Plano de Ação</b><span>Projetos de IA — atividades e prazos</span></a>
+    <a class="card" href="/biart/"><div class="ic">🚌</div><b>Biarticulado</b><span>Treinamento e autorização por colaborador</span></a>
   </div>
 </div>
-
-<script>
-const API = ''; // mesmo domínio do front — em produção, aponta pra própria URL do serviço.
-let USUARIO = localStorage.getItem('agenda_usuario') || '';
-
-function entrar(){
-  const u = document.getElementById('loginUser').value.trim();
-  if(!u) return;
-  USUARIO = u;
-  localStorage.setItem('agenda_usuario', u);
-  iniciar();
-}
-function sair(){
-  localStorage.removeItem('agenda_usuario');
-  location.reload();
-}
-
-async function carregar(){
-  const r = await fetch(`${API}/api/eventos?usuario=${encodeURIComponent(USUARIO)}`);
-  const eventos = await r.json();
-  const lista = document.getElementById('lista');
-  if(!eventos.length){
-    lista.innerHTML = '<div class="vazio">Nenhum compromisso ainda.</div>';
-    return;
-  }
-  lista.innerHTML = eventos.map(ev => {
-    const [ano, mes, dia] = ev.data.split('-');
-    return `<div class="ev">
-      <div class="ev-data">${dia}<b>${mesAbrev(mes)}</b></div>
-      <div class="ev-corpo">
-        <div class="ev-tit">${escapeHtml(ev.titulo)}</div>
-        ${ev.hora ? `<div class="ev-hora">${ev.hora.slice(0,5)}</div>` : ''}
-        ${ev.descricao ? `<div class="ev-desc">${escapeHtml(ev.descricao)}</div>` : ''}
-      </div>
-      <button class="ev-del" onclick="excluir(${ev.id})">Excluir</button>
-    </div>`;
-  }).join('');
-}
-
-async function salvar(){
-  const titulo = document.getElementById('fTitulo').value.trim();
-  const data = document.getElementById('fData').value;
-  const hora = document.getElementById('fHora').value;
-  const descricao = document.getElementById('fDesc').value.trim();
-  if(!titulo || !data){ alert('Preencha ao menos título e data.'); return; }
-  await fetch(`${API}/api/eventos`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({usuario: USUARIO, titulo, data, hora: hora || null, descricao: descricao || null})
-  });
-  document.getElementById('fTitulo').value = '';
-  document.getElementById('fHora').value = '';
-  document.getElementById('fDesc').value = '';
-  carregar();
-}
-
-async function excluir(id){
-  if(!confirm('Excluir esse compromisso?')) return;
-  await fetch(`${API}/api/eventos/${id}`, {method: 'DELETE'});
-  carregar();
-}
-
-function mesAbrev(m){
-  return ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][parseInt(m,10)-1];
-}
-function escapeHtml(s){
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-function iniciar(){
-  document.getElementById('loginBox').style.display = 'none';
-  document.getElementById('app').style.display = '';
-  document.getElementById('quemSou').textContent = USUARIO;
-  carregar();
-}
-
-if(USUARIO){ iniciar(); } else { document.getElementById('loginBox').style.display = ''; }
-</script>
 </body>
 </html>

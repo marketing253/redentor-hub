@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plano de Ação — Redentor (piloto Python)</title>
+<style>
+  :root{
+    --azul:#3B4192; --azul-esc:#2A2F6C;
+    --ouro:#C08A28; --ouro-cl:#D9A83F;
+    --bg:#0C0E1C; --sup:#12152C; --sup2:#191D3A;
+    --txt:#F1EFE7; --txt2:#9EA2C0; --txt3:#6A6F98;
+    --pos:#57C98B; --neg:#E0576E;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+  .marca{background:linear-gradient(120deg,var(--azul-esc),var(--azul));
+    border-bottom:2px solid var(--ouro);padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+  .marca b{font-size:17px}
+  .marca a{color:#c7cbee;font-size:12px;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:22px 18px 60px}
+  .stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .stat{background:var(--sup);border:1px solid var(--sup2);border-radius:10px;padding:12px 18px;flex:1;min-width:130px}
+  .stat b{display:block;font-size:22px}
+  .stat span{font-size:11px;color:var(--txt2);text-transform:uppercase}
+  .card{background:var(--sup);border:1px solid var(--sup2);border-radius:12px;padding:14px;margin-bottom:12px}
+  .item-hd{display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer}
+  .item-hd b{font-size:14px}
+  .item-hd .num{color:var(--ouro-cl);font-weight:700;margin-right:8px}
+  .barra{width:120px;height:8px;background:var(--sup2);border-radius:6px;overflow:hidden;flex-shrink:0}
+  .barra i{display:block;height:100%;background:var(--pos)}
+  .pct-txt{font-size:12px;color:var(--txt2);width:36px;text-align:right}
+  .detalhe{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--sup2);font-size:13px}
+  .detalhe.aberto{display:block}
+  .campo{margin-bottom:8px}
+  .campo b{display:block;font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+  .campo div{white-space:pre-wrap;color:var(--txt)}
+  input,textarea{width:100%;background:var(--sup2);border:1px solid #2c3260;color:var(--txt);
+    border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;margin-top:2px}
+  textarea{resize:vertical;min-height:50px}
+  .btn{background:var(--azul);color:#fff;border:0;border-radius:8px;padding:8px 14px;
+    font-size:13px;cursor:pointer;margin-top:8px}
+  .btn.ouro{background:var(--ouro-cl);color:#1b1e24;font-weight:600}
+</style>
+</head>
+<body>
+<div class="marca"><b>🎯 Plano de Ação — Projetos IA</b><a href="/">← voltar</a></div>
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div id="lista"></div>
+</div>
+
+<script>
+const API = '';
+let ITENS = [];
+
+async function carregar(){
+  const r = await fetch(`${API}/api/plano`);
+  ITENS = await r.json();
+  render();
+}
+
+function render(){
+  const concluidos = ITENS.filter(i => i.pct >= 100).length;
+  const custoTotal = ITENS.reduce((s,i) => s + (i.custo||0), 0);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${ITENS.length}</b><span>Atividades</span></div>
+    <div class="stat"><b>${concluidos}</b><span>Concluídas</span></div>
+    <div class="stat"><b>R$ ${custoTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</b><span>Custo total</span></div>
+  `;
+  document.getElementById('lista').innerHTML = ITENS.map(i => `
+    <div class="card">
+      <div class="item-hd" onclick="toggle(${i.id})">
+        <b><span class="num">#${i.num||i.id}</span>${escapeHtml(i.atividade)}</b>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="barra"><i style="width:${i.pct}%"></i></div>
+          <span class="pct-txt">${i.pct}%</span>
+        </div>
+      </div>
+      <div class="detalhe" id="det${i.id}">
+        <div class="campo"><b>Quem</b><div>${escapeHtml(i.quem||'—')}</div></div>
+        <div class="campo"><b>O que</b><div>${escapeHtml(i.oque||'—')}</div></div>
+        <div class="campo"><b>Como</b><div>${escapeHtml(i.como||'—')}</div></div>
+        <div class="campo"><b>Eficácia / resultado</b><div>${escapeHtml(i.eficacia||'—')}</div></div>
+        <div class="campo"><b>Custo</b><div>R$ ${(i.custo||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+        <label style="font-size:11px;color:var(--txt2)">Ajustar % de conclusão</label>
+        <input type="number" min="0" max="100" value="${i.pct}" id="pct${i.id}">
+        <button class="btn ouro" onclick="salvarPct(${i.id})">Salvar %</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggle(id){
+  document.getElementById('det'+id).classList.toggle('aberto');
+}
+
+async function salvarPct(id){
+  const pct = parseInt(document.getElementById('pct'+id).value, 10) || 0;
+  await fetch(`${API}/api/plano/${id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({pct})
+  });
+  carregar();
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : s;
+  return d.innerHTML;
+}
+
+carregar();
+</script>
+</body>
+</html>
