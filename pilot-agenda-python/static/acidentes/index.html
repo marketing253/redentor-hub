@@ -5,22 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Acidentes — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="/charts.js"></script>
 <style>
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
   .kpi{background:var(--sup);border:1px solid var(--sup2);border-radius:12px;padding:14px 16px}
   .kpi b{display:block;font-size:24px}
   .kpi span{font-size:11px;color:var(--txt2);text-transform:uppercase}
   .kpi.alerta b{color:var(--neg)}
-  .barra-linha{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
-  .barra-linha .nome{width:110px;flex-shrink:0;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .barra-linha .barra{flex:1;height:16px;background:var(--sup2);border-radius:4px;overflow:hidden}
-  .barra-linha .barra i{display:block;height:100%;background:var(--azul-claro)}
-  .barra-linha .qtd{width:36px;text-align:right;color:var(--ouro-cl);font-weight:600}
+  .roscas{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;text-align:center}
   .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .filtros input,.filtros select{width:auto;min-width:160px}
   .tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
   .tag.sim{background:#3a1e1c;color:var(--neg)}
   .tag.nao{background:var(--sup2);color:var(--txt3)}
+  .dropzone{border:2px dashed var(--sup2);border-radius:12px;padding:26px;text-align:center;
+    cursor:pointer;color:var(--txt2);font-size:13px}
+  .dropzone:hover{border-color:var(--ouro-cl)}
+  .preview-stats{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0}
+  .preview-stats div{background:var(--sup2);border-radius:8px;padding:8px 14px;font-size:12px}
+  .preview-stats b{display:block;font-size:18px;color:var(--ouro-cl)}
 </style>
 </head>
 <body>
@@ -29,8 +33,28 @@
   <div class="kpis" id="kpis"></div>
 
   <div class="card">
+    <h2>Culpado × Evitável</h2>
+    <div class="roscas" id="roscas"></div>
+  </div>
+
+  <div class="card">
     <h2>Linhas com mais acidentes</h2>
     <div id="rankLinhas"></div>
+  </div>
+
+  <div class="card">
+    <h2>Importar planilha (Excel ou CSV)</h2>
+    <p style="font-size:12px;color:var(--txt2);margin:0 0 12px">
+      Colunas reconhecidas (nome flexível, maiúsc./minúsc. não importa):
+      <b>Data, Colaborador/Motorista, Equipamento/Veículo, Linha, Atendente,
+      Avaliação, Evitado, Clima, Tipo Dia, Hora, Culpado, Evitável, Vítima, Perda Km</b>.
+      As últimas 4 aceitam Sim/Não, 1/0 ou verdadeiro/falso.
+    </p>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('arquivoImport').click()">
+      📊 Clique para escolher a planilha (.xlsx, .xls ou .csv)
+      <input type="file" id="arquivoImport" accept=".xlsx,.xls,.csv" style="display:none" onchange="lerArquivo(this)">
+    </div>
+    <div id="previewImport"></div>
   </div>
 
   <div class="card">
@@ -51,6 +75,7 @@
 
 <script>
 const API = '';
+let REGISTROS_LOTE = null;
 
 async function carregarResumo(){
   const r = await fetch(`${API}/api/acidentes/resumo`);
@@ -58,26 +83,23 @@ async function carregarResumo(){
   const pct = (a,b) => b ? Math.round(a/b*100) : 0;
   document.getElementById('kpis').innerHTML = `
     <div class="kpi"><b>${k.total.toLocaleString('pt-BR')}</b><span>Acidentes</span></div>
-    <div class="kpi alerta"><b>${pct(k.culpados,k.total)}%</b><span>Culpados</span></div>
-    <div class="kpi alerta"><b>${pct(k.evitaveis,k.total)}%</b><span>Evitáveis</span></div>
     <div class="kpi alerta"><b>${k.vitimas}</b><span>Com vítima</span></div>
     <div class="kpi"><b>${k.n_motoristas}</b><span>Motoristas</span></div>
     <div class="kpi"><b>${k.n_veiculos}</b><span>Veículos</span></div>
     <div class="kpi"><b>${k.n_linhas}</b><span>Linhas</span></div>
+  `;
+  document.getElementById('roscas').innerHTML = `
+    <div>${graficoRosca(k.culpados, k.total, {rotulo:'Culpados', cor:'var(--neg)'})}</div>
+    <div>${graficoRosca(k.evitaveis, k.total, {rotulo:'Evitáveis', cor:'var(--ouro-cl)'})}</div>
   `;
 }
 
 async function carregarLinhas(){
   const r = await fetch(`${API}/api/acidentes/linhas`);
   const linhas = await r.json();
-  const max = Math.max(...linhas.map(l => l.qtd), 1);
-  document.getElementById('rankLinhas').innerHTML = linhas.map(l => `
-    <div class="barra-linha">
-      <span class="nome">${escapeHtml(l.linha||'—')}</span>
-      <div class="barra"><i style="width:${l.qtd/max*100}%"></i></div>
-      <span class="qtd">${l.qtd}</span>
-    </div>
-  `).join('');
+  document.getElementById('rankLinhas').innerHTML = graficoBarras(
+    linhas.map(l => ({rotulo: l.linha||'—', valor: l.qtd}))
+  );
   const sel = document.getElementById('fLinha');
   linhas.forEach(l => {
     const op = document.createElement('option');
@@ -108,6 +130,105 @@ async function carregarLista(){
       <td><span class="tag ${a.vitima?'sim':'nao'}">${a.vitima?'Sim':'Não'}</span></td>
     </tr>
   `).join('') || '<tr><td colspan="7" class="vazio">Nenhum registro com esse filtro.</td></tr>';
+}
+
+/* ── Importação de planilha ─────────────────────────────────── */
+const MAPA_COLUNAS = {
+  data: ['data'],
+  colaborador: ['colaborador','motorista'],
+  equipamento: ['equipamento','veiculo','veículo'],
+  linha: ['linha'],
+  atendente: ['atendente'],
+  avaliacao: ['avaliacao','avaliação'],
+  evitado: ['evitado'],
+  clima: ['clima'],
+  tipo_dia: ['tipodia','tipo_dia','tipo dia'],
+  hora: ['hora'],
+  culpado: ['culpado'],
+  evitavel: ['evitavel','evitável'],
+  vitima: ['vitima','vítima'],
+  perdakm: ['perdakm','perda_km','perda km'],
+};
+function normChave(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
+function paraBool(v){
+  if(typeof v === 'number') return v !== 0;
+  const s = String(v||'').trim().toLowerCase();
+  return ['sim','1','verdadeiro','true','x'].includes(s);
+}
+function paraDataISO(v){
+  if(v instanceof Date) return v.toISOString().slice(0,10);
+  const s = String(v||'').trim();
+  const br = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(br) return `${br[3]}-${br[2]}-${br[1]}`;
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  return null;
+}
+
+function lerArquivo(input){
+  const f = input.files && input.files[0];
+  if(!f) return;
+  const leitor = new FileReader();
+  leitor.onload = function(e){
+    const wb = XLSX.read(e.target.result, {type:'binary', cellDates:true});
+    const primeira = wb.SheetNames[0];
+    const linhas = XLSX.utils.sheet_to_json(wb.Sheets[primeira], {defval:''});
+    processarLinhas(linhas);
+  };
+  leitor.readAsBinaryString(f);
+}
+
+function processarLinhas(linhas){
+  if(!linhas.length){ alert('Planilha vazia.'); return; }
+  // Mapeia cabeçalho da planilha -> campo do banco, comparando nomes normalizados.
+  const cabecalho = Object.keys(linhas[0]);
+  const mapaReal = {};
+  for(const campo in MAPA_COLUNAS){
+    const alvo = MAPA_COLUNAS[campo].map(normChave);
+    const achou = cabecalho.find(c => alvo.includes(normChave(c)));
+    if(achou) mapaReal[campo] = achou;
+  }
+  if(!mapaReal.data){ alert('Não encontrei uma coluna de Data na planilha.'); return; }
+
+  REGISTROS_LOTE = linhas.map(l => ({
+    data: paraDataISO(l[mapaReal.data]),
+    colaborador: mapaReal.colaborador ? String(l[mapaReal.colaborador]||'').trim() : null,
+    equipamento: mapaReal.equipamento ? String(l[mapaReal.equipamento]||'').trim() : null,
+    linha: mapaReal.linha ? String(l[mapaReal.linha]||'').trim() : null,
+    atendente: mapaReal.atendente ? String(l[mapaReal.atendente]||'').trim() : null,
+    avaliacao: mapaReal.avaliacao ? String(l[mapaReal.avaliacao]||'').trim() : null,
+    evitado: mapaReal.evitado ? String(l[mapaReal.evitado]||'').trim() : null,
+    clima: mapaReal.clima ? String(l[mapaReal.clima]||'').trim() : null,
+    tipo_dia: mapaReal.tipo_dia ? String(l[mapaReal.tipo_dia]||'').trim() : null,
+    hora: mapaReal.hora ? String(l[mapaReal.hora]||'').trim() : null,
+    culpado: mapaReal.culpado ? paraBool(l[mapaReal.culpado]) : false,
+    evitavel: mapaReal.evitavel ? paraBool(l[mapaReal.evitavel]) : false,
+    vitima: mapaReal.vitima ? paraBool(l[mapaReal.vitima]) : false,
+    perdakm: mapaReal.perdakm ? paraBool(l[mapaReal.perdakm]) : false,
+  })).filter(r => r.data);
+
+  const motoristas = new Set(REGISTROS_LOTE.map(r => r.colaborador).filter(Boolean));
+  const culpados = REGISTROS_LOTE.filter(r => r.culpado).length;
+  document.getElementById('previewImport').innerHTML = `
+    <div class="preview-stats">
+      <div><b>${REGISTROS_LOTE.length}</b>linhas lidas</div>
+      <div><b>${motoristas.size}</b>motoristas</div>
+      <div><b>${culpados}</b>culpados</div>
+    </div>
+    <button class="btn ouro" onclick="confirmarImportacao()">Confirmar e adicionar à base</button>
+  `;
+}
+
+async function confirmarImportacao(){
+  if(!REGISTROS_LOTE || !REGISTROS_LOTE.length) return;
+  const r = await fetch(`${API}/api/acidentes/importar`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({registros: REGISTROS_LOTE})
+  });
+  const d = await r.json();
+  document.getElementById('previewImport').innerHTML = `<div class="vazio">✅ ${d.inseridos} registro(s) adicionado(s).</div>`;
+  document.getElementById('arquivoImport').value = '';
+  REGISTROS_LOTE = null;
+  carregarResumo(); carregarLinhas(); carregarLista();
 }
 
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }

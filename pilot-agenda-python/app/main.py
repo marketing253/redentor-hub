@@ -396,5 +396,64 @@ def listar_linhas_acidentes(db: Session = Depends(get_db)):
     return [{"linha": r[0], "qtd": r[1]} for r in rows]
 
 
+class AcidenteImportarItem(BaseModel):
+    data: _Optional[str] = None
+    colaborador: _Optional[str] = None
+    equipamento: _Optional[str] = None
+    linha: _Optional[str] = None
+    atendente: _Optional[str] = None
+    avaliacao: _Optional[str] = None
+    evitado: _Optional[str] = None
+    clima: _Optional[str] = None
+    tipo_dia: _Optional[str] = None
+    hora: _Optional[str] = None
+    culpado: bool = False
+    evitavel: bool = False
+    vitima: bool = False
+    perdakm: bool = False
+
+
+class AcidenteImportarLote(BaseModel):
+    registros: List[AcidenteImportarItem]
+
+
+@app.post("/api/acidentes/importar")
+def importar_acidentes(lote: AcidenteImportarLote, db: Session = Depends(get_db)):
+    """Recebe as linhas já lidas da planilha (Excel/CSV) pelo navegador e
+    grava — o parse do arquivo em si acontece no front, com a SheetJS,
+    igual o painel original fazia. Aqui só valida e insere."""
+    from datetime import datetime as _dt
+
+    def _data(s):
+        if not s:
+            return None
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                return _dt.strptime(s, fmt).date()
+            except ValueError:
+                pass
+        return None
+
+    inseridos = 0
+    for item in lote.registros:
+        db.add(models.Acidente(
+            data=_data(item.data),
+            colaborador=item.colaborador or None,
+            equipamento=item.equipamento or None,
+            linha=item.linha or None,
+            atendente=item.atendente or None,
+            avaliacao=item.avaliacao or None,
+            evitado=item.evitado or None,
+            clima=item.clima or None,
+            tipo_dia=item.tipo_dia or None,
+            hora=item.hora or None,
+            culpado=item.culpado, evitavel=item.evitavel,
+            vitima=item.vitima, perdakm=item.perdakm,
+        ))
+        inseridos += 1
+    db.commit()
+    return {"ok": True, "inseridos": inseridos}
+
+
 # Serve as páginas estáticas (uma pasta por ferramenta) na raiz do site.
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
