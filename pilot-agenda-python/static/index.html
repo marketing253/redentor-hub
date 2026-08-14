@@ -4,41 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ferramentas — Redentor (piloto Python)</title>
-<style>
-  :root{
-    --azul:#3B4192; --azul-esc:#2A2F6C;
-    --ouro:#C08A28; --ouro-cl:#D9A83F;
-    --bg:#0C0E1C; --sup:#12152C; --sup2:#191D3A;
-    --txt:#F1EFE7; --txt2:#9EA2C0;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);
-    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
-  .marca{background:linear-gradient(120deg,var(--azul-esc),var(--azul));
-    border-bottom:2px solid var(--ouro);padding:18px 22px}
-  .marca b{font-size:18px;letter-spacing:.3px}
-  .marca span{display:block;font-size:12px;color:#c7cbee;margin-top:2px}
-  .wrap{max-width:760px;margin:0 auto;padding:30px 18px 60px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-  a.card{display:block;background:var(--sup);border:1px solid var(--sup2);border-left:3px solid var(--ouro-cl);
-    border-radius:12px;padding:18px;text-decoration:none;color:var(--txt);transition:.15s}
-  a.card:hover{border-color:var(--ouro-cl);transform:translateY(-2px)}
-  a.card .ic{font-size:26px;margin-bottom:8px}
-  a.card b{display:block;font-size:15px;margin-bottom:4px}
-  a.card span{font-size:12px;color:var(--txt2)}
-</style>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="marca">
-  <b>Ferramentas — Redentor</b>
-  <span>Piloto em Python · migração módulo por módulo</span>
+  <div><b>Ferramentas — Redentor</b><span class="marca-sub">Piloto em Python · migração módulo por módulo</span></div>
 </div>
 <div class="wrap">
   <div class="grid">
-    <a class="card" href="/agenda/"><div class="ic">📆</div><b>Minha Agenda</b><span>Compromissos pessoais, por usuário</span></a>
-    <a class="card" href="/chamados/"><div class="ic">🛠</div><b>Chamados</b><span>Abertura e acompanhamento de chamados</span></a>
-    <a class="card" href="/plano/"><div class="ic">🎯</div><b>Plano de Ação</b><span>Projetos de IA — atividades e prazos</span></a>
-    <a class="card" href="/biart/"><div class="ic">🚌</div><b>Biarticulado</b><span>Treinamento e autorização por colaborador</span></a>
+    <a class="card-tool" href="/agenda/"><div class="ic">📆</div><b>Minha Agenda</b><span>Compromissos pessoais, por usuário</span></a>
+    <a class="card-tool" href="/chamados/"><div class="ic">🛠</div><b>Chamados</b><span>Abertura e acompanhamento de chamados</span></a>
+    <a class="card-tool" href="/plano/"><div class="ic">🎯</div><b>Plano de Ação</b><span>Projetos de IA — atividades e prazos</span></a>
+    <a class="card-tool" href="/biart/"><div class="ic">🚌</div><b>Biarticulado</b><span>Treinamento e autorização por colaborador</span></a>
   </div>
 </div>
 </body>

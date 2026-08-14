@@ -1,0 +1,91 @@
+/* style.css — visual compartilhado por todas as ferramentas do piloto.
+   Uma folha só: corrigir um componente aqui vale pra tudo, em vez de
+   repetir (e desalinhar) o mesmo CSS em cada página. */
+:root{
+  --azul:#3B4192; --azul-esc:#2A2F6C; --azul-claro:#7B84E0;
+  --ouro:#C08A28; --ouro-cl:#D9A83F;
+  --bg:#0C0E1C; --sup:#12152C; --sup2:#191D3A; --sup3:#20264a;
+  --txt:#F1EFE7; --txt2:#9EA2C0; --txt3:#6A6F98;
+  --pos:#57C98B; --neg:#E0576E;
+  --r-sm:8px; --r-md:10px; --r-lg:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);
+  font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+
+/* ── Barra superior: presente em toda ferramenta ── */
+.marca{
+  background:linear-gradient(120deg,var(--azul-esc),var(--azul) 65%,var(--azul-claro));
+  border-bottom:2px solid var(--ouro);
+  padding:14px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  flex-wrap:wrap;
+}
+.marca b{font-size:17px;letter-spacing:.2px}
+.marca .marca-sub{display:block;font-size:12px;color:#c7cbee;margin-top:2px}
+
+/* Botão de voltar: um chip de verdade, não um linkzinho solto. */
+.btn-voltar{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#ffffff16;border:1px solid #ffffff30;color:#fff;
+  border-radius:20px;padding:7px 16px 7px 12px;
+  font-size:13px;text-decoration:none;font-weight:500;
+  transition:.15s;
+}
+.btn-voltar:hover{background:#ffffff28;border-color:var(--ouro-cl)}
+
+.wrap{max-width:1100px;margin:0 auto;padding:22px 18px 60px}
+
+.card{background:var(--sup);border:1px solid var(--sup2);border-radius:var(--r-lg);
+  padding:18px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 12px;color:var(--txt)}
+
+label{display:block;font-size:12px;color:var(--txt2);margin:10px 0 4px;
+  text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;background:var(--sup2);border:1px solid #2c3260;
+  color:var(--txt);border-radius:var(--r-sm);padding:10px 12px;font-size:14px;
+  font-family:inherit;box-sizing:border-box;outline:none;transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--azul-claro)}
+textarea{resize:vertical;min-height:60px}
+
+.linha{display:flex;gap:10px;flex-wrap:wrap}
+.linha > div{flex:1;min-width:140px}
+
+.btn{background:var(--azul);color:#fff;border:0;border-radius:var(--r-sm);
+  padding:10px 18px;font-size:14px;cursor:pointer;margin-top:14px;
+  font-family:inherit;transition:.15s}
+.btn:hover{filter:brightness(1.15)}
+.btn.ouro{background:var(--ouro-cl);color:#1b1e24;font-weight:600}
+.btn.fantasma{background:transparent;border:1px solid #2c3260;color:var(--txt2)}
+
+.vazio{color:var(--txt3);font-size:13px;text-align:center;padding:24px 0}
+
+/* ── Cards do launcher (tela inicial) ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+a.card-tool{display:block;background:var(--sup);border:1px solid var(--sup2);
+  border-left:3px solid var(--ouro-cl);border-radius:var(--r-lg);padding:18px;
+  text-decoration:none;color:var(--txt);transition:.15s}
+a.card-tool:hover{border-color:var(--ouro-cl);transform:translateY(-2px);
+  box-shadow:0 8px 24px #00000040}
+a.card-tool .ic{font-size:26px;margin-bottom:8px}
+a.card-tool b{display:block;font-size:15px;margin-bottom:4px}
+a.card-tool span{font-size:12px;color:var(--txt2)}
+
+/* ── Componentes recorrentes ── */
+.status{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.status.Aberto{background:#3a2c1740;color:var(--ouro-cl)}
+.status.Concluído{background:#17301f;color:var(--pos)}
+.status.venc{background:#3a1e1c;color:var(--neg)}
+.status.ok{background:#17301f;color:var(--pos)}
+.status.concl{background:#191d3a;color:var(--txt2)}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--txt2);font-size:11px;text-transform:uppercase;
+  padding:8px 10px;border-bottom:1px solid var(--sup2)}
+td{padding:9px 10px;border-bottom:1px solid var(--sup2)}
+
+.stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.stat{background:var(--sup);border:1px solid var(--sup2);border-radius:var(--r-md);
+  padding:12px 18px;flex:1;min-width:130px}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:11px;color:var(--txt2);text-transform:uppercase}

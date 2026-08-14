@@ -4,50 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chamados — Redentor (piloto Python)</title>
+<link rel="stylesheet" href="/style.css">
 <style>
-  :root{
-    --azul:#3B4192; --azul-esc:#2A2F6C;
-    --ouro:#C08A28; --ouro-cl:#D9A83F;
-    --bg:#0C0E1C; --sup:#12152C; --sup2:#191D3A;
-    --txt:#F1EFE7; --txt2:#9EA2C0; --txt3:#6A6F98;
-    --pos:#57C98B; --neg:#E0576E;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);
-    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
-  .marca{background:linear-gradient(120deg,var(--azul-esc),var(--azul));
-    border-bottom:2px solid var(--ouro);padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
-  .marca b{font-size:17px}
-  .marca a{color:#c7cbee;font-size:12px;text-decoration:none}
-  .wrap{max-width:900px;margin:0 auto;padding:22px 18px 60px}
   .abas{display:flex;gap:6px;margin-bottom:18px}
   .aba{background:var(--sup);border:1px solid var(--sup2);color:var(--txt2);border-radius:8px;
-    padding:8px 16px;font-size:13px;cursor:pointer}
+    padding:8px 16px;font-size:13px;cursor:pointer;font-family:inherit}
   .aba.ativa{background:var(--azul);color:#fff;border-color:var(--azul)}
-  .card{background:var(--sup);border:1px solid var(--sup2);border-radius:12px;padding:18px;margin-bottom:16px}
-  h2{font-size:15px;margin:0 0 12px}
-  label{display:block;font-size:12px;color:var(--txt2);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.5px}
-  input,select,textarea{width:100%;background:var(--sup2);border:1px solid #2c3260;color:var(--txt);
-    border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;box-sizing:border-box}
-  textarea{resize:vertical;min-height:60px}
-  .linha{display:flex;gap:10px;flex-wrap:wrap}
-  .linha > div{flex:1;min-width:140px}
-  .btn{background:var(--azul);color:#fff;border:0;border-radius:8px;padding:10px 18px;
-    font-size:14px;cursor:pointer;margin-top:14px}
-  .btn.ouro{background:var(--ouro-cl);color:#1b1e24;font-weight:600}
   .item{border-bottom:1px solid var(--sup2);padding:12px 0}
   .item:last-child{border:0}
   .item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
   .item-tit{font-weight:600;font-size:14px}
   .item-meta{font-size:12px;color:var(--txt2);margin-top:3px}
-  .status{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
-  .status.Aberto{background:#3a2c1740;color:var(--ouro-cl)}
-  .status.Concluído{background:#17301f;color:var(--pos)}
   .item-desc{font-size:13px;color:var(--txt2);margin-top:6px;white-space:pre-wrap}
   .acoes{display:flex;gap:8px;margin-top:8px}
   .acoes button{background:transparent;border:1px solid #2c3260;color:var(--txt2);
-    border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
-  .vazio{color:var(--txt3);font-size:13px;text-align:center;padding:20px 0}
+    border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit}
   .nv-item{border-bottom:1px solid var(--sup2);padding:10px 0}
   .nv-data{font-size:11px;color:var(--ouro-cl);font-weight:700}
   .nv-sis{font-size:12px;color:var(--txt2);margin-left:6px}
@@ -55,7 +26,7 @@
 </style>
 </head>
 <body>
-<div class="marca"><b>🛠 Chamados</b><a href="/">← voltar</a></div>
+<div class="marca"><b>🛠 Chamados</b><a class="btn-voltar" href="/">← Voltar</a></div>
 <div class="wrap">
   <div class="abas">
     <button class="aba ativa" id="tChamados" onclick="mostrarAba('chamados')">Chamados</button>

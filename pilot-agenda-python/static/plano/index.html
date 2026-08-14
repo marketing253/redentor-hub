@@ -4,27 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plano de Ação — Redentor (piloto Python)</title>
+<link rel="stylesheet" href="/style.css">
 <style>
-  :root{
-    --azul:#3B4192; --azul-esc:#2A2F6C;
-    --ouro:#C08A28; --ouro-cl:#D9A83F;
-    --bg:#0C0E1C; --sup:#12152C; --sup2:#191D3A;
-    --txt:#F1EFE7; --txt2:#9EA2C0; --txt3:#6A6F98;
-    --pos:#57C98B; --neg:#E0576E;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);
-    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif}
-  .marca{background:linear-gradient(120deg,var(--azul-esc),var(--azul));
-    border-bottom:2px solid var(--ouro);padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
-  .marca b{font-size:17px}
-  .marca a{color:#c7cbee;font-size:12px;text-decoration:none}
-  .wrap{max-width:1100px;margin:0 auto;padding:22px 18px 60px}
-  .stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
-  .stat{background:var(--sup);border:1px solid var(--sup2);border-radius:10px;padding:12px 18px;flex:1;min-width:130px}
-  .stat b{display:block;font-size:22px}
-  .stat span{font-size:11px;color:var(--txt2);text-transform:uppercase}
-  .card{background:var(--sup);border:1px solid var(--sup2);border-radius:12px;padding:14px;margin-bottom:12px}
   .item-hd{display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer}
   .item-hd b{font-size:14px}
   .item-hd .num{color:var(--ouro-cl);font-weight:700;margin-right:8px}
@@ -36,16 +17,11 @@
   .campo{margin-bottom:8px}
   .campo b{display:block;font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
   .campo div{white-space:pre-wrap;color:var(--txt)}
-  input,textarea{width:100%;background:var(--sup2);border:1px solid #2c3260;color:var(--txt);
-    border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;margin-top:2px}
-  textarea{resize:vertical;min-height:50px}
-  .btn{background:var(--azul);color:#fff;border:0;border-radius:8px;padding:8px 14px;
-    font-size:13px;cursor:pointer;margin-top:8px}
-  .btn.ouro{background:var(--ouro-cl);color:#1b1e24;font-weight:600}
+  #lista input{margin-top:2px}
 </style>
 </head>
 <body>
-<div class="marca"><b>🎯 Plano de Ação — Projetos IA</b><a href="/">← voltar</a></div>
+<div class="marca"><b>🎯 Plano de Ação — Projetos IA</b><a class="btn-voltar" href="/">← Voltar</a></div>
 <div class="wrap">
   <div class="stats" id="stats"></div>
   <div id="lista"></div>
