@@ -5,21 +5,83 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ferramentas — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
 </head>
 <body>
-<div class="marca">
-  <div><b>Ferramentas — Redentor</b><span class="marca-sub">Piloto em Python · migração módulo por módulo</span></div>
-</div>
-<div class="wrap">
-  <div class="grid">
-    <a class="card-tool" href="/agenda/"><div class="ic">📆</div><b>Minha Agenda</b><span>Compromissos pessoais, por usuário</span></a>
-    <a class="card-tool" href="/chamados/"><div class="ic">🛠</div><b>Chamados</b><span>Abertura e acompanhamento de chamados</span></a>
-    <a class="card-tool" href="/plano/"><div class="ic">🎯</div><b>Plano de Ação</b><span>Projetos de IA — atividades e prazos</span></a>
-    <a class="card-tool" href="/biart/"><div class="ic">🚌</div><b>Biarticulado</b><span>Treinamento e autorização por colaborador</span></a>
-    <a class="card-tool" href="/reunioes/"><div class="ic">📋</div><b>Reuniões</b><span>Atas, pautas e anexos por pasta</span></a>
-    <a class="card-tool" href="/salas/"><div class="ic">📅</div><b>Agendamento de Salas</b><span>João Gulin e Angelo Gulin</span></a>
-    <a class="card-tool" href="/acidentes/"><div class="ic">🚨</div><b>Acidentes</b><span>Histórico, ranking por linha e filtros</span></a>
+
+<div id="telaLogin" class="login-wrap" style="display:none">
+  <div class="card login-box">
+    <div class="login-marca">🚌</div>
+    <h1>Ferramentas — Redentor</h1>
+    <div class="sub">Piloto em Python · entre com seu usuário</div>
+    <label>Usuário</label>
+    <input id="fUsuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('fSenha').focus()">
+    <label>Senha</label>
+    <input id="fSenha" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
+    <button class="btn ouro" style="width:100%" onclick="entrar()">Entrar</button>
+    <div class="login-erro" id="loginErro"></div>
   </div>
 </div>
+
+<div id="telaLauncher" style="display:none">
+  <div class="marca">
+    <div><b>Ferramentas — Redentor</b><span class="marca-sub">Piloto em Python · migração módulo por módulo</span></div>
+    <div class="marca-acoes" id="marcaAcoes"></div>
+  </div>
+  <div class="wrap">
+    <div class="grid">
+      <a class="card-tool" href="/agenda/"><div class="ic">📆</div><b>Minha Agenda</b><span>Compromissos pessoais, por usuário</span></a>
+      <a class="card-tool" href="/chamados/"><div class="ic">🛠</div><b>Chamados</b><span>Abertura e acompanhamento de chamados</span></a>
+      <a class="card-tool" href="/plano/"><div class="ic">🎯</div><b>Plano de Ação</b><span>Projetos de IA — atividades e prazos</span></a>
+      <a class="card-tool" href="/biart/"><div class="ic">🚌</div><b>Biarticulado</b><span>Treinamento e autorização por colaborador</span></a>
+      <a class="card-tool" href="/reunioes/"><div class="ic">📋</div><b>Reuniões</b><span>Atas, pautas e anexos por pasta</span></a>
+      <a class="card-tool" href="/salas/"><div class="ic">📅</div><b>Agendamento de Salas</b><span>João Gulin e Angelo Gulin</span></a>
+      <a class="card-tool" href="/acidentes/"><div class="ic">🚨</div><b>Acidentes</b><span>Histórico, ranking por linha e filtros</span></a>
+    </div>
+  </div>
+</div>
+
+<script>
+async function entrar(){
+  const usuario = document.getElementById('fUsuario').value.trim();
+  const senha = document.getElementById('fSenha').value;
+  const erro = document.getElementById('loginErro');
+  erro.style.display = 'none';
+  if(!usuario || !senha){
+    erro.textContent = 'Preencha usuário e senha.';
+    erro.style.display = '';
+    return;
+  }
+  try{
+    const r = await fetch('/api/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({usuario, senha})
+    });
+    if(!r.ok){
+      const d = await r.json().catch(() => ({}));
+      erro.textContent = d.detail || 'Usuário ou senha inválidos.';
+      erro.style.display = '';
+      return;
+    }
+    const dados = await r.json();
+    localStorage.setItem('redentor_sessao', JSON.stringify(dados));
+    mostrarLauncher();
+  }catch(e){
+    erro.textContent = 'Não deu pra conectar. Tente de novo.';
+    erro.style.display = '';
+  }
+}
+
+function mostrarLauncher(){
+  document.getElementById('telaLogin').style.display = 'none';
+  document.getElementById('telaLauncher').style.display = '';
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario();
+  authFetch('/api/me').catch(function(){}); // valida a sessão; se expirou, authFetch já manda pro login
+}
+
+const sessao = sessaoAtual();
+if(sessao && sessao.token){ mostrarLauncher(); }
+else { document.getElementById('telaLogin').style.display = ''; }
+</script>
 </body>
 </html>

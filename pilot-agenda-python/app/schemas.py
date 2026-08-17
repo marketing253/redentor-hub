@@ -213,6 +213,43 @@ class SalaAgendamento(SalaAgendamentoBase):
     criado_em: Optional[datetime] = None
 
 
+# ── Login / usuários ────────────────────────────────────────────
+class LoginEntrada(BaseModel):
+    usuario: str
+    senha: str
+
+
+class LoginSaida(BaseModel):
+    token: str
+    nome: str
+    usuario: str
+    role: str
+
+
+class UsuarioBase(BaseModel):
+    nome: str
+    usuario: str
+    role: str = "usuario"
+
+
+class UsuarioCriar(UsuarioBase):
+    senha: str
+
+
+class UsuarioAtualizar(BaseModel):
+    nome: Optional[str] = None
+    role: Optional[str] = None
+    ativo: Optional[bool] = None
+    senha: Optional[str] = None
+
+
+class Usuario(UsuarioBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    ativo: bool
+    criado_em: Optional[datetime] = None
+
+
 # ── Acidentes (só leitura — histórico importado) ────────────────
 class Acidente(BaseModel):
     model_config = ConfigDict(from_attributes=True)

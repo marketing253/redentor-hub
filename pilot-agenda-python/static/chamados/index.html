@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chamados — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
 <style>
   .abas{display:flex;gap:6px;margin-bottom:18px}
   .aba{background:var(--sup);border:1px solid var(--sup2);color:var(--txt2);border-radius:8px;
@@ -26,7 +27,7 @@
 </style>
 </head>
 <body>
-<div class="marca"><b>🛠 Chamados</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="marca"><b>🛠 Chamados</b><div class="marca-acoes" id="marcaAcoes"><a class="btn-voltar" href="/">← Voltar</a></div></div>
 <div class="wrap">
   <div class="abas">
     <button class="aba ativa" id="tChamados" onclick="mostrarAba('chamados')">Chamados</button>
@@ -67,6 +68,7 @@
 
 <script>
 const API = '';
+const sessao = exigirLogin();
 
 function mostrarAba(aba){
   document.getElementById('painelChamados').style.display = aba === 'chamados' ? '' : 'none';
@@ -77,7 +79,7 @@ function mostrarAba(aba){
 }
 
 async function carregar(){
-  const r = await fetch(`${API}/api/chamados`);
+  const r = await authFetch(`${API}/api/chamados`);
   const itens = await r.json();
   const lista = document.getElementById('lista');
   if(!itens.length){ lista.innerHTML = '<div class="vazio">Nenhum chamado ainda.</div>'; return; }
@@ -104,7 +106,7 @@ async function salvar(){
   const descricao = document.getElementById('fDesc').value.trim();
   const aberto_por = document.getElementById('fAbertoPor').value.trim();
   if(!titulo || !descricao || !aberto_por){ alert('Preencha ao menos título, descrição e quem abriu.'); return; }
-  await fetch(`${API}/api/chamados`, {
+  await authFetch(`${API}/api/chamados`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       titulo, descricao, aberto_por,
@@ -120,7 +122,7 @@ async function salvar(){
 }
 
 async function concluir(id){
-  await fetch(`${API}/api/chamados/${id}`, {
+  await authFetch(`${API}/api/chamados/${id}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({status: 'Concluído'})
   });
@@ -129,12 +131,12 @@ async function concluir(id){
 
 async function excluir(id){
   if(!confirm('Excluir este chamado?')) return;
-  await fetch(`${API}/api/chamados/${id}`, {method: 'DELETE'});
+  await authFetch(`${API}/api/chamados/${id}`, {method: 'DELETE'});
   carregar();
 }
 
 async function carregarNovidades(){
-  const r = await fetch(`${API}/api/novidades`);
+  const r = await authFetch(`${API}/api/novidades`);
   const itens = await r.json();
   const lista = document.getElementById('listaNv');
   if(!itens.length){ lista.innerHTML = '<div class="vazio">Nenhuma novidade publicada ainda.</div>'; return; }
@@ -153,7 +155,10 @@ function escapeHtml(s){
   return d.innerHTML;
 }
 
-carregar();
+if(sessao){
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario() + '<a class="btn-voltar" href="/">← Voltar</a>';
+  carregar();
+}
 </script>
 </body>
 </html>

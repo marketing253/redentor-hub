@@ -9,8 +9,10 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app import models
+from app.seguranca import hash_senha
 
 _DIR = os.path.join(os.path.dirname(__file__), "seed_data")
+_ADMIN_SENHA_INICIAL = "redentor@2026"
 
 
 def _data_ou_none(s):
@@ -88,4 +90,14 @@ def rodar_seed(db: Session):
             ))
             if i % 500 == 0:
                 db.flush()
+        db.commit()
+
+    if db.query(models.Usuario).count() == 0:
+        db.add(models.Usuario(
+            nome="Administrador",
+            usuario="admin",
+            senha_hash=hash_senha(_ADMIN_SENHA_INICIAL),
+            role="admin",
+            ativo=True,
+        ))
         db.commit()

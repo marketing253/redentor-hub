@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Acidentes — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="/charts.js"></script>
 <style>
@@ -28,7 +29,7 @@
 </style>
 </head>
 <body>
-<div class="marca"><b>🚨 Painel de Acidentes</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="marca"><b>🚨 Painel de Acidentes</b><div class="marca-acoes" id="marcaAcoes"><a class="btn-voltar" href="/">← Voltar</a></div></div>
 <div class="wrap">
   <div class="kpis" id="kpis"></div>
 
@@ -75,10 +76,11 @@
 
 <script>
 const API = '';
+const sessao = exigirLogin();
 let REGISTROS_LOTE = null;
 
 async function carregarResumo(){
-  const r = await fetch(`${API}/api/acidentes/resumo`);
+  const r = await authFetch(`${API}/api/acidentes/resumo`);
   const k = await r.json();
   const pct = (a,b) => b ? Math.round(a/b*100) : 0;
   document.getElementById('kpis').innerHTML = `
@@ -95,7 +97,7 @@ async function carregarResumo(){
 }
 
 async function carregarLinhas(){
-  const r = await fetch(`${API}/api/acidentes/linhas`);
+  const r = await authFetch(`${API}/api/acidentes/linhas`);
   const linhas = await r.json();
   document.getElementById('rankLinhas').innerHTML = graficoBarras(
     linhas.map(l => ({rotulo: l.linha||'—', valor: l.qtd}))
@@ -117,7 +119,7 @@ async function carregarLista(){
   if(linha) params.set('linha', linha);
   if(ano) params.set('ano', ano);
   params.set('limit', '200');
-  const r = await fetch(`${API}/api/acidentes?${params}`);
+  const r = await authFetch(`${API}/api/acidentes?${params}`);
   const itens = await r.json();
   document.getElementById('corpo').innerHTML = itens.map(a => `
     <tr>
@@ -220,7 +222,7 @@ function processarLinhas(linhas){
 
 async function confirmarImportacao(){
   if(!REGISTROS_LOTE || !REGISTROS_LOTE.length) return;
-  const r = await fetch(`${API}/api/acidentes/importar`, {
+  const r = await authFetch(`${API}/api/acidentes/importar`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({registros: REGISTROS_LOTE})
   });
@@ -233,9 +235,12 @@ async function confirmarImportacao(){
 
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
 
-carregarResumo();
-carregarLinhas();
-carregarLista();
+if(sessao){
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario() + '<a class="btn-voltar" href="/">← Voltar</a>';
+  carregarResumo();
+  carregarLinhas();
+  carregarLista();
+}
 </script>
 </body>
 </html>

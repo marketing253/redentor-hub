@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reuniões — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
 <style>
   .item{border-bottom:1px solid var(--sup2);padding:14px 0}
   .item:last-child{border:0}
@@ -24,7 +25,7 @@
 </style>
 </head>
 <body>
-<div class="marca"><b>📋 Reuniões</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="marca"><b>📋 Reuniões</b><div class="marca-acoes" id="marcaAcoes"><a class="btn-voltar" href="/">← Voltar</a></div></div>
 <div class="wrap">
   <div class="card">
     <h2>Nova reunião</h2>
@@ -56,11 +57,12 @@
 
 <script>
 const API = '';
+const sessao = exigirLogin();
 let ITENS = [];
 let PASTA_ATIVA = 'todas';
 
 async function carregar(){
-  const r = await fetch(`${API}/api/reunioes`);
+  const r = await authFetch(`${API}/api/reunioes`);
   ITENS = await r.json();
   renderPastas();
   render();
@@ -99,17 +101,23 @@ async function render(){
 }
 
 async function carregarAnexos(reuniaoId){
-  const r = await fetch(`${API}/api/reunioes/${reuniaoId}/anexos`);
+  const r = await authFetch(`${API}/api/reunioes/${reuniaoId}/anexos`);
   const anexos = await r.json();
   const box = document.getElementById('anexos'+reuniaoId);
   if(!box) return;
   box.innerHTML = anexos.map(a => `
     <div class="anexo">
-      <a href="${API}/api/anexos/${a.id}" target="_blank" style="color:var(--ouro-cl)">📄 ${escapeHtml(a.nome)}</a>
+      <a href="#" onclick="abrirAnexo(${a.id});return false" style="color:var(--ouro-cl)">📄 ${escapeHtml(a.nome)}</a>
       <span style="color:var(--txt3)">(${(a.tamanho/1024).toFixed(0)} KB)</span>
       <button onclick="excluirAnexo(${a.id}, ${reuniaoId})">excluir</button>
     </div>
   `).join('');
+}
+
+async function abrirAnexo(anexoId){
+  const r = await authFetch(`${API}/api/anexos/${anexoId}`);
+  const blob = await r.blob();
+  window.open(URL.createObjectURL(blob), '_blank');
 }
 
 async function anexar(reuniaoId, input){
@@ -122,7 +130,7 @@ async function anexar(reuniaoId, input){
     r.onerror = rej;
     r.readAsDataURL(f);
   });
-  await fetch(`${API}/api/reunioes/${reuniaoId}/anexos`, {
+  await authFetch(`${API}/api/reunioes/${reuniaoId}/anexos`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({nome: f.name, tipo: f.type || 'application/octet-stream', dados: b64})
   });
@@ -132,7 +140,7 @@ async function anexar(reuniaoId, input){
 
 async function excluirAnexo(anexoId, reuniaoId){
   if(!confirm('Excluir este anexo?')) return;
-  await fetch(`${API}/api/anexos/${anexoId}`, {method: 'DELETE'});
+  await authFetch(`${API}/api/anexos/${anexoId}`, {method: 'DELETE'});
   carregarAnexos(reuniaoId);
 }
 
@@ -141,7 +149,7 @@ async function salvar(){
   const data = document.getElementById('fData').value;
   const inicio = document.getElementById('fInicio').value;
   if(!titulo || !data || !inicio){ alert('Preencha ao menos título, data e início.'); return; }
-  await fetch(`${API}/api/reunioes`, {
+  await authFetch(`${API}/api/reunioes`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       titulo, data, inicio,
@@ -159,14 +167,17 @@ async function salvar(){
 
 async function excluir(id){
   if(!confirm('Excluir esta reunião? Os anexos dela também somem.')) return;
-  await fetch(`${API}/api/reunioes/${id}`, {method: 'DELETE'});
+  await authFetch(`${API}/api/reunioes/${id}`, {method: 'DELETE'});
   carregar();
 }
 
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
 function escapeAttr(s){ return String(s).replace(/'/g,"&#39;"); }
 
-carregar();
+if(sessao){
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario() + '<a class="btn-voltar" href="/">← Voltar</a>';
+  carregar();
+}
 </script>
 </body>
 </html>

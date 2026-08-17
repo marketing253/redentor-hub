@@ -123,6 +123,28 @@ class Acidente(Base):
     perdakm = Column(Boolean, nullable=False, default=False)
 
 
+class Usuario(Base):
+    """Login próprio do piloto em Python — separado dos usuários do
+    Hub PHP antigo (portal_usuarios), por enquanto."""
+    __tablename__ = "usuarios"
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(150), nullable=False)
+    usuario = Column(String(60), nullable=False, unique=True, index=True)
+    senha_hash = Column(String(200), nullable=False)
+    role = Column(String(20), nullable=False, default="usuario")  # "admin" ou "usuario"
+    ativo = Column(Boolean, nullable=False, default=True)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class SessaoToken(Base):
+    __tablename__ = "sessoes_token"
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(64), nullable=False, unique=True, index=True)
+    usuario_id = Column(Integer, nullable=False, index=True)
+    criado_em = Column(DateTime, nullable=False)
+    expira_em = Column(DateTime, nullable=False, index=True)
+
+
 class SalaAgendamento(Base):
     """As salas em si (João Gulin / Angelo Gulin) ficam fixas no código
     do front, igual já era — só os agendamentos vêm do banco."""

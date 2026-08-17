@@ -4,12 +4,13 @@ Ação e Biarticulado. Um serviço só, um banco só, publicado sozinho a
 cada git push.
 """
 import base64
+from datetime import datetime, timedelta
 from typing import List
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc, func
@@ -17,6 +18,7 @@ from sqlalchemy import asc, desc, func
 from app.database import engine, get_db, SessionLocal, Base
 from app import models, schemas
 from app.seed import rodar_seed
+from app.seguranca import hash_senha, verificar_senha, gerar_token
 
 Base.metadata.create_all(bind=engine)
 
@@ -34,10 +36,150 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ══════════════════════════════════════ Login ═══════════════════
+DURACAO_SESSAO = timedelta(days=7)
+_CAMINHOS_PUBLICOS = {"/api/login", "/api/saude"}
+
+
+def _extrair_token(cabecalho):
+    if not cabecalho or not cabecalho.lower().startswith("bearer "):
+        return None
+    return cabecalho[7:].strip()
+
+
+def _rota_publica(metodo, caminho):
+    if caminho in _CAMINHOS_PUBLICOS:
+        return True
+    # o painel físico da porta (painel_sala.php, no Hub antigo) lê os
+    # agendamentos sem login — é só leitura, exibida na tela da sala.
+    if metodo == "GET" and caminho == "/api/salas/agendamentos":
+        return True
+    return False
+
+
+@app.middleware("http")
+async def exigir_autenticacao(request: Request, call_next):
+    """Toda rota /api/* exige sessão válida, com as exceções de
+    _rota_publica. Verifica aqui (em vez de Depends em cada rota) pra
+    não ter que tocar em cada endpoint que já existia antes do login
+    existir."""
+    caminho = request.url.path
+    if request.method != "OPTIONS" and caminho.startswith("/api/") and not _rota_publica(request.method, caminho):
+        token = _extrair_token(request.headers.get("authorization"))
+        usuario = None
+        if token:
+            with SessionLocal() as db:
+                sessao = db.query(models.SessaoToken).filter(models.SessaoToken.token == token).first()
+                if sessao and sessao.expira_em >= datetime.utcnow():
+                    usuario = (
+                        db.query(models.Usuario)
+                        .filter(models.Usuario.id == sessao.usuario_id, models.Usuario.ativo.is_(True))
+                        .first()
+                    )
+        if not usuario:
+            return JSONResponse(status_code=401, content={"detail": "Não autenticado."})
+        request.state.usuario_id = usuario.id
+        request.state.usuario_role = usuario.role
+        request.state.usuario_nome = usuario.usuario
+    return await call_next(request)
+
+
+def exigir_admin(request: Request):
+    if getattr(request.state, "usuario_role", None) != "admin":
+        raise HTTPException(status_code=403, detail="Apenas administradores.")
+
 
 @app.get("/api/saude")
 def saude():
     return {"ok": True}
+
+
+@app.post("/api/login", response_model=schemas.LoginSaida)
+def login(dados: schemas.LoginEntrada, db: Session = Depends(get_db)):
+    usuario_login = dados.usuario.strip().lower()
+    u = db.query(models.Usuario).filter(models.Usuario.usuario == usuario_login, models.Usuario.ativo.is_(True)).first()
+    if not u or not verificar_senha(dados.senha, u.senha_hash):
+        raise HTTPException(status_code=401, detail="Usuário ou senha inválidos.")
+    token = gerar_token()
+    db.add(models.SessaoToken(
+        token=token, usuario_id=u.id,
+        criado_em=datetime.utcnow(), expira_em=datetime.utcnow() + DURACAO_SESSAO,
+    ))
+    db.commit()
+    return schemas.LoginSaida(token=token, nome=u.nome, usuario=u.usuario, role=u.role)
+
+
+@app.post("/api/logout", status_code=204)
+def logout(request: Request, db: Session = Depends(get_db)):
+    token = _extrair_token(request.headers.get("authorization"))
+    if token:
+        db.query(models.SessaoToken).filter(models.SessaoToken.token == token).delete()
+        db.commit()
+    return None
+
+
+@app.get("/api/me")
+def me(request: Request, db: Session = Depends(get_db)):
+    u = db.query(models.Usuario).filter(models.Usuario.id == request.state.usuario_id).first()
+    if not u:
+        raise HTTPException(status_code=401, detail="Não autenticado.")
+    return {"nome": u.nome, "usuario": u.usuario, "role": u.role}
+
+
+# ══════════════════════════════════════ Usuários (admin) ════════
+@app.get("/api/usuarios", response_model=List[schemas.Usuario], dependencies=[Depends(exigir_admin)])
+def listar_usuarios(db: Session = Depends(get_db)):
+    return db.query(models.Usuario).order_by(asc(models.Usuario.nome)).all()
+
+
+@app.post("/api/usuarios", response_model=schemas.Usuario, status_code=201, dependencies=[Depends(exigir_admin)])
+def criar_usuario(u: schemas.UsuarioCriar, db: Session = Depends(get_db)):
+    login_norm = u.usuario.strip().lower()
+    if db.query(models.Usuario).filter(models.Usuario.usuario == login_norm).first():
+        raise HTTPException(status_code=400, detail="Já existe um usuário com esse login.")
+    if not u.senha or len(u.senha) < 6:
+        raise HTTPException(status_code=400, detail="A senha precisa ter ao menos 6 caracteres.")
+    novo = models.Usuario(
+        nome=u.nome, usuario=login_norm, senha_hash=hash_senha(u.senha),
+        role=u.role if u.role in ("admin", "usuario") else "usuario", ativo=True,
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+
+@app.put("/api/usuarios/{usuario_id}", response_model=schemas.Usuario, dependencies=[Depends(exigir_admin)])
+def atualizar_usuario(usuario_id: int, dados: schemas.UsuarioAtualizar, db: Session = Depends(get_db)):
+    u = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not u:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+    campos = dados.model_dump(exclude_unset=True)
+    senha = campos.pop("senha", None)
+    if senha:
+        if len(senha) < 6:
+            raise HTTPException(status_code=400, detail="A senha precisa ter ao menos 6 caracteres.")
+        u.senha_hash = hash_senha(senha)
+    if "role" in campos and campos["role"] not in ("admin", "usuario"):
+        raise HTTPException(status_code=400, detail="Papel inválido.")
+    for campo, valor in campos.items():
+        setattr(u, campo, valor)
+    db.commit()
+    db.refresh(u)
+    return u
+
+
+@app.delete("/api/usuarios/{usuario_id}", status_code=204, dependencies=[Depends(exigir_admin)])
+def excluir_usuario(usuario_id: int, request: Request, db: Session = Depends(get_db)):
+    if usuario_id == request.state.usuario_id:
+        raise HTTPException(status_code=400, detail="Você não pode excluir seu próprio usuário.")
+    u = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not u:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+    db.query(models.SessaoToken).filter(models.SessaoToken.usuario_id == usuario_id).delete()
+    db.delete(u)
+    db.commit()
+    return None
 
 
 # ══════════════════════════════════════ Agenda ══════════════════

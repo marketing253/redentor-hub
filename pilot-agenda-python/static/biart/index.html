@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Biarticulado — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
 <style>
   #busca{margin-bottom:14px}
 </style>
 </head>
 <body>
-<div class="marca"><b>🚌 Treinamento Biarticulado</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="marca"><b>🚌 Treinamento Biarticulado</b><div class="marca-acoes" id="marcaAcoes"><a class="btn-voltar" href="/">← Voltar</a></div></div>
 <div class="wrap">
   <div class="stats" id="stats"></div>
   <input id="busca" placeholder="Buscar por nome ou CPD..." oninput="render()">
@@ -22,10 +23,11 @@
 
 <script>
 const API = '';
+const sessao = exigirLogin();
 let REGISTROS = [];
 
 async function carregar(){
-  const r = await fetch(`${API}/api/biart`);
+  const r = await authFetch(`${API}/api/biart`);
   REGISTROS = await r.json();
   render();
 }
@@ -70,7 +72,10 @@ function escapeHtml(s){
   return d.innerHTML;
 }
 
-carregar();
+if(sessao){
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario() + '<a class="btn-voltar" href="/">← Voltar</a>';
+  carregar();
+}
 </script>
 </body>
 </html>

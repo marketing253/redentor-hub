@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plano de Ação — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
 <style>
   .item-hd{display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer}
   .item-hd b{font-size:14px}
@@ -21,7 +22,7 @@
 </style>
 </head>
 <body>
-<div class="marca"><b>🎯 Plano de Ação — Projetos IA</b><a class="btn-voltar" href="/">← Voltar</a></div>
+<div class="marca"><b>🎯 Plano de Ação — Projetos IA</b><div class="marca-acoes" id="marcaAcoes"><a class="btn-voltar" href="/">← Voltar</a></div></div>
 <div class="wrap">
   <div class="stats" id="stats"></div>
   <div id="lista"></div>
@@ -29,10 +30,11 @@
 
 <script>
 const API = '';
+const sessao = exigirLogin();
 let ITENS = [];
 
 async function carregar(){
-  const r = await fetch(`${API}/api/plano`);
+  const r = await authFetch(`${API}/api/plano`);
   ITENS = await r.json();
   render();
 }
@@ -74,7 +76,7 @@ function toggle(id){
 
 async function salvarPct(id){
   const pct = parseInt(document.getElementById('pct'+id).value, 10) || 0;
-  await fetch(`${API}/api/plano/${id}`, {
+  await authFetch(`${API}/api/plano/${id}`, {
     method: 'PUT', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({pct})
   });
@@ -87,7 +89,10 @@ function escapeHtml(s){
   return d.innerHTML;
 }
 
-carregar();
+if(sessao){
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario() + '<a class="btn-voltar" href="/">← Voltar</a>';
+  carregar();
+}
 </script>
 </body>
 </html>

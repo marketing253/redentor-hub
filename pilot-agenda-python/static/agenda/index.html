@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agenda — Redentor (piloto Python)</title>
 <link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
 <style>
   .ev{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
     border-bottom:1px solid var(--sup2)}
@@ -19,28 +20,14 @@
   .ev-desc{color:var(--txt2);font-size:13px;margin-top:4px;white-space:pre-wrap}
   .ev-del{background:transparent;border:1px solid #3a3f60;color:var(--neg);
     border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
-  #loginBox{max-width:340px;margin:60px auto;text-align:center}
-  #loginBox p{color:var(--txt2);font-size:13px}
-  .marca-acoes{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .link-trocar{color:#c7cbee;font-size:12px;text-decoration:none}
 </style>
 </head>
 <body>
 
-<div id="loginBox" class="card" style="display:none">
-  <h2>Quem é você?</h2>
-  <p>Digite seu usuário do Hub pra ver sua agenda. (Piloto — sem senha ainda.)</p>
-  <input id="loginUser" placeholder="seu.usuario">
-  <button class="btn ouro" onclick="entrar()" style="width:100%">Entrar</button>
-</div>
-
 <div id="app" style="display:none">
   <div class="marca">
     <div><b>Agenda — Redentor</b><span class="marca-sub">Piloto em Python · logado como <b id="quemSou"></b></span></div>
-    <div class="marca-acoes">
-      <a class="link-trocar" href="#" onclick="sair();return false">trocar usuário</a>
-      <a class="btn-voltar" href="/">← Voltar</a>
-    </div>
+    <div class="marca-acoes" id="marcaAcoes"><a class="btn-voltar" href="/">← Voltar</a></div>
   </div>
   <div class="wrap">
     <div class="card">
@@ -64,22 +51,11 @@
 
 <script>
 const API = ''; // mesmo domínio do front — em produção, aponta pra própria URL do serviço.
-let USUARIO = localStorage.getItem('agenda_usuario') || '';
-
-function entrar(){
-  const u = document.getElementById('loginUser').value.trim();
-  if(!u) return;
-  USUARIO = u;
-  localStorage.setItem('agenda_usuario', u);
-  iniciar();
-}
-function sair(){
-  localStorage.removeItem('agenda_usuario');
-  location.reload();
-}
+const sessao = exigirLogin();
+const USUARIO = sessao ? sessao.usuario : '';
 
 async function carregar(){
-  const r = await fetch(`${API}/api/eventos?usuario=${encodeURIComponent(USUARIO)}`);
+  const r = await authFetch(`${API}/api/eventos?usuario=${encodeURIComponent(USUARIO)}`);
   const eventos = await r.json();
   const lista = document.getElementById('lista');
   if(!eventos.length){
@@ -106,7 +82,7 @@ async function salvar(){
   const hora = document.getElementById('fHora').value;
   const descricao = document.getElementById('fDesc').value.trim();
   if(!titulo || !data){ alert('Preencha ao menos título e data.'); return; }
-  await fetch(`${API}/api/eventos`, {
+  await authFetch(`${API}/api/eventos`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({usuario: USUARIO, titulo, data, hora: hora || null, descricao: descricao || null})
@@ -119,7 +95,7 @@ async function salvar(){
 
 async function excluir(id){
   if(!confirm('Excluir esse compromisso?')) return;
-  await fetch(`${API}/api/eventos/${id}`, {method: 'DELETE'});
+  await authFetch(`${API}/api/eventos/${id}`, {method: 'DELETE'});
   carregar();
 }
 
@@ -133,13 +109,13 @@ function escapeHtml(s){
 }
 
 function iniciar(){
-  document.getElementById('loginBox').style.display = 'none';
   document.getElementById('app').style.display = '';
-  document.getElementById('quemSou').textContent = USUARIO;
+  document.getElementById('quemSou').textContent = sessao.nome || USUARIO;
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario() + '<a class="btn-voltar" href="/">← Voltar</a>';
   carregar();
 }
 
-if(USUARIO){ iniciar(); } else { document.getElementById('loginBox').style.display = ''; }
+if(sessao){ iniciar(); }
 </script>
 </body>
 </html>

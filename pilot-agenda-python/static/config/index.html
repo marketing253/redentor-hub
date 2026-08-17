@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configurações — Redentor (piloto Python)</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/auth.js"></script>
+<style>
+  .item{border-bottom:1px solid var(--sup2);padding:12px 0}
+  .item:last-child{border:0}
+  .item-top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+  .item-tit{font-weight:600;font-size:14px}
+  .item-meta{font-size:12px;color:var(--txt2);margin-top:2px}
+  .item-meta .voce{color:var(--ouro-cl)}
+  .acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .acoes select, .acoes input{width:auto;padding:6px 10px;font-size:12px;margin:0}
+  .acoes button{background:transparent;border:1px solid #2c3260;color:var(--txt2);
+    border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+  .acoes button.perigo{color:var(--neg)}
+  .acoes button.ok{color:var(--pos)}
+  .badge-role{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600}
+  .badge-role.admin{background:#3a2c1740;color:var(--ouro-cl)}
+  .badge-role.usuario{background:#191d3a;color:var(--txt2)}
+  .badge-inativo{background:#3a1e1c;color:var(--neg);font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="marca">
+  <b>⚙ Configurações — Usuários</b>
+  <div class="marca-acoes" id="marcaAcoes"><a class="btn-voltar" href="/">← Voltar</a></div>
+</div>
+<div class="wrap">
+  <div class="card">
+    <h2>Novo usuário</h2>
+    <div class="linha">
+      <div><label>Nome</label><input id="fNome" placeholder="Nome completo"></div>
+      <div><label>Usuário (login)</label><input id="fUsuario" placeholder="ex.: joao.silva"></div>
+    </div>
+    <div class="linha">
+      <div><label>Senha</label><input id="fSenha" type="password" placeholder="mínimo 6 caracteres"></div>
+      <div><label>Papel</label>
+        <select id="fRole"><option value="usuario">Usuário comum</option><option value="admin">Administrador</option></select>
+      </div>
+    </div>
+    <button class="btn ouro" onclick="criar()">Criar usuário</button>
+    <div id="erroCriar" style="color:var(--neg);font-size:13px;margin-top:8px;display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2>Usuários cadastrados</h2>
+    <div id="lista"></div>
+  </div>
+</div>
+
+<script>
+const sessao = exigirLogin();
+if(sessao && sessao.role !== 'admin'){ location.href = '/'; }
+
+let USUARIOS = [];
+let EU = sessao ? sessao.usuario : null;
+
+async function carregar(){
+  const r = await authFetch('/api/usuarios');
+  USUARIOS = await r.json();
+  render();
+}
+
+function render(){
+  const lista = document.getElementById('lista');
+  if(!USUARIOS.length){ lista.innerHTML = '<div class="vazio">Nenhum usuário ainda.</div>'; return; }
+  lista.innerHTML = USUARIOS.map(u => `
+    <div class="item">
+      <div class="item-top">
+        <div>
+          <div class="item-tit">${escHtml(u.nome)} ${u.usuario === EU ? '<span class="voce">(você)</span>' : ''}</div>
+          <div class="item-meta">@${escHtml(u.usuario)}
+            <span class="badge-role ${u.role}">${u.role === 'admin' ? 'Administrador' : 'Usuário comum'}</span>
+            ${!u.ativo ? '<span class="badge-inativo">Inativo</span>' : ''}
+          </div>
+        </div>
+      </div>
+      <div class="acoes">
+        <select onchange="mudarRole(${u.id}, this.value)" ${u.usuario === EU ? 'disabled' : ''}>
+          <option value="usuario" ${u.role==='usuario'?'selected':''}>Usuário comum</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option>
+        </select>
+        <button onclick="alternarAtivo(${u.id}, ${!u.ativo})" ${u.usuario === EU ? 'disabled' : ''} class="${u.ativo ? 'perigo' : 'ok'}">
+          ${u.ativo ? 'Desativar' : 'Reativar'}
+        </button>
+        <input type="password" placeholder="nova senha" id="novaSenha${u.id}" style="width:130px">
+        <button onclick="resetarSenha(${u.id})">Trocar senha</button>
+        <button onclick="excluir(${u.id})" ${u.usuario === EU ? 'disabled' : ''} class="perigo">🗑 Excluir</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function criar(){
+  const nome = document.getElementById('fNome').value.trim();
+  const usuario = document.getElementById('fUsuario').value.trim();
+  const senha = document.getElementById('fSenha').value;
+  const role = document.getElementById('fRole').value;
+  const erro = document.getElementById('erroCriar');
+  erro.style.display = 'none';
+  if(!nome || !usuario || !senha){
+    erro.textContent = 'Preencha nome, usuário e senha.';
+    erro.style.display = '';
+    return;
+  }
+  const r = await authFetch('/api/usuarios', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({nome, usuario, senha, role})
+  });
+  if(!r.ok){
+    const d = await r.json().catch(() => ({}));
+    erro.textContent = d.detail || 'Não foi possível criar o usuário.';
+    erro.style.display = '';
+    return;
+  }
+  ['fNome','fUsuario','fSenha'].forEach(id => document.getElementById(id).value = '');
+  carregar();
+}
+
+async function mudarRole(id, role){
+  await authFetch(`/api/usuarios/${id}`, {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({role})
+  });
+  carregar();
+}
+
+async function alternarAtivo(id, ativo){
+  await authFetch(`/api/usuarios/${id}`, {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ativo})
+  });
+  carregar();
+}
+
+async function resetarSenha(id){
+  const campo = document.getElementById('novaSenha'+id);
+  const senha = campo.value;
+  if(!senha || senha.length < 6){ alert('A nova senha precisa ter ao menos 6 caracteres.'); return; }
+  const r = await authFetch(`/api/usuarios/${id}`, {
+    method: 'PUT', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({senha})
+  });
+  if(r.ok){ campo.value = ''; alert('Senha atualizada.'); }
+}
+
+async function excluir(id){
+  if(!confirm('Excluir este usuário? Ele perde o acesso imediatamente.')) return;
+  await authFetch(`/api/usuarios/${id}`, {method: 'DELETE'});
+  carregar();
+}
+
+function escHtml(s){ const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+if(sessao && sessao.role === 'admin'){
+  document.getElementById('marcaAcoes').innerHTML = barraUsuario() + '<a class="btn-voltar" href="/">← Voltar</a>';
+  carregar();
+}
+</script>
+</body>
+</html>
