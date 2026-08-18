@@ -597,5 +597,73 @@ def importar_acidentes(lote: AcidenteImportarLote, db: Session = Depends(get_db)
     return {"ok": True, "inseridos": inseridos}
 
 
+# ══════════════════════════════════════ Aderência ═══════════════
+# O painel original faz todo filtro/gráfico/análise no navegador, em
+# cima de um dataset compacto (grupos/linhas/tabelas como listas +
+# registros como tuplas de índice). Aqui reconstruímos esse mesmo
+# formato a partir da tabela relacional, pra reaproveitar o JS
+# original quase sem alterações — só troca de onde os dados vêm.
+@app.get("/api/aderencia/dataset")
+def dataset_aderencia(db: Session = Depends(get_db)):
+    registros = db.query(models.AderenciaRegistro).order_by(asc(models.AderenciaRegistro.id)).all()
+    groups, group_idx = [], {}
+    lines, line_idx = [], {}
+    idents, ident_idx = [], {}
+    line_group = []
+    rows = []
+    for r in registros:
+        if r.grupo not in group_idx:
+            group_idx[r.grupo] = len(groups)
+            groups.append(r.grupo)
+        if r.linha not in line_idx:
+            line_idx[r.linha] = len(lines)
+            lines.append(r.linha)
+            line_group.append(group_idx[r.grupo])
+        if r.identificacao not in ident_idx:
+            ident_idx[r.identificacao] = len(idents)
+            idents.append(r.identificacao)
+        rows.append([
+            ident_idx[r.identificacao], line_idx[r.linha],
+            r.total, r.igual, r.dia, r.ano, r.mes,
+        ])
+    return {
+        "groups": groups, "lines": lines, "lineGroup": line_group,
+        "idents": idents, "days": ["Útil", "Sábado", "Domingo"], "rows": rows,
+    }
+
+
+@app.post("/api/aderencia/importar")
+def importar_aderencia(lote: schemas.AderenciaImportarLote, db: Session = Depends(get_db)):
+    """Recebe os registros já validados pelo motor de parsing do próprio
+    painel (front) e grava — substitui quando a chave (tabela + linha +
+    dia + ano + mês) já existir, igual o app original fazia."""
+    novos, substituidos = 0, 0
+    for item in lote.registros:
+        existente = (
+            db.query(models.AderenciaRegistro)
+            .filter(
+                models.AderenciaRegistro.identificacao == item.id,
+                models.AderenciaRegistro.linha == item.ln,
+                models.AderenciaRegistro.dia == item.di,
+                models.AderenciaRegistro.ano == item.an,
+                models.AderenciaRegistro.mes == item.me,
+            )
+            .first()
+        )
+        if existente:
+            existente.total = item.t
+            existente.igual = item.i
+            existente.grupo = item.gr
+            substituidos += 1
+        else:
+            db.add(models.AderenciaRegistro(
+                identificacao=item.id, linha=item.ln, grupo=item.gr,
+                dia=item.di, ano=item.an, mes=item.me, total=item.t, igual=item.i,
+            ))
+            novos += 1
+    db.commit()
+    return {"ok": True, "novos": novos, "substituidos": substituidos}
+
+
 # Serve as páginas estáticas (uma pasta por ferramenta) na raiz do site.
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

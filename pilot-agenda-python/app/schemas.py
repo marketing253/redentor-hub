@@ -2,7 +2,7 @@
 schemas.py — formato dos dados que entram e saem da API.
 """
 from datetime import date, time, datetime
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
@@ -211,6 +211,22 @@ class SalaAgendamento(SalaAgendamentoBase):
     id: int
     criado_por: Optional[str] = None
     criado_em: Optional[datetime] = None
+
+
+# ── Aderência (dataset é montado à mão no endpoint; isto é só import) ──
+class AderenciaImportarItem(BaseModel):
+    id: str   # identificação/tabela de horário
+    ln: str   # linha
+    t: int    # total programado x realizado
+    i: int    # igual
+    di: int   # dia (0=Útil,1=Sábado,2=Domingo)
+    an: int   # ano
+    me: int   # mês
+    gr: str   # grupo de operação
+
+
+class AderenciaImportarLote(BaseModel):
+    registros: List[AderenciaImportarItem]
 
 
 # ── Login / usuários ────────────────────────────────────────────

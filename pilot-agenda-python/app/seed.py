@@ -92,6 +92,26 @@ def rodar_seed(db: Session):
                 db.flush()
         db.commit()
 
+    if db.query(models.AderenciaRegistro).count() == 0:
+        with open(os.path.join(_DIR, "aderencia_seed.json"), encoding="utf-8") as f:
+            dados = json.load(f)
+        groups = dados.get("groups", [])
+        lines = dados.get("lines", [])
+        line_group = dados.get("lineGroup", [])
+        idents = dados.get("idents", [])
+        # rows: [identIdx, lineIdx, total, igual, diaIdx, ano, mes]
+        for i, r in enumerate(dados.get("rows", [])):
+            ident_idx, line_idx, total, igual, dia, ano, mes = r
+            db.add(models.AderenciaRegistro(
+                identificacao=idents[ident_idx],
+                linha=lines[line_idx],
+                grupo=groups[line_group[line_idx]],
+                dia=dia, mes=mes, ano=ano, total=total, igual=igual,
+            ))
+            if i % 500 == 0:
+                db.flush()
+        db.commit()
+
     if db.query(models.Usuario).count() == 0:
         db.add(models.Usuario(
             nome="Administrador",

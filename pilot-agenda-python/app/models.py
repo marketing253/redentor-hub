@@ -123,6 +123,23 @@ class Acidente(Base):
     perdakm = Column(Boolean, nullable=False, default=False)
 
 
+class AderenciaRegistro(Base):
+    """Aderência Programado × Realizado — um registro por combinação de
+    tabela de horário + linha + tipo de dia + mês + ano, igual ao
+    painel original (Percentual_Programado_Linha_.xlsx)."""
+    __tablename__ = "aderencia_registros"
+    id = Column(Integer, primary_key=True, index=True)
+    identificacao = Column(String(20), nullable=False, index=True)
+    linha = Column(String(20), nullable=False, index=True)
+    grupo = Column(String(60), nullable=False)
+    dia = Column(Integer, nullable=False)  # 0=Útil, 1=Sábado, 2=Domingo
+    mes = Column(Integer, nullable=False)
+    ano = Column(Integer, nullable=False)
+    total = Column(Integer, nullable=False)
+    igual = Column(Integer, nullable=False)
+    criado_em = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class Usuario(Base):
     """Login próprio do piloto em Python — separado dos usuários do
     Hub PHP antigo (portal_usuarios), por enquanto."""

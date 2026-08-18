@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aderência Programado × Realizado — Auto Viação Redentor</title>
+<script src="/auth.js"></script>
+<style>
+:root{
+  --acc:#22d3ee; --acc-soft:rgba(34,211,238,.14);
+  --bg:#1a1d23; --panel:#22262e; --panel2:#282d36; --txt:#e8ebf0; --mut:#9aa3b2; --bd:#333a45; --grid:#2f3641;
+  --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+  --r:14px; --sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.22);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.01em}
+a{color:var(--acc)}
+.wrap{max-width:1400px;margin:0 auto;padding:22px 20px 80px}
+
+/* header */
+header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--bd);margin-bottom:18px}
+.brand{display:flex;gap:14px;align-items:center}
+.mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(140deg,var(--acc),transparent 70%),var(--panel2);border:1px solid var(--bd);display:grid;place-items:center;font-weight:800;color:var(--txt)}
+.brand h1{font-size:20px}
+.brand p{margin:2px 0 0;color:var(--mut);font-size:12.5px}
+.meta{color:var(--mut);font-size:12.5px;text-align:right}
+
+/* barra de sessão */
+.sessao{display:flex;justify-content:flex-end;align-items:center;gap:14px;padding:8px 0 4px;font-size:12.5px;color:var(--mut)}
+.sessao a{text-decoration:none}
+.sessao a.sair{color:var(--mut)}
+
+/* filtros */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;margin-bottom:16px}
+.f{display:flex;flex-direction:column;gap:4px}
+.f label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.f select,.f input{background:var(--panel2);color:var(--txt);border:1px solid var(--bd);border-radius:9px;padding:7px 10px;font:inherit;font-size:13.5px;min-width:130px}
+.f select:focus,.f input:focus{outline:2px solid var(--acc);outline-offset:1px}
+.btn{background:var(--panel2);color:var(--txt);border:1px solid var(--bd);border-radius:9px;padding:8px 13px;font:inherit;font-size:13.5px;cursor:pointer}
+.btn:hover{border-color:var(--acc)}
+.btn.pri{background:var(--acc-soft);border-color:var(--acc);color:var(--txt)}
+
+/* tabs */
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;border-bottom:1px solid var(--bd)}
+nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);padding:10px 14px;font:inherit;font-size:14px;cursor:pointer;border-radius:8px 8px 0 0}
+nav.tabs button:hover{color:var(--txt);background:var(--panel)}
+nav.tabs button[aria-selected="true"]{color:var(--txt);border-bottom-color:var(--acc);background:var(--panel)}
+.tabpanel[hidden]{display:none}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.kpi:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--acc);opacity:.85}
+.kpi .lb{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.kpi .vl{font-size:26px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .sb{font-size:12px;color:var(--mut);margin-top:3px}
+.kpi.ok .vl{color:var(--ok)} .kpi.warn .vl{color:var(--warn)} .kpi.bad .vl{color:var(--bad)}
+
+/* cards */
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);padding:16px;box-shadow:var(--sh);margin-bottom:14px}
+.card h3{font-size:14.5px;margin-bottom:2px}
+.card .hint{color:var(--mut);font-size:12px;margin:2px 0 12px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.axis{fill:var(--mut);font-size:12.5px}
+.gl{stroke:var(--grid);stroke-width:1}
+.lbl{fill:var(--txt);font-size:14px;font-variant-numeric:tabular-nums}
+.val{fill:var(--txt);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.sub{fill:var(--mut);font-size:12px;font-variant-numeric:tabular-nums}
+
+/* tabelas */
+.tblwrap{overflow:auto;max-height:560px;border:1px solid var(--bd);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel2);color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;z-index:2}
+th:first-child,td:first-child{text-align:left}
+th:nth-child(2),td:nth-child(2){text-align:left}
+tbody tr:hover{background:var(--panel2)}
+td.num{font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600}
+.p-ok{background:rgba(52,211,153,.15);color:var(--ok)}
+.p-warn{background:rgba(251,191,36,.15);color:var(--warn)}
+.p-bad{background:rgba(248,113,113,.16);color:var(--bad)}
+.outlier{color:var(--bad);font-weight:700}
+.bar{height:6px;border-radius:4px;background:var(--grid);position:relative;min-width:60px}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--acc)}
+
+/* analista */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{background:var(--panel2);border:1px solid var(--bd);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;color:var(--txt)}
+.chip:hover{border-color:var(--acc);background:var(--acc-soft)}
+.askrow{display:flex;gap:8px;margin-bottom:14px}
+.askrow input{flex:1;background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;color:var(--txt);font:inherit}
+.out{background:var(--panel2);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;min-height:120px}
+.out h4{font-size:14px;margin-bottom:8px;color:var(--acc)}
+.out p{margin:0 0 10px}
+.out ul{margin:0 0 12px;padding-left:20px}
+.out li{margin-bottom:5px}
+.out .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0 14px}
+.out .kv div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:9px 12px}
+.out .kv b{display:block;font-size:19px;font-variant-numeric:tabular-nums;margin-top:2px}
+.out small{color:var(--mut)}
+.out table{margin-top:6px}
+.sep{height:1px;background:var(--bd);margin:14px 0}
+.mono{font-family:"Cascadia Mono",Consolas,monospace;font-size:12.5px;color:var(--mut)}
+
+/* diretor */
+.sec{margin-bottom:16px}
+.sec h3{font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sec h3 span.n{width:24px;height:24px;border-radius:7px;background:var(--acc-soft);border:1px solid var(--acc);display:grid;place-items:center;font-size:12px;color:var(--txt)}
+.quad{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quad .q{border:1px solid var(--bd);border-radius:10px;padding:12px;background:var(--panel2)}
+.quad .q h4{font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin-bottom:8px}
+.quad .q.q1{border-color:var(--bad)} .quad .q.q2{border-color:var(--warn)}
+.w5{width:100%;border-collapse:collapse;font-size:12.5px}
+.w5 th,.w5 td{text-align:left;vertical-align:top;white-space:normal;padding:8px 10px}
+.drop{border:2px dashed var(--bd);border-radius:12px;padding:26px;text-align:center;color:var(--mut);background:var(--panel2);cursor:pointer}
+.drop.hot{border-color:var(--acc);color:var(--txt)}
+.drop input{display:none}
+textarea#paste{width:100%;min-height:150px;background:var(--panel2);color:var(--txt);border:1px solid var(--bd);border-radius:10px;padding:11px 13px;font-family:"Cascadia Mono",Consolas,monospace;font-size:12.5px;resize:vertical}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.msg{border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13.5px;border:1px solid var(--bd);background:var(--panel2)}
+.msg.ok{border-left:3px solid var(--ok)} .msg.warn{border-left:3px solid var(--warn)} .msg.bad{border-left:3px solid var(--bad)}
+.msg ul{margin:8px 0 0;padding-left:20px} .msg li{margin-bottom:3px}
+.badge{display:inline-block;background:var(--acc-soft);border:1px solid var(--acc);border-radius:20px;padding:1px 9px;font-size:11.5px;margin-left:6px}
+.notes{border-left:3px solid var(--warn);background:var(--panel2);border-radius:0 10px 10px 0;padding:12px 14px;font-size:13px;color:var(--mut)}
+.notes b{color:var(--txt)}
+
+/* tema */
+#themeBtn{position:fixed;right:22px;bottom:22px;width:52px;height:52px;border-radius:50%;border:1px solid var(--bd);background:var(--panel);color:var(--txt);font-size:22px;cursor:pointer;box-shadow:var(--sh);z-index:60}
+#themeBtn:hover{border-color:var(--acc)}
+#themePanel{position:fixed;right:22px;bottom:86px;width:268px;background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);padding:14px;box-shadow:var(--sh);z-index:60}
+#themePanel[hidden]{display:none}
+#themePanel h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin-bottom:9px}
+.dots{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.dot{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.dot[aria-pressed="true"]{border-color:var(--txt);transform:scale(1.08)}
+.bgs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.bgs button{background:var(--panel2);border:1px solid var(--bd);color:var(--txt);border-radius:8px;padding:7px;font:inherit;font-size:12.5px;cursor:pointer}
+.bgs button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft)}
+
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff;color:#000}
+  .card,.kpi{break-inside:avoid;box-shadow:none}
+  .tblwrap{max-height:none}
+}
+@media (max-width:700px){.wrap{padding:14px 12px 70px}.g2,.g3{grid-template-columns:1fr}.quad{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.card,.kpi{transition:border-color .2s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="sessao no-print" id="sessaoBar"></div>
+<header class="top">
+  <div class="brand">
+    <div class="mark">PR</div>
+    <div>
+      <h1>Aderência Programado × Realizado</h1>
+      <p>Auto Viação Redentor · Inteligência de Negócios · Percentual programado por linha</p>
+    </div>
+  </div>
+  <div class="meta" id="meta"></div>
+</header>
+
+<div class="filters no-print">
+  <div class="f"><label for="fAno">Ano</label><select id="fAno"></select></div>
+  <div class="f"><label for="fMes">Mês</label><select id="fMes"></select></div>
+  <div class="f"><label for="fGrupo">Grupo de operação</label><select id="fGrupo"></select></div>
+  <div class="f"><label for="fDia">Tipo de dia</label><select id="fDia"></select></div>
+  <div class="f"><label for="fLinha">Linha</label><select id="fLinha"></select></div>
+  <div class="f"><label for="fMin">Volume mín. (viagens)</label><input id="fMin" type="number" min="0" step="50" value="0"></div>
+  <button class="btn" id="btnReset">Limpar filtros</button>
+  <button class="btn pri" id="btnPrint">Imprimir / PDF</button>
+</div>
+
+<nav class="tabs no-print" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="visao">Visão geral</button>
+  <button role="tab" aria-selected="false" data-tab="linhas">Linhas</button>
+  <button role="tab" aria-selected="false" data-tab="tabelas">Tabelas de horário</button>
+  <button role="tab" aria-selected="false" data-tab="temporal">Temporal</button>
+  <button role="tab" aria-selected="false" data-tab="analista">Analista</button>
+  <button role="tab" aria-selected="false" data-tab="diretor">Diretor de BI</button>
+  <button role="tab" aria-selected="false" data-tab="dados">Adicionar dados</button>
+</nav>
+
+<section class="tabpanel" id="tab-visao">
+  <div class="kpis" id="kpis"></div>
+  <div class="grid g2">
+    <div class="card"><h3>Aderência mensal</h3><p class="hint">Viagens iguais ÷ viagens comparadas, por mês. A linha tracejada é a média do recorte.</p><div id="chartMes"></div></div>
+    <div class="card"><h3>Aderência por grupo de operação</h3><p class="hint">Ponderada por volume de viagens comparadas.</p><div id="chartGrupo"></div></div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><h3>Aderência por tipo de dia</h3><p class="hint">Útil, sábado e domingo.</p><div id="chartDia"></div></div>
+    <div class="card"><h3>Distribuição dos registros</h3><p class="hint">Quantos registros (linha × tabela × mês) caem em cada faixa de aderência.</p><div id="chartHist"></div></div>
+    <div class="card"><h3>10 linhas com menor aderência</h3><p class="hint">Somente linhas dentro do volume mínimo do filtro.</p><div id="chartPiores"></div></div>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-linhas" hidden>
+  <div class="card">
+    <h3>Ranking de linhas</h3>
+    <p class="hint">Score de risco = 50% volume + 30% taxa de divergência + 20% severidade (participação de registros com divergência ≥ 70%). Cada componente é normalizado de 0 a 1 dentro do recorte. Linhas com taxa de divergência acima de μ + 2σ aparecem em vermelho.</p>
+    <div class="tblwrap"><table id="tLinhas"><thead></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-tabelas" hidden>
+  <div class="card">
+    <h3>Tabelas de horário (Identificação)</h3>
+    <p class="hint">Uma tabela pode operar linhas diferentes ao longo do período. Os totais somam todas as linhas em que a tabela apareceu.</p>
+    <div class="tblwrap"><table id="tIdents"><thead></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-temporal" hidden>
+  <div class="card"><h3>Série mensal de viagens comparadas × divergentes</h3><p class="hint">Barras empilhadas: verde = iguais, vermelho = divergentes.</p><div id="chartStack"></div></div>
+  <div class="grid g2">
+    <div class="card"><h3>Aderência por ano</h3><div id="chartAno"></div></div>
+    <div class="card"><h3>Sazonalidade — mês do ano</h3><p class="hint">Aderência média consolidando todos os anos do recorte.</p><div id="chartSaz"></div></div>
+  </div>
+  <div class="card"><h3>Mapa de calor — mês × grupo de operação</h3><p class="hint">Aderência (%). Células vazias indicam ausência de registros no recorte.</p><div id="chartHeat"></div></div>
+</section>
+
+<section class="tabpanel" id="tab-analista" hidden>
+  <div class="card">
+    <h3>Analista de aderência</h3>
+    <p class="hint">Motor determinístico local: calcula sempre sobre os dados filtrados, sem inventar números. Consultas numéricas e relatórios temáticos usam roteadores distintos.</p>
+    <div class="chips no-print">
+      <button class="chip" data-rep="exec">Relatório Executivo</button>
+      <button class="chip" data-rep="causa">Causa Raiz</button>
+      <button class="chip" data-rep="risco">Entidades de Risco</button>
+      <button class="chip" data-rep="tempo">Padrões Temporais</button>
+    </div>
+    <div class="askrow no-print">
+      <input id="ask" placeholder="Ex.: aderência da linha 603 · pior mês · quantas viagens no domingo · grupo Expresso · tabela HA004">
+      <button class="btn pri" id="askBtn">Consultar</button>
+    </div>
+    <div class="out" id="out"></div>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-dados" hidden>
+  <div class="card">
+    <h3>Adicionar dados à base</h3>
+    <p class="hint">Cole ou carregue um arquivo CSV com os novos meses. Os registros entram na base pra todo mundo que usa o painel assim que você aplicar. Registros com a mesma chave (tabela + linha + tipo de dia + mês + ano) substituem os existentes.</p>
+
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".csv,.txt">
+      <b>Clique para escolher um CSV</b> ou arraste o arquivo aqui<br>
+      <small>Separador , ou ; · UTF-8 · primeira linha com os nomes das colunas</small>
+    </label>
+
+    <p class="hint" style="margin-top:14px">Ou cole o conteúdo diretamente (copiar do Excel também funciona — usa TAB como separador):</p>
+    <textarea id="paste" placeholder="Identificação;Linha;Total ProgxReal;Diferente;Igual;Dia;Mês;Ano;Grupo de Operação&#10;HA004;680;22;3;19;Útil;5;2026;Alimentador"></textarea>
+
+    <div class="actions">
+      <button class="btn pri" id="btnVal">Validar</button>
+      <button class="btn" id="btnAplic" disabled>Aplicar à base</button>
+      <button class="btn" id="btnModelo">Baixar CSV modelo</button>
+      <button class="btn" id="btnExp">Exportar base consolidada</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h3>Formato aceito</h3>
+    <div class="tblwrap" style="max-height:none">
+    <table class="w5"><thead><tr><th>Coluna</th><th>Obrigatória</th><th>Aceita</th></tr></thead><tbody>
+      <tr><td><span class="mono">Identificação</span></td><td>Sim</td><td>Código da tabela de horário, ex. <span class="mono">HA004</span>. Também aceita os nomes <span class="mono">ID</span>, <span class="mono">Tabela</span> ou <span class="mono">Prefixo</span>.</td></tr>
+      <tr><td><span class="mono">Linha</span></td><td>Sim</td><td>Código da linha, ex. <span class="mono">680</span>, <span class="mono">X41</span>. Linhas novas são criadas automaticamente.</td></tr>
+      <tr><td><span class="mono">Total ProgxReal</span> · <span class="mono">Diferente</span> · <span class="mono">Igual</span></td><td>Dois dos três</td><td>Inteiros. O terceiro é calculado. Se os três vierem e não fecharem (<span class="mono">Igual + Diferente ≠ Total</span>), o registro é rejeitado.</td></tr>
+      <tr><td><span class="mono">Dia</span></td><td>Sim</td><td><span class="mono">Útil</span>, <span class="mono">Sábado</span>, <span class="mono">Domingo</span> — com ou sem acento.</td></tr>
+      <tr><td><span class="mono">Mês</span></td><td>Sim</td><td>Número <span class="mono">1–12</span>, nome (<span class="mono">Maio</span>), <span class="mono">05/2026</span> ou <span class="mono">2026-05-01</span>.</td></tr>
+      <tr><td><span class="mono">Ano</span></td><td>Sim*</td><td>Ex. <span class="mono">2026</span>. Dispensável se o mês vier como data completa.</td></tr>
+      <tr><td><span class="mono">Grupo de Operação</span></td><td>Só para linha nova</td><td>Se a linha já existe na base, o grupo cadastrado é usado quando a coluna vier vazia.</td></tr>
+    </tbody></table></div>
+    <p class="hint" style="margin-top:12px">A validação nunca aplica nada sozinha: ela mostra quantos registros são novos, quantos substituem existentes e quais foram rejeitados e por quê. Só depois o botão <b>Aplicar à base</b> é liberado.</p>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-diretor" hidden>
+  <div class="card" id="diretor"></div>
+</section>
+</div>
+
+<button id="themeBtn" class="no-print" aria-label="Alterar tema" title="Tema">🎨</button>
+<div id="themePanel" class="no-print" hidden>
+  <h4>Cor de destaque</h4>
+  <div class="dots" id="dots"></div>
+  <h4>Fundo</h4>
+  <div class="bgs" id="bgs"></div>
+</div>
+
+<script>
+(async function(){
+const sessao = exigirLogin();
+if(!sessao) return;
+document.getElementById('sessaoBar').innerHTML =
+  '<a href="/">← Voltar</a>' +
+  '<span>' + escSess(sessao.nome||sessao.usuario) + (sessao.role==='admin'?' · admin':'') + '</span>' +
+  '<a href="#" class="sair" onclick="sairSessao();return false">sair</a>';
+function escSess(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+
+let respInicial;
+try{ respInicial = await authFetch('/api/aderencia/dataset'); }
+catch(e){ document.getElementById('meta').textContent = 'Não foi possível carregar os dados.'; return; }
+let D = await respInicial.json();
+
+/* ===================== DADOS ===================== */
+let R = D.rows;                     // [identIdx, lineIdx, total, igual, diaIdx, ano, mes]
+const I_ID=0,I_LN=1,I_TT=2,I_IG=3,I_DI=4,I_AN=5,I_ME=6;
+const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const nf=n=>n.toLocaleString('pt-BR');
+const pf=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+const pct=(a,b)=>b>0?100*a/b:0;
+const d1=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const cls=v=>v>=70?'ok':v>=50?'warn':'bad';
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ===================== TEMA ===================== */
+const ACC=[['Ciano','#22d3ee','#0e7490'],['Âmbar','#f59e0b','#b45309'],['Esmeralda','#10b981','#047857'],['Violeta','#a78bfa','#6d28d9'],
+           ['Rosa','#f472b6','#be185d'],['Laranja','#fb923c','#c2410c'],['Azul','#60a5fa','#1d4ed8'],['Lima','#a3e635','#4d7c0f']];
+const BGS={
+ grafite:{nome:'Grafite',bg:'#1a1d23',panel:'#22262e',panel2:'#282d36',txt:'#e8ebf0',mut:'#9aa3b2',bd:'#333a45',grid:'#2f3641',ok:'#34d399',warn:'#fbbf24',bad:'#f87171',light:false},
+ meianoite:{nome:'Meia-noite',bg:'#0f172a',panel:'#16203a',panel2:'#1c2748',txt:'#e6ecf7',mut:'#94a3b8',bd:'#2b3a5c',grid:'#243252',ok:'#34d399',warn:'#fbbf24',bad:'#f87171',light:false},
+ ardosia:{nome:'Ardósia',bg:'#1e293b',panel:'#27354b',panel2:'#2f3f58',txt:'#e8eef6',mut:'#9db0c6',bd:'#3b4d68',grid:'#35475f',ok:'#34d399',warn:'#fbbf24',bad:'#f87171',light:false},
+ carvao:{nome:'Carvão',bg:'#121212',panel:'#1b1b1b',panel2:'#232323',txt:'#eaeaea',mut:'#9a9a9a',bd:'#333',grid:'#2b2b2b',ok:'#34d399',warn:'#fbbf24',bad:'#f87171',light:false},
+ claro:{nome:'Claro',bg:'#f5f6f8',panel:'#ffffff',panel2:'#eef1f5',txt:'#1b2230',mut:'#5a6474',bd:'#d5dae2',grid:'#e2e6ec',ok:'#047857',warn:'#a16207',bad:'#b91c1c',light:true}
+};
+let TH={acc:0,bg:'grafite'};
+function hex2rgba(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
+function applyTheme(){
+  const b=BGS[TH.bg]||BGS.grafite, a=b.light?ACC[TH.acc][2]:ACC[TH.acc][1], s=document.documentElement.style;
+  s.setProperty('--acc',a); s.setProperty('--acc-soft',hex2rgba(a,b.light?.10:.14));
+  ['bg','panel','panel2','txt','mut','bd','grid','ok','warn','bad'].forEach(k=>s.setProperty('--'+k,b[k]));
+  document.querySelectorAll('#dots .dot').forEach((d,i)=>{d.style.background=b.light?ACC[i][2]:ACC[i][1];d.setAttribute('aria-pressed',i===TH.acc)});
+  document.querySelectorAll('#bgs button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.bg===TH.bg));
+  try{localStorage.setItem('redentor_tema_aderencia',JSON.stringify(TH))}catch(e){}
+  if(window.__ready) renderAll();
+}
+(function initTheme(){
+  try{const raw=localStorage.getItem('redentor_tema_aderencia'); if(raw){const t=JSON.parse(raw); if(typeof t.acc==='number'&&BGS[t.bg])TH=t;}}catch(e){}
+  const dots=document.getElementById('dots');
+  ACC.forEach((a,i)=>{const b=document.createElement('button');b.className='dot';b.title=a[0];b.setAttribute('aria-pressed',false);b.onclick=()=>{TH.acc=i;applyTheme()};dots.appendChild(b)});
+  const bgs=document.getElementById('bgs');
+  Object.entries(BGS).forEach(([k,v])=>{const b=document.createElement('button');b.textContent=v.nome;b.dataset.bg=k;b.onclick=()=>{TH.bg=k;applyTheme()};bgs.appendChild(b)});
+  const btn=document.getElementById('themeBtn'),pan=document.getElementById('themePanel');
+  btn.onclick=()=>pan.hidden=!pan.hidden;
+  document.addEventListener('click',e=>{if(!pan.hidden&&!pan.contains(e.target)&&e.target!==btn)pan.hidden=true});
+  applyTheme();
+})();
+
+/* ===================== FILTROS ===================== */
+const F={ano:'',mes:'',grupo:'',dia:'',linha:'',min:0};
+function fillSelects(){
+  const anos=[...new Set(R.map(r=>r[I_AN]))].sort();
+  const opt=(el,items,all)=>{el.innerHTML=`<option value="">${all}</option>`+items.map(x=>`<option value="${esc(x[0])}">${esc(x[1])}</option>`).join('')};
+  opt(document.getElementById('fAno'),anos.map(a=>[a,a]),'Todos');
+  opt(document.getElementById('fMes'),MESES.map((m,i)=>[i+1,m]),'Todos');
+  opt(document.getElementById('fGrupo'),D.groups.map((g,i)=>[i,g]),'Todos');
+  opt(document.getElementById('fDia'),D.days.map((d,i)=>[i,d]),'Todos');
+  const ordLinhas=D.lines.map((l,i)=>[i,l]).sort((a,b)=>a[1].localeCompare(b[1],'pt-BR',{numeric:true}));
+  opt(document.getElementById('fLinha'),ordLinhas,'Todas');
+}
+function bindFilters(){
+  const map={fAno:'ano',fMes:'mes',fGrupo:'grupo',fDia:'dia',fLinha:'linha',fMin:'min'};
+  Object.entries(map).forEach(([id,k])=>document.getElementById(id).addEventListener('change',e=>{F[k]=e.target.value;renderAll()}));
+  document.getElementById('btnReset').onclick=()=>{Object.keys(F).forEach(k=>F[k]=k==='min'?0:'');['fAno','fMes','fGrupo','fDia','fLinha'].forEach(i=>document.getElementById(i).value='');document.getElementById('fMin').value=0;renderAll()};
+  document.getElementById('btnPrint').onclick=()=>window.print();
+}
+function filtered(){
+  return R.filter(r=>
+    (F.ano===''||r[I_AN]==F.ano)&&(F.mes===''||r[I_ME]==F.mes)&&(F.dia===''||r[I_DI]==F.dia)&&
+    (F.linha===''||r[I_LN]==F.linha)&&(F.grupo===''||D.lineGroup[r[I_LN]]==F.grupo));
+}
+function recorteTxt(){
+  const p=[];
+  if(F.ano)p.push('ano '+F.ano); if(F.mes)p.push('mês de '+MESES[F.mes-1]);
+  if(F.grupo!=='')p.push('grupo '+D.groups[F.grupo]); if(F.dia!=='')p.push('dia '+D.days[F.dia]);
+  if(F.linha!=='')p.push('linha '+D.lines[F.linha]); if(+F.min>0)p.push('volume ≥ '+nf(+F.min));
+  return p.length?p.join(' · '):'período completo, sem filtros';
+}
+
+/* ===================== AGREGAÇÕES ===================== */
+function tot(rows){let t=0,i=0;for(const r of rows){t+=r[I_TT];i+=r[I_IG]}return{t,i,d:t-i,ad:pct(i,t)}}
+function byKey(rows,fn){const m=new Map();for(const r of rows){const k=fn(r);let o=m.get(k);if(!o){o={k,t:0,i:0,n:0,crit:0};m.set(k,o)}o.t+=r[I_TT];o.i+=r[I_IG];o.n++;if(r[I_TT]>0&&pct(r[I_TT]-r[I_IG],r[I_TT])>=70)o.crit++}
+  return [...m.values()].map(o=>Object.assign(o,{ad:pct(o.i,o.t),tx:pct(o.t-o.i,o.t),sev:pct(o.crit,o.n)}))}
+function linhaStats(rows){
+  let L=byKey(rows,r=>r[I_LN]).map(o=>Object.assign(o,{nome:D.lines[o.k],grupo:D.groups[D.lineGroup[o.k]]}));
+  if(+F.min>0)L=L.filter(o=>o.t>=+F.min);
+  const tx=L.map(o=>o.tx), mu=tx.reduce((a,b)=>a+b,0)/(tx.length||1);
+  const sd=Math.sqrt(tx.reduce((a,b)=>a+(b-mu)**2,0)/(tx.length>1?tx.length-1:1));
+  const nz=(v,arr)=>{const mn=Math.min(...arr),mx=Math.max(...arr);return mx>mn?(v-mn)/(mx-mn):0};
+  const vt=L.map(o=>o.t),vx=L.map(o=>o.tx),vs=L.map(o=>o.sev);
+  L.forEach(o=>{o.score=100*(0.5*nz(o.t,vt)+0.3*nz(o.tx,vx)+0.2*nz(o.sev,vs));o.out=o.tx>mu+2*sd});
+  return {L,mu,sd};
+}
+const ymKey=r=>r[I_AN]*100+r[I_ME];
+const ymLabel=k=>MESES[(k%100)-1]+'/'+String(Math.floor(k/100)).slice(2);
+
+/* ===================== SVG ===================== */
+const C=(v)=>`var(--${cls(v)})`;
+const wOf=(id,min=320)=>Math.max(min,(document.getElementById(id)||{}).clientWidth||700);
+
+function svgLineChart(rows,W){
+  const S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k);
+  if(!S.length)return '<p class="hint">Sem dados no recorte.</p>';
+  const H=Math.max(230,Math.min(300,W*0.42)),ml=48,mr=14,mt=16,mb=38,iw=W-ml-mr,ih=H-mt-mb;
+  const media=pct(S.reduce((a,o)=>a+o.i,0),S.reduce((a,o)=>a+o.t,0));
+  const x=i=>ml+(S.length<2?iw/2:i*iw/(S.length-1)), y=v=>mt+ih-(v/100)*ih;
+  let g='';for(let v=0;v<=100;v+=25)g+=`<line class="gl" x1="${ml}" y1="${y(v)}" x2="${W-mr}" y2="${y(v)}"/><text class="axis" x="${ml-6}" y="${y(v)+4}" text-anchor="end">${v}%</text>`;
+  const pts=S.map((o,i)=>`${x(i)},${y(o.ad)}`).join(' ');
+  const area=`M${x(0)},${mt+ih} L${pts.split(' ').join(' L')} L${x(S.length-1)},${mt+ih} Z`;
+  const step=Math.max(1,Math.ceil(S.length/Math.max(3,Math.floor(iw/64))));
+  const lb=S.map((o,i)=>i%step?'':`<text class="axis" x="${x(i)}" y="${H-mb+20}" text-anchor="middle">${ymLabel(o.k)}</text>`).join('');
+  const dots=S.map((o,i)=>`<circle cx="${x(i)}" cy="${y(o.ad)}" r="3.5" fill="${C(o.ad)}"><title>${ymLabel(o.k)}: ${pf(o.ad)} — ${nf(o.t)} viagens</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Aderência mensal">${g}
+   <path d="${area}" fill="var(--acc)" opacity=".10"/>
+   <polyline points="${pts}" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round"/>
+   <line x1="${ml}" y1="${y(media)}" x2="${W-mr}" y2="${y(media)}" stroke="var(--mut)" stroke-dasharray="5 4" stroke-width="1"/>
+   <text class="axis" x="${W-mr}" y="${y(media)-6}" text-anchor="end">média ${pf(media)}</text>
+   ${dots}${lb}</svg>`;
+}
+
+function svgHBars(items,W,{fmt=pf,val=o=>o.ad,max=100,sub=o=>nf(o.t)+' viagens',color=o=>C(o.ad)}={}){
+  if(!items.length)return '<p class="hint">Sem dados no recorte.</p>';
+  const longo=Math.max(...items.map(o=>String(o.nome).length));
+  const estreito=W<520;
+  const lw=Math.min(140,Math.max(52,longo*8.5));
+  const vw=56, sw=estreito?0:92, rh=34, H=items.length*rh+10;
+  const bw=Math.max(40,W-lw-vw-sw-(estreito?8:20));
+  return `<svg viewBox="0 0 ${W} ${H}">${items.map((o,i)=>{
+    const y=i*rh+8,w=Math.max(2,(val(o)/max)*bw);
+    return `<text class="lbl" x="0" y="${y+17}">${esc(o.nome)}</text>
+      <rect x="${lw}" y="${y+5}" width="${bw}" height="16" rx="4" fill="var(--grid)"/>
+      <rect x="${lw}" y="${y+5}" width="${w}" height="16" rx="4" fill="${color(o)}"><title>${esc(o.nome)}: ${fmt(val(o))} · ${sub(o)}</title></rect>
+      <text class="val" x="${lw+bw+vw}" y="${y+18}" text-anchor="end">${fmt(val(o))}</text>
+      ${estreito?`<title>${sub(o)}</title>`:`<text class="sub" x="${W}" y="${y+18}" text-anchor="end">${sub(o)}</text>`}`}).join('')}</svg>`;
+}
+
+function svgHist(rows,W){
+  const bins=new Array(10).fill(0);
+  rows.forEach(r=>{const p=pct(r[I_IG],r[I_TT]);let b=Math.floor(p/10);if(b>9)b=9;bins[b]++});
+  const H=Math.max(230,Math.min(290,W*0.5)),ml=52,mb=48,mt=10,iw=W-ml-14,ih=H-mt-mb,mx=Math.max(...bins,1);
+  const bw=iw/10, todos=bw>44;
+  return `<svg viewBox="0 0 ${W} ${H}">
+  ${[0,.5,1].map(f=>`<line class="gl" x1="${ml}" y1="${mt+ih-f*ih}" x2="${W-14}" y2="${mt+ih-f*ih}"/><text class="axis" x="${ml-6}" y="${mt+ih-f*ih+4}" text-anchor="end">${nf(Math.round(mx*f))}</text>`).join('')}
+  ${bins.map((v,i)=>{const h=(v/mx)*ih,x=ml+i*bw+3,mid=i*10+5;
+    return `<rect x="${x}" y="${mt+ih-h}" width="${bw-6}" height="${h}" rx="3" fill="${C(mid)}" opacity=".85"><title>${i*10}–${i*10+10}%: ${nf(v)} registros</title></rect>
+    ${(todos||i%2===0)?`<text class="axis" x="${x+(bw-6)/2}" y="${H-mb+18}" text-anchor="middle">${i*10}</text>`:''}`}).join('')}
+  <text class="axis" x="${ml+iw/2}" y="${H-6}" text-anchor="middle">faixa de aderência (%)</text></svg>`;
+}
+
+function svgStack(rows,W){
+  const S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k);
+  if(!S.length)return '<p class="hint">Sem dados no recorte.</p>';
+  const H=Math.max(240,Math.min(300,W*0.4)),ml=58,mt=12,mb=40,iw=W-ml-16,ih=H-mt-mb,mx=Math.max(...S.map(o=>o.t)),bw=iw/S.length;
+  const step=Math.max(1,Math.ceil(S.length/Math.max(3,Math.floor(iw/64))));
+  return `<svg viewBox="0 0 ${W} ${H}">
+  ${[0,.5,1].map(f=>`<line class="gl" x1="${ml}" y1="${mt+ih-f*ih}" x2="${W-16}" y2="${mt+ih-f*ih}"/><text class="axis" x="${ml-6}" y="${mt+ih-f*ih+4}" text-anchor="end">${nf(Math.round(mx*f))}</text>`).join('')}
+  ${S.map((o,i)=>{const hi=(o.i/mx)*ih,hd=((o.t-o.i)/mx)*ih,x=ml+i*bw+2,w=Math.max(2,bw-4);
+   return `<rect x="${x}" y="${mt+ih-hi}" width="${w}" height="${hi}" fill="var(--ok)" opacity=".85"><title>${ymLabel(o.k)} · iguais: ${nf(o.i)}</title></rect>
+     <rect x="${x}" y="${mt+ih-hi-hd}" width="${w}" height="${hd}" fill="var(--bad)" opacity=".8"><title>${ymLabel(o.k)} · divergentes: ${nf(o.t-o.i)}</title></rect>
+     ${i%step?'':`<text class="axis" x="${x+w/2}" y="${H-mb+20}" text-anchor="middle">${ymLabel(o.k)}</text>`}`}).join('')}</svg>`;
+}
+
+function svgHeat(rows,W){
+  const gs=D.groups.map((g,i)=>i).filter(i=>rows.some(r=>D.lineGroup[r[I_LN]]===i));
+  const ms=[...new Set(rows.map(ymKey))].sort((a,b)=>a-b);
+  if(!gs.length||!ms.length)return '<p class="hint">Sem dados no recorte.</p>';
+  const m=new Map();rows.forEach(r=>{const k=D.lineGroup[r[I_LN]]+'|'+ymKey(r);let o=m.get(k)||{t:0,i:0};o.t+=r[I_TT];o.i+=r[I_IG];m.set(k,o)});
+  const ml=132, ch=36, cw=Math.max(30,(W-ml-12)/ms.length), H=gs.length*ch+56;
+  const VB=ml+ms.length*cw+12;
+  let s=`<svg viewBox="0 0 ${VB} ${H}">`;
+  const step=Math.max(1,Math.ceil(ms.length/Math.max(3,Math.floor((VB-ml)/58))));
+  ms.forEach((k,j)=>{if(j%step===0)s+=`<text class="axis" x="${ml+j*cw+cw/2}" y="14" text-anchor="middle">${ymLabel(k)}</text>`});
+  gs.forEach((g,i)=>{s+=`<text class="lbl" x="0" y="${26+i*ch+ch/2+5}">${esc(D.groups[g])}</text>`;
+    ms.forEach((k,j)=>{const o=m.get(g+'|'+k);const x=ml+j*cw,y=26+i*ch;
+      if(!o||!o.t){s+=`<rect x="${x+1}" y="${y+1}" width="${cw-2}" height="${ch-2}" rx="3" fill="var(--grid)" opacity=".35"/>`;return}
+      const v=pct(o.i,o.t),op=.25+.65*(v/100);
+      s+=`<rect x="${x+1}" y="${y+1}" width="${cw-2}" height="${ch-2}" rx="3" fill="${C(v)}" opacity="${op.toFixed(2)}"><title>${D.groups[g]} · ${ymLabel(k)}: ${pf(v)} (${nf(o.t)} viagens)</title></rect>`;
+      if(cw>=38)s+=`<text class="axis" x="${x+cw/2}" y="${y+ch/2+5}" text-anchor="middle" fill="var(--txt)">${v.toFixed(0)}</text>`})});
+  return s+`</svg>`;
+}
+
+function svgScatter(L,W){
+  if(!L.length)return '<p class="hint">Sem dados.</p>';
+  const H=Math.max(320,Math.min(400,W*0.52)),ml=64,mr=18,mt=20,mb=48,iw=W-ml-mr,ih=H-mt-mb;
+  const mxT=Math.max(...L.map(o=>o.t)),medT=med(L.map(o=>o.t)),medX=med(L.map(o=>o.tx));
+  const x=v=>ml+(v/mxT)*iw, y=v=>mt+ih-(v/100)*ih;
+  let s=`<svg viewBox="0 0 ${W} ${H}">`;
+  s+=`<line class="gl" x1="${x(medT)}" y1="${mt}" x2="${x(medT)}" y2="${mt+ih}" stroke-dasharray="4 4"/>`;
+  s+=`<line class="gl" x1="${ml}" y1="${y(medX)}" x2="${W-mr}" y2="${y(medX)}" stroke-dasharray="4 4"/>`;
+  s+=`<text class="axis" x="${W-mr}" y="${mt+12}" text-anchor="end">alto impacto · alta urgência</text>`;
+  s+=`<text class="axis" x="${ml}" y="${mt+12}">baixo impacto · alta urgência</text>`;
+  [0,25,50,75,100].forEach(v=>s+=`<text class="axis" x="${ml-8}" y="${y(v)+4}" text-anchor="end">${v}%</text>`);
+  s+=`<text class="axis" x="${ml+iw/2}" y="${H-8}" text-anchor="middle">impacto → viagens comparadas</text>`;
+  L.forEach(o=>{const crit=o.t>=medT&&o.tx>=medX;
+    s+=`<circle cx="${x(o.t)}" cy="${y(o.tx)}" r="${crit?5:3.5}" fill="${crit?'var(--bad)':'var(--acc)'}" opacity="${crit?.9:.5}"><title>Linha ${o.nome} (${o.grupo}) · ${nf(o.t)} viagens · divergência ${pf(o.tx)}</title></circle>`;
+    if(crit&&o.t>medT*1.6)s+=`<text class="axis" x="${x(o.t)+8}" y="${y(o.tx)+4}">${esc(o.nome)}</text>`});
+  s+=`<line class="gl" x1="${ml}" y1="${mt+ih}" x2="${W-mr}" y2="${mt+ih}"/><line class="gl" x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt+ih}"/>`;
+  s+=`<text class="axis" x="18" y="${mt+ih/2}" transform="rotate(-90 18 ${mt+ih/2})" text-anchor="middle">urgência → taxa de divergência</text>`;
+  return s+`</svg>`;
+}
+const med=a=>{const s=[...a].sort((x,y)=>x-y);const n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):0};
+
+/* ===================== RENDER ===================== */
+let CUR=[],LS={L:[],mu:0,sd:0};
+function kpiCard(lb,vl,sb,k){return `<div class="kpi ${k||''}"><div class="lb">${lb}</div><div class="vl">${vl}</div><div class="sb">${sb}</div></div>`}
+function renderKPIs(rows){
+  const T=tot(rows), L=LS.L;
+  const crit=rows.filter(r=>pct(r[I_TT]-r[I_IG],r[I_TT])>=70).length;
+  const g=byKey(rows,r=>D.lineGroup[r[I_LN]]).sort((a,b)=>b.ad-a.ad);
+  const S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k);
+  const pior=S.length?S.reduce((a,b)=>b.ad<a.ad?b:a):null;
+  document.getElementById('kpis').innerHTML=
+    kpiCard('Viagens comparadas',nf(T.t),nf(rows.length)+' registros · '+L.length+' linhas')+
+    kpiCard('Aderência global',pf(T.ad),nf(T.i)+' viagens conformes',cls(T.ad))+
+    kpiCard('Divergências',nf(T.d),pf(100-T.ad)+' do programado','bad')+
+    kpiCard('Registros críticos',nf(crit),'≥ 70% de divergência ('+pf(pct(crit,rows.length||1))+')',crit/(rows.length||1)>=.2?'bad':'warn')+
+    kpiCard('Melhor grupo',g.length?esc(D.groups[g[0].k]):'—',g.length?pf(g[0].ad)+' de aderência':'—','ok')+
+    kpiCard('Pior mês',pior?ymLabel(pior.k):'—',pior?pf(pior.ad)+' de aderência':'—','bad');
+  document.getElementById('meta').innerHTML=`Recorte: <b>${esc(recorteTxt())}</b><br>${nf(R.length)} registros na base · ${D.lines.length} linhas · ${D.idents.length} tabelas de horário`;
+}
+function renderVisao(rows){
+  document.getElementById('chartMes').innerHTML=svgLineChart(rows,wOf('chartMes'));
+  const g=byKey(rows,r=>D.lineGroup[r[I_LN]]).map(o=>Object.assign(o,{nome:D.groups[o.k]})).sort((a,b)=>b.ad-a.ad);
+  document.getElementById('chartGrupo').innerHTML=svgHBars(g,wOf('chartGrupo'));
+  const d=byKey(rows,r=>r[I_DI]).map(o=>Object.assign(o,{nome:D.days[o.k]})).sort((a,b)=>b.ad-a.ad);
+  document.getElementById('chartDia').innerHTML=svgHBars(d,wOf('chartDia'));
+  document.getElementById('chartHist').innerHTML=svgHist(rows,wOf('chartHist'));
+  const piores=[...LS.L].sort((a,b)=>a.ad-b.ad).slice(0,10);
+  document.getElementById('chartPiores').innerHTML=svgHBars(piores,wOf('chartPiores'));
+}
+function sortableTable(el,cols,data,defSort){
+  let sk=defSort,sd=-1;
+  const draw=()=>{
+    const arr=[...data].sort((a,b)=>{const x=cols[sk].get(a),y=cols[sk].get(b);return (typeof x==='string'?x.localeCompare(y,'pt-BR',{numeric:true}):x-y)*sd});
+    el.querySelector('thead').innerHTML='<tr>'+cols.map((c,i)=>`<th data-i="${i}">${c.h}${i===sk?(sd<0?' ▾':' ▴'):''}</th>`).join('')+'</tr>';
+    el.querySelector('tbody').innerHTML=arr.map(o=>'<tr>'+cols.map(c=>`<td class="${c.num?'num':''}">${c.cell(o)}</td>`).join('')+'</tr>').join('');
+    el.querySelectorAll('th').forEach(th=>th.onclick=()=>{const i=+th.dataset.i; if(i===sk)sd=-sd; else{sk=i;sd=-1} draw()});
+  };draw();
+}
+function renderLinhas(){
+  const cols=[
+    {h:'Linha',get:o=>o.nome,cell:o=>`<b class="${o.out?'outlier':''}">${esc(o.nome)}</b>${o.out?' ⚠':''}`},
+    {h:'Grupo',get:o=>o.grupo,cell:o=>esc(o.grupo)},
+    {h:'Viagens',num:1,get:o=>o.t,cell:o=>nf(o.t)},
+    {h:'Iguais',num:1,get:o=>o.i,cell:o=>nf(o.i)},
+    {h:'Divergentes',num:1,get:o=>o.t-o.i,cell:o=>nf(o.t-o.i)},
+    {h:'Aderência',num:1,get:o=>o.ad,cell:o=>`<span class="pill p-${cls(o.ad)}">${pf(o.ad)}</span>`},
+    {h:'Taxa divergência',num:1,get:o=>o.tx,cell:o=>`<span class="${o.out?'outlier':''}">${pf(o.tx)}</span>`},
+    {h:'Severidade',num:1,get:o=>o.sev,cell:o=>pf(o.sev)},
+    {h:'Score de risco',num:1,get:o=>o.score,cell:o=>`<div style="display:flex;gap:8px;align-items:center;justify-content:flex-end"><span>${d1(o.score)}</span><div class="bar" style="width:70px"><i style="width:${o.score.toFixed(0)}%"></i></div></div>`}
+  ];
+  sortableTable(document.getElementById('tLinhas'),cols,LS.L,8);
+}
+function renderIdents(rows){
+  let A=byKey(rows,r=>r[I_ID]).map(o=>Object.assign(o,{nome:D.idents[o.k]}));
+  if(+F.min>0)A=A.filter(o=>o.t>=+F.min);
+  const linhasPorId=new Map();rows.forEach(r=>{const s=linhasPorId.get(r[I_ID])||new Set();s.add(r[I_LN]);linhasPorId.set(r[I_ID],s)});
+  const cols=[
+    {h:'Tabela',get:o=>o.nome,cell:o=>`<b>${esc(o.nome)}</b>`},
+    {h:'Linhas atendidas',get:o=>(linhasPorId.get(o.k)||new Set()).size,cell:o=>[...(linhasPorId.get(o.k)||[])].map(i=>D.lines[i]).sort().join(', ')},
+    {h:'Viagens',num:1,get:o=>o.t,cell:o=>nf(o.t)},
+    {h:'Divergentes',num:1,get:o=>o.t-o.i,cell:o=>nf(o.t-o.i)},
+    {h:'Aderência',num:1,get:o=>o.ad,cell:o=>`<span class="pill p-${cls(o.ad)}">${pf(o.ad)}</span>`},
+    {h:'Registros críticos',num:1,get:o=>o.crit,cell:o=>nf(o.crit)+' / '+nf(o.n)}
+  ];
+  sortableTable(document.getElementById('tIdents'),cols,A,4);
+}
+function renderTemporal(rows){
+  document.getElementById('chartStack').innerHTML=svgStack(rows,wOf('chartStack'));
+  const a=byKey(rows,r=>r[I_AN]).map(o=>Object.assign(o,{nome:String(o.k)})).sort((x,y)=>x.k-y.k);
+  document.getElementById('chartAno').innerHTML=svgHBars(a,wOf('chartAno'));
+  const s=byKey(rows,r=>r[I_ME]).map(o=>Object.assign(o,{nome:MESES[o.k-1]})).sort((x,y)=>x.k-y.k);
+  document.getElementById('chartSaz').innerHTML=svgHBars(s,wOf('chartSaz'));
+  document.getElementById('chartHeat').innerHTML=svgHeat(rows,wOf('chartHeat'));
+}
+function renderAll(){
+  CUR=filtered(); LS=linhaStats(CUR);
+  renderKPIs(CUR); renderVisao(CUR); renderLinhas(); renderIdents(CUR); renderTemporal(CUR); renderDiretor(CUR);
+  if(document.getElementById('out').dataset.rep) runReport(document.getElementById('out').dataset.rep);
+}
+
+/* ===================== ANALISTA — motor determinístico ===================== */
+function tblHTML(head,rowsArr){return `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rowsArr.map(r=>`<tr>${r.map((c,i)=>`<td class="${i?'num':''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function kvHTML(items){return `<div class="kv">${items.map(([a,b])=>`<div><small>${a}</small><b>${b}</b></div>`).join('')}</div>`}
+
+const REPORTS={
+  exec(rows){
+    const T=tot(rows), S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k);
+    const G=byKey(rows,r=>D.lineGroup[r[I_LN]]).map(o=>Object.assign(o,{nome:D.groups[o.k]})).sort((a,b)=>b.ad-a.ad);
+    const Dd=byKey(rows,r=>r[I_DI]).map(o=>Object.assign(o,{nome:D.days[o.k]})).sort((a,b)=>b.ad-a.ad);
+    const n=S.length, ter=Math.max(1,Math.round(n/3));
+    const ini=tot(rows.filter(r=>S.slice(0,ter).some(o=>o.k===ymKey(r)))), fim=tot(rows.filter(r=>S.slice(-ter).some(o=>o.k===ymKey(r))));
+    const delta=fim.ad-ini.ad;
+    const piores=[...LS.L].sort((a,b)=>a.ad-b.ad).slice(0,3);
+    const critL=LS.L.filter(o=>o.ad<50).length;
+    return `<h4>Relatório executivo — ${esc(recorteTxt())}</h4>
+    ${kvHTML([['Viagens comparadas',nf(T.t)],['Aderência global',pf(T.ad)],['Divergências',nf(T.d)],['Linhas abaixo de 50%',nf(critL)+' de '+LS.L.length]])}
+    <p>Das <b>${nf(T.t)}</b> viagens comparadas entre programado e realizado, <b>${nf(T.i)}</b> coincidiram — aderência de <b>${pf(T.ad)}</b>. As <b>${nf(T.d)}</b> divergências representam ${pf(100-T.ad)} do total programado no recorte.</p>
+    <p>Comparando o primeiro terço do período (${S.slice(0,ter).map(o=>ymLabel(o.k)).slice(0,1)}–${ymLabel(S[ter-1].k)}, ${pf(ini.ad)}) com o último (${ymLabel(S[n-ter].k)}–${ymLabel(S[n-1].k)}, ${pf(fim.ad)}), a aderência ${delta<0?'<b style="color:var(--bad)">caiu</b>':'<b style="color:var(--ok)">subiu</b>'} <b>${d1(Math.abs(delta))} p.p.</b></p>
+    <ul>
+      <li>Melhor grupo: <b>${esc(G[0].nome)}</b> (${pf(G[0].ad)}, ${nf(G[0].t)} viagens). Pior: <b>${esc(G[G.length-1].nome)}</b> (${pf(G[G.length-1].ad)}, ${nf(G[G.length-1].t)} viagens).</li>
+      <li>Tipo de dia com maior aderência: <b>${esc(Dd[0].nome)}</b> (${pf(Dd[0].ad)}); menor: <b>${esc(Dd[Dd.length-1].nome)}</b> (${pf(Dd[Dd.length-1].ad)}).</li>
+      <li>Linhas com menor aderência: ${piores.map(o=>`<b>${esc(o.nome)}</b> (${pf(o.ad)})`).join(', ')}.</li>
+      <li>Mês mais fraco: <b>${ymLabel(S.reduce((a,b)=>b.ad<a.ad?b:a).k)}</b>; mais forte: <b>${ymLabel(S.reduce((a,b)=>b.ad>a.ad?b:a).k)}</b>.</li>
+    </ul>
+    <small>Aderência = viagens iguais ÷ viagens comparadas, ponderada por volume. Nenhum valor é estimado.</small>`;
+  },
+  causa(rows){
+    const T=tot(rows);
+    const G=byKey(rows,r=>D.lineGroup[r[I_LN]]).map(o=>Object.assign(o,{nome:D.groups[o.k]})).sort((a,b)=>(b.t-b.i)-(a.t-a.i));
+    const Dd=byKey(rows,r=>r[I_DI]).map(o=>Object.assign(o,{nome:D.days[o.k]})).sort((a,b)=>(b.t-b.i)-(a.t-a.i));
+    const L=[...LS.L].sort((a,b)=>(b.t-b.i)-(a.t-a.i));
+    let ac=0,k=0; for(const o of L){ac+=o.t-o.i;k++;if(ac>=.8*T.d)break}
+    const S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k);
+    let quebra=null,mq=0;
+    for(let i=1;i<S.length;i++){const d=S[i].ad-S[i-1].ad;if(d<mq){mq=d;quebra=S[i]}}
+    const antes=quebra?tot(rows.filter(r=>ymKey(r)<quebra.k)):null, depois=quebra?tot(rows.filter(r=>ymKey(r)>=quebra.k)):null;
+    return `<h4>Causa raiz — ${esc(recorteTxt())}</h4>
+    <p>As ${nf(T.d)} divergências não se distribuem por igual. A tabela abaixo mostra onde elas se concentram.</p>
+    ${tblHTML(['Grupo de operação','Divergências','Participação','Taxa de divergência'],G.map(o=>[esc(o.nome),nf(o.t-o.i),pf(pct(o.t-o.i,T.d)),pf(o.tx)]))}
+    <div class="sep"></div>
+    <p><b>Concentração:</b> ${k} linha${k>1?'s':''} de ${LS.L.length} respondem por 80% de todas as divergências do recorte — ${(100*k/(LS.L.length||1)).toFixed(0)}% das linhas. Atacar esse grupo é o caminho de maior retorno.</p>
+    ${tblHTML(['Linha','Grupo','Divergências','Participação'],L.slice(0,8).map(o=>[esc(o.nome),esc(o.grupo),nf(o.t-o.i),pf(pct(o.t-o.i,T.d))]))}
+    <div class="sep"></div>
+    <p><b>Tipo de dia:</b> ${Dd.map(o=>`${esc(o.nome)} concentra ${pf(pct(o.t-o.i,T.d))} das divergências com taxa de ${pf(o.tx)}`).join('; ')}.</p>
+    ${quebra?`<p><b>Quebra temporal:</b> a maior queda mês a mês ocorre em <b>${ymLabel(quebra.k)}</b> (${d1(mq)} p.p.). Antes dessa data a aderência era de <b>${pf(antes.ad)}</b> (${nf(antes.t)} viagens); de ${ymLabel(quebra.k)} em diante, <b>${pf(depois.ad)}</b> (${nf(depois.t)} viagens). Uma ruptura desse porte raramente é operacional — é candidata a mudança de programação, de sistema de coleta ou de critério de comparação.</p>`:''}
+    <small>Participação = divergências da categoria ÷ divergências totais do recorte. Taxa de divergência = divergentes ÷ comparadas da própria categoria.</small>`;
+  },
+  risco(rows){
+    const L=[...LS.L].sort((a,b)=>b.score-a.score).slice(0,12);
+    const outs=LS.L.filter(o=>o.out).sort((a,b)=>b.tx-a.tx);
+    return `<h4>Entidades de risco — ${esc(recorteTxt())}</h4>
+    <p class="mono">score = 50% · volume normalizado + 30% · taxa de divergência normalizada + 20% · severidade normalizada</p>
+    <p>Volume = viagens comparadas (impacto). Taxa de divergência = divergentes ÷ comparadas (culpa). Severidade = participação dos registros com divergência ≥ 70% (gravidade). Cada componente é normalizado de 0 a 1 entre as ${LS.L.length} linhas do recorte, então o score é sempre relativo ao recorte atual.</p>
+    ${tblHTML(['Linha','Grupo','Viagens','Taxa div.','Severidade','Score'],L.map(o=>[
+      (o.out?'<span class="outlier">':'')+esc(o.nome)+(o.out?' ⚠</span>':''),esc(o.grupo),nf(o.t),
+      (o.out?`<span class="outlier">${pf(o.tx)}</span>`:pf(o.tx)),pf(o.sev),d1(o.score)]))}
+    <div class="sep"></div>
+    <p><b>Outliers estatísticos (taxa de divergência > μ + 2σ):</b> μ = ${d1(LS.mu)}%, σ = ${d1(LS.sd)}%, limiar = ${d1(LS.mu+2*LS.sd)}%. ${outs.length?`${outs.length} linha${outs.length>1?'s':''} ultrapassa${outs.length>1?'m':''} o limiar: ${outs.map(o=>`<span class="outlier">${esc(o.nome)}</span> (${pf(o.tx)}, ${nf(o.t)} viagens)`).join(', ')}.`:'Nenhuma linha ultrapassa o limiar no recorte atual.'}</p>
+    ${outs.length?`<p>Um outlier com taxa próxima de 100% não descreve uma operação ruim — descreve uma operação cujo programado nunca bate com o realizado. Antes de tratar como problema de campo, verifique se a linha teve troca de programação, prefixo reaproveitado ou cadastro desatualizado.</p>`:''}`;
+  },
+  tempo(rows){
+    const S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k);
+    const A=byKey(rows,r=>r[I_AN]).sort((a,b)=>a.k-b.k);
+    const M=byKey(rows,r=>r[I_ME]).sort((a,b)=>a.k-b.k);
+    const Dd=byKey(rows,r=>r[I_DI]).map(o=>Object.assign(o,{nome:D.days[o.k]}));
+    const melhorM=M.reduce((a,b)=>b.ad>a.ad?b:a), piorM=M.reduce((a,b)=>b.ad<a.ad?b:a);
+    const volAnom=S.filter(o=>o.t<0.35*med(S.map(x=>x.t)));
+    let maiorQueda={d:0,k:null};
+    for(let i=1;i<S.length;i++){const d=S[i].ad-S[i-1].ad;if(d<maiorQueda.d)maiorQueda={d,k:S[i].k}}
+    return `<h4>Padrões temporais — ${esc(recorteTxt())}</h4>
+    ${kvHTML([['Meses no recorte',nf(S.length)],['Amplitude mensal',pf(Math.max(...S.map(o=>o.ad))-Math.min(...S.map(o=>o.ad)))],['Maior queda mês a mês',maiorQueda.k?d1(maiorQueda.d)+' p.p.':'—'],['Mês da queda',maiorQueda.k?ymLabel(maiorQueda.k):'—']])}
+    ${tblHTML(['Ano','Viagens','Aderência'],A.map(o=>[o.k,nf(o.t),pf(o.ad)]))}
+    <div class="sep"></div>
+    <p><b>Sazonalidade:</b> consolidando todos os anos, ${esc(MESES[melhorM.k-1])} é o mês de maior aderência (${pf(melhorM.ad)}) e ${esc(MESES[piorM.k-1])} o de menor (${pf(piorM.ad)}). A amplitude entre eles é de ${d1(melhorM.ad-piorM.ad)} p.p.</p>
+    <p><b>Tipo de dia:</b> ${Dd.sort((a,b)=>b.ad-a.ad).map(o=>`${esc(o.nome)} ${pf(o.ad)}`).join(' · ')}. ${Dd[0].nome!=='Útil'?'Dias de menor oferta apresentam aderência maior — programação mais enxuta tende a ser cumprida com mais fidelidade.':''}</p>
+    ${volAnom.length?`<p><b>Anomalia de volume:</b> ${volAnom.map(o=>ymLabel(o.k)+' ('+nf(o.t)+' viagens)').join(', ')} ${volAnom.length>1?'apresentam':'apresenta'} volume muito abaixo da mediana mensal (${nf(Math.round(med(S.map(x=>x.t))))} viagens). Trate a aderência desses meses como não comparável — provável coleta parcial.</p>`:''}
+    <small>Amplitude = maior menos menor aderência mensal, em pontos percentuais.</small>`;
+  }
+};
+function runReport(k){const o=document.getElementById('out');o.dataset.rep=k;o.innerHTML=CUR.length?REPORTS[k](CUR):'<p class="hint">Nenhum registro no recorte atual.</p>'}
+
+/* --- roteador de intenção --- */
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+function responder(q){
+  const s=norm(q); if(!s)return '<p class="hint">Digite uma consulta ou use um dos chips de relatório.</p>';
+  const rows=CUR; if(!rows.length)return '<p class="hint">Nenhum registro no recorte atual.</p>';
+  if(/relatorio executivo|resumo executivo|visao geral/.test(s))return REPORTS.exec(rows);
+  if(/causa raiz|por que|porque|motivo/.test(s))return REPORTS.causa(rows);
+  if(/risco|ranking|score|outlier|piores linhas/.test(s))return REPORTS.risco(rows);
+  if(/padrao|padrões|padroes|temporal|sazonal|tendencia|evolucao/.test(s))return REPORTS.tempo(rows);
+  const mLinha=s.match(/linha\s+([a-z0-9]{1,4})/);
+  if(mLinha){
+    const alvo=D.lines.find(l=>norm(l)===mLinha[1]);
+    if(!alvo)return `<p>Não existe a linha <b>${esc(mLinha[1].toUpperCase())}</b> na base. Linhas disponíveis começam em ${esc(D.lines[0])} e vão até ${esc(D.lines[D.lines.length-1])}.</p>`;
+    const li=D.lines.indexOf(alvo), sub=rows.filter(r=>r[I_LN]===li);
+    if(!sub.length)return `<p>A linha <b>${esc(alvo)}</b> existe na base, mas não tem registros no recorte atual (${esc(recorteTxt())}).</p>`;
+    const T=tot(sub), S=byKey(sub,ymKey).sort((a,b)=>a.k-b.k), Dd=byKey(sub,r=>r[I_DI]).map(o=>Object.assign(o,{nome:D.days[o.k]}));
+    const st=LS.L.find(o=>o.k===li);
+    return `<h4>Linha ${esc(alvo)} · ${esc(D.groups[D.lineGroup[li]])}</h4>
+    ${kvHTML([['Viagens comparadas',nf(T.t)],['Aderência',pf(T.ad)],['Divergências',nf(T.d)],['Score de risco',st?d1(st.score):'fora do volume mínimo']])}
+    <p>Melhor mês: <b>${ymLabel(S.reduce((a,b)=>b.ad>a.ad?b:a).k)}</b> (${pf(S.reduce((a,b)=>b.ad>a.ad?b:a).ad)}). Pior mês: <b>${ymLabel(S.reduce((a,b)=>b.ad<a.ad?b:a).k)}</b> (${pf(S.reduce((a,b)=>b.ad<a.ad?b:a).ad)}).</p>
+    ${tblHTML(['Tipo de dia','Viagens','Aderência'],Dd.sort((a,b)=>b.t-a.t).map(o=>[esc(o.nome),nf(o.t),pf(o.ad)]))}
+    ${st&&st.out?'<p class="outlier">Esta linha é outlier estatístico: taxa de divergência acima de μ + 2σ.</p>':''}`;
+  }
+  const mTab=s.match(/\b(tabela|identificacao|prefixo)\s+([a-z]{2}\d{3}|[a-z]{2}\d{1,3})/);
+  if(mTab){
+    const alvo=D.idents.find(x=>norm(x)===mTab[2]);
+    if(!alvo)return `<p>Não encontrei a tabela <b>${esc(mTab[2].toUpperCase())}</b>. A base tem ${nf(D.idents.length)} tabelas de horário.</p>`;
+    const idx=D.idents.indexOf(alvo), sub=rows.filter(r=>r[I_ID]===idx);
+    if(!sub.length)return `<p>A tabela <b>${esc(alvo)}</b> não tem registros no recorte atual.</p>`;
+    const T=tot(sub), ls=[...new Set(sub.map(r=>D.lines[r[I_LN]]))];
+    return `<h4>Tabela ${esc(alvo)}</h4>${kvHTML([['Viagens comparadas',nf(T.t)],['Aderência',pf(T.ad)],['Divergências',nf(T.d)],['Linhas atendidas',ls.length]])}
+    <p>Linhas em que a tabela apareceu: ${ls.map(l=>'<b>'+esc(l)+'</b>').join(', ')}.</p>`;
+  }
+  const grp=D.groups.find(g=>s.includes(norm(g)));
+  if(grp){
+    const gi=D.groups.indexOf(grp), sub=rows.filter(r=>D.lineGroup[r[I_LN]]===gi);
+    if(!sub.length)return `<p>O grupo <b>${esc(grp)}</b> não tem registros no recorte atual.</p>`;
+    const T=tot(sub), L=byKey(sub,r=>r[I_LN]).map(o=>Object.assign(o,{nome:D.lines[o.k]})).sort((a,b)=>a.ad-b.ad);
+    return `<h4>Grupo ${esc(grp)}</h4>${kvHTML([['Viagens comparadas',nf(T.t)],['Aderência',pf(T.ad)],['Divergências',nf(T.d)],['Linhas',L.length]])}
+    ${tblHTML(['Linha','Viagens','Aderência'],L.slice(0,10).map(o=>[esc(o.nome),nf(o.t),pf(o.ad)]))}
+    <small>Dez linhas de menor aderência do grupo.</small>`;
+  }
+  const dia=D.days.find(d=>s.includes(norm(d))||(norm(d)==='util'&&/dia util|uteis/.test(s)));
+  if(dia){
+    const di=D.days.indexOf(dia), sub=rows.filter(r=>r[I_DI]===di), T=tot(sub);
+    return `<h4>${esc(dia)}</h4>${kvHTML([['Viagens comparadas',nf(T.t)],['Aderência',pf(T.ad)],['Divergências',nf(T.d)],['Registros',nf(sub.length)]])}`;
+  }
+  if(/pior mes|mes pior|menor aderencia.*mes|pior periodo/.test(s)||/melhor mes|mes melhor/.test(s)){
+    const S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k), melhor=/melhor/.test(s);
+    const alvo=S.reduce((a,b)=>(melhor?b.ad>a.ad:b.ad<a.ad)?b:a);
+    return `<h4>${melhor?'Melhor':'Pior'} mês do recorte</h4>${kvHTML([['Mês',ymLabel(alvo.k)],['Aderência',pf(alvo.ad)],['Viagens',nf(alvo.t)],['Divergências',nf(alvo.t-alvo.i)]])}
+    <p>Média mensal do recorte: <b>${pf(pct(S.reduce((a,o)=>a+o.i,0),S.reduce((a,o)=>a+o.t,0)))}</b> em ${S.length} meses.</p>`;
+  }
+  if(/quantas viagens|total de viagens|quantos registros|volume/.test(s)){
+    const T=tot(rows);
+    return `<h4>Volume no recorte</h4>${kvHTML([['Viagens comparadas',nf(T.t)],['Iguais',nf(T.i)],['Divergentes',nf(T.d)],['Registros',nf(rows.length)]])}<p>Recorte: ${esc(recorteTxt())}.</p>`;
+  }
+  if(/aderencia|percentual realizado/.test(s)){
+    const T=tot(rows);
+    return `<h4>Aderência no recorte</h4>${kvHTML([['Aderência',pf(T.ad)],['Divergência',pf(100-T.ad)],['Viagens',nf(T.t)],['Linhas',LS.L.length]])}<p>Recorte: ${esc(recorteTxt())}.</p>`;
+  }
+  return `<p>Não consegui mapear essa pergunta para um cálculo sobre os dados — e não vou responder com números que a base não sustenta.</p>
+  <p>Consultas que o motor entende:</p>
+  <ul><li><span class="mono">linha 603</span> · <span class="mono">tabela HA004</span> · <span class="mono">grupo Expresso</span></li>
+  <li><span class="mono">pior mês</span> · <span class="mono">melhor mês</span> · <span class="mono">quantas viagens</span> · <span class="mono">aderência</span></li>
+  <li><span class="mono">domingo</span>, <span class="mono">sábado</span>, <span class="mono">dia útil</span></li>
+  <li>Ou os quatro relatórios temáticos nos chips acima.</li></ul>`;
+}
+
+/* ===================== DIRETOR DE BI ===================== */
+function renderDiretor(rows){
+  const el=document.getElementById('diretor');
+  if(!rows.length){el.innerHTML='<p class="hint">Nenhum registro no recorte atual.</p>';return}
+  const T=tot(rows), S=byKey(rows,ymKey).sort((a,b)=>a.k-b.k);
+  const G=byKey(rows,r=>D.lineGroup[r[I_LN]]).map(o=>Object.assign(o,{nome:D.groups[o.k]})).sort((a,b)=>(b.t-b.i)-(a.t-a.i));
+  const L=LS.L, medT=med(L.map(o=>o.t)), medX=med(L.map(o=>o.tx));
+  const q=(f)=>L.filter(f).sort((a,b)=>b.score-a.score);
+  const q1=q(o=>o.t>=medT&&o.tx>=medX), q2=q(o=>o.t<medT&&o.tx>=medX), q3=q(o=>o.t>=medT&&o.tx<medX), q4=q(o=>o.t<medT&&o.tx<medX);
+  const outs=L.filter(o=>o.out);
+  let quebra=null,mq=0; for(let i=1;i<S.length;i++){const d=S[i].ad-S[i-1].ad;if(d<mq){mq=d;quebra=S[i]}}
+  const antes=quebra?tot(rows.filter(r=>ymKey(r)<quebra.k)):null, depois=quebra?tot(rows.filter(r=>ymKey(r)>=quebra.k)):null;
+  const Dd=byKey(rows,r=>r[I_DI]).map(o=>Object.assign(o,{nome:D.days[o.k]})).sort((a,b)=>b.ad-a.ad);
+  const ganho80=q1.reduce((a,o)=>a+(o.t-o.i),0);
+  const volAnom=S.filter(o=>o.t<0.35*med(S.map(x=>x.t)));
+  const linhaLista=a=>a.length?a.slice(0,6).map(o=>esc(o.nome)).join(', ')+(a.length>6?` +${a.length-6}`:''):'—';
+
+  el.innerHTML=`
+  <div class="sec">
+    <h3><span class="n">1</span>Resumo executivo</h3>
+    ${kvHTML([['Viagens comparadas',nf(T.t)],['Aderência global',pf(T.ad)],['Divergências',nf(T.d)],['Linhas críticas (&lt;50%)',nf(L.filter(o=>o.ad<50).length)]])}
+    <p>No recorte <b>${esc(recorteTxt())}</b>, a operação cumpriu <b>${pf(T.ad)}</b> do que foi programado, medido viagem a viagem. Isso significa que praticamente ${T.ad<55?'metade':'a maior parte'} das viagens comparadas saiu diferente da programação: <b>${nf(T.d)}</b> divergências acumuladas em ${S.length} meses.</p>
+    <p>A aderência ${S.length>1?`saiu de <b>${pf(S[0].ad)}</b> em ${ymLabel(S[0].k)} para <b>${pf(S[S.length-1].ad)}</b> em ${ymLabel(S[S.length-1].k)}`:'não tem série suficiente para tendência'}. ${quebra?`A ruptura está em <b>${ymLabel(quebra.k)}</b>: antes, ${pf(antes.ad)}; depois, ${pf(depois.ad)} — uma perda de <b>${d1(antes.ad-depois.ad)} p.p.</b> sustentada, não um mês ruim isolado.`:''}</p>
+  </div>
+
+  <div class="sec">
+    <h3><span class="n">2</span>Análise crítica</h3>
+    <ul>
+      <li><b>A queda é estrutural, não sazonal.</b> ${quebra?`O degrau em ${ymLabel(quebra.k)} (${d1(mq)} p.p. em um único mês) coincide com um salto de volume comparado (${nf(S.find(o=>o.k===quebra.k).t)} viagens no mês). Volume subindo e aderência caindo ao mesmo tempo aponta para mudança de escopo da medição ou de programação, não para piora súbita de campo.`:'Não há degrau isolado no recorte.'}</li>
+      <li><b>A divergência é concentrada.</b> O grupo <b>${esc(G[0].nome)}</b> sozinho responde por ${pf(pct(G[0].t-G[0].i,T.d))} de todas as divergências (${nf(G[0].t-G[0].i)} de ${nf(T.d)}), porque também concentra ${pf(pct(G[0].t,T.t))} do volume. Corrigir aderência ali move o indicador global; corrigir grupos pequenos não move.</li>
+      <li><b>Dia útil é o problema.</b> A aderência em ${esc(Dd[0].nome)} é ${pf(Dd[0].ad)} contra ${pf(Dd[Dd.length-1].ad)} em ${esc(Dd[Dd.length-1].nome)} — ${d1(Dd[0].ad-Dd[Dd.length-1].ad)} p.p. de diferença. A programação de pico é a que menos se cumpre.</li>
+      ${outs.length?`<li><b>Há ${outs.length} outlier${outs.length>1?'s':''} que distorce${outs.length>1?'m':''} a leitura.</b> ${outs.map(o=>`Linha <span class="outlier">${esc(o.nome)}</span> com ${pf(o.tx)} de divergência em ${nf(o.t)} viagens`).join('; ')}. Uma linha que quase nunca bate com o programado é, até prova em contrário, um problema de cadastro — não de motorista.</li>`:''}
+      ${volAnom.length?`<li><b>Meses não comparáveis.</b> ${volAnom.map(o=>ymLabel(o.k)).join(', ')} ${volAnom.length>1?'têm':'tem'} volume muito abaixo da mediana mensal. Excluir da série antes de tirar conclusões de tendência.</li>`:''}
+      <li><b>Limite do indicador.</b> Aderência aqui é binária (igual / diferente). Ela não diz se o desvio foi de 1 minuto ou de 30, nem se houve viagem a mais ou a menos. Sem essa granularidade, priorização por severidade real fica limitada.</li>
+    </ul>
+  </div>
+
+  <div class="sec">
+    <h3><span class="n">3</span>Matriz impacto × urgência</h3>
+    <p class="hint">Impacto = viagens comparadas (mediana ${nf(Math.round(medT))}). Urgência = taxa de divergência (mediana ${pf(medX)}). Cada ponto é uma linha; em vermelho, o quadrante crítico.</p>
+    <div id="scatter">${svgScatter(L,wOf('scatter',420))}</div>
+    <div class="quad" style="margin-top:12px">
+      <div class="q q1"><h4>Agir agora — alto volume, alta divergência (${q1.length})</h4><p>${linhaLista(q1)}</p><small>${nf(ganho80)} divergências (${pf(pct(ganho80,T.d))} do total) estão nestas linhas.</small></div>
+      <div class="q q2"><h4>Investigar — baixo volume, alta divergência (${q2.length})</h4><p>${linhaLista(q2)}</p><small>Suspeita de cadastro, prefixo reaproveitado ou linha em transição.</small></div>
+      <div class="q"><h4>Monitorar — alto volume, baixa divergência (${q3.length})</h4><p>${linhaLista(q3)}</p><small>Sustentar o desempenho; qualquer piora tem efeito global.</small></div>
+      <div class="q"><h4>Manter — baixo volume, baixa divergência (${q4.length})</h4><p>${linhaLista(q4)}</p><small>Sem ação dedicada.</small></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3><span class="n">4</span>Plano de ação 5W2H</h3>
+    <div class="tblwrap" style="max-height:none">
+    <table class="w5"><thead><tr><th>What</th><th>Why</th><th>Where</th><th>Who</th><th>When</th><th>How</th><th>How much</th></tr></thead><tbody>
+      <tr><td>Auditar o degrau de ${quebra?ymLabel(quebra.k):'aderência'}</td><td>Perda de ${quebra?d1(antes.ad-depois.ad):'—'} p.p. sustentada; se for artefato de medição, todo o resto do plano muda</td><td>Base de comparação programado × realizado</td><td>Inteligência de Negócios</td><td>Semana 1</td><td>Comparar critério de coleta, versão da programação e escopo de linhas antes e depois do mês da quebra</td><td>~16 h de análise</td></tr>
+      <tr><td>Sanear as linhas outlier${outs.length?' ('+outs.map(o=>esc(o.nome)).join(', ')+')':''}</td><td>Taxa de divergência acima de μ+2σ contamina o indicador global e o ranking de risco</td><td>Cadastro de linhas e tabelas de horário</td><td>Programação · TI</td><td>Semanas 1–2</td><td>Conferir prefixo, itinerário e tabela vigente; reprocessar histórico após correção</td><td>Baixo — correção cadastral</td></tr>
+      <tr><td>Plano de recuperação das ${q1.length} linhas do quadrante crítico</td><td>Concentram ${pf(pct(ganho80,T.d))} das divergências do recorte</td><td>${esc(G[0].nome)} e demais grupos de alto volume</td><td>Operação · Fiscalização</td><td>Semanas 2–8</td><td>Acompanhamento diário por tabela, causa registrada em cada divergência (quebra, trânsito, falta de motorista, desvio)</td><td>1 fiscal por corredor</td></tr>
+      <tr><td>Reforço de programação em dia útil</td><td>${esc(Dd[Dd.length-1].nome)} tem ${d1(Dd[0].ad-Dd[Dd.length-1].ad)} p.p. menos aderência que ${esc(Dd[0].nome)}</td><td>Horários de pico</td><td>Programação</td><td>Semanas 3–6</td><td>Revisar tempos de ciclo e folga entre viagens nas faixas de maior divergência</td><td>Revisão de escala</td></tr>
+      <tr><td>Evoluir o indicador para desvio em minutos</td><td>O binário igual/diferente não distingue 1 minuto de 30 e impede priorizar por severidade real</td><td>Pipeline de dados</td><td>Inteligência de Negócios</td><td>Trimestre</td><td>Guardar horário programado e realizado por viagem; faixas de tolerância parametrizáveis</td><td>Alteração de schema</td></tr>
+      <tr><td>Meta e acompanhamento mensal</td><td>Sem meta explícita, ${pf(T.ad)} vira normal</td><td>Este painel</td><td>Diretoria de Operações</td><td>Mensal</td><td>Meta de ${Math.min(90,Math.ceil((T.ad+8)/5)*5)}% em 12 meses, revisada a cada fechamento</td><td>Ritual de gestão</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="sec">
+    <h3><span class="n">5</span>Notas e limites</h3>
+    <div class="notes">
+      <p><b>Fonte:</b> Percentual_Programado_Linha_.xlsx, aba <span class="mono">Dados.</span> — ${nf(R.length)} registros, ${D.lines.length} linhas, ${D.idents.length} tabelas de horário, ${nf(tot(R).t)} viagens comparadas. Nenhum número deste painel é estimado, projetado ou preenchido por interpolação.</p>
+      <p><b>Definições:</b> aderência = <span class="mono">Igual ÷ Total ProgxReal</span>, ponderada por volume (não é média das médias). Taxa de divergência = <span class="mono">Diferente ÷ Total ProgxReal</span>. Severidade = participação dos registros com divergência ≥ 70%. Score de risco = 50% volume + 30% taxa + 20% severidade, cada componente normalizado min-máx <b>dentro do recorte filtrado</b> — comparações de score entre recortes diferentes não são válidas.</p>
+      <p><b>Limites conhecidos:</b> (1) a coluna <span class="mono">Identificação</span> não é exclusiva de uma linha — a mesma tabela aparece em linhas distintas ao longo do período; (2) o indicador é binário e não mede magnitude do desvio; (3) ${volAnom.length?`meses com volume atípico (${volAnom.map(o=>ymLabel(o.k)).join(', ')}) sugerem coleta parcial e não devem ser lidos como desempenho;`:'não foram detectados meses de volume atípico no recorte;'} (4) o último mês da base (${ymLabel(S[S.length-1].k)}) pode estar incompleto; (5) a base não informa o motivo da divergência, apenas sua ocorrência.</p>
+      <p><b>Uso:</b> priorização por score de risco, não por aderência isolada — uma linha com 20% de aderência e 60 viagens pesa menos que uma com 50% e 9.000 viagens.</p>
+    </div>
+  </div>`;
+}
+
+/* ===================== INGESTÃO DE DADOS ===================== */
+let PEND=null;
+
+/* --- parser CSV/TSV --- */
+function splitLine(s,sep){
+  const out=[];let cur='',q=false;
+  for(let i=0;i<s.length;i++){const c=s[i];
+    if(q){if(c==='"'){if(s[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"')q=true; else if(c===sep){out.push(cur);cur=''} else cur+=c}
+  out.push(cur);return out.map(x=>x.trim());
+}
+function detectSep(head){const c=[[';',(head.match(/;/g)||[]).length],['\t',(head.match(/\t/g)||[]).length],[',',(head.match(/,/g)||[]).length]];c.sort((a,b)=>b[1]-a[1]);return c[0][1]?c[0][0]:';'}
+const MESNOME={janeiro:1,fevereiro:2,marco:3,abril:4,maio:5,junho:6,julho:7,agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12,jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+const COLMAP={identificacao:'id',id:'id',tabela:'id',prefixo:'id',linha:'ln','total progxreal':'t',total:'t',diferente:'d',divergente:'d',divergentes:'d',igual:'i',iguais:'i',dia:'di','tipo de dia':'di',mes:'me','mês':'me',ano:'an',grupo:'gr','grupo de operacao':'gr','grupo de operação':'gr'};
+const intOf=v=>{const s=String(v).replace(/\./g,'').replace(',','.').trim();if(!/^-?\d+(\.\d+)?$/.test(s))return null;const n=Math.round(parseFloat(s));return isFinite(n)?n:null};
+
+function parseTexto(txt){
+  const linhas=txt.replace(/\r/g,'').split('\n').filter(l=>l.trim().length);
+  if(linhas.length<2)return {erro:'Preciso de um cabeçalho e ao menos uma linha de dados.'};
+  const sep=detectSep(linhas[0]);
+  const head=splitLine(linhas[0],sep).map(h=>COLMAP[norm(h)]||null);
+  const falta=['id','ln','di','me'].filter(k=>!head.includes(k));
+  if(falta.length)return {erro:'Colunas obrigatórias ausentes ou não reconhecidas: '+falta.map(k=>({id:'Identificação',ln:'Linha',di:'Dia',me:'Mês'})[k]).join(', ')+'. Separador detectado: "'+(sep==='\t'?'TAB':sep)+'".'};
+  if(!head.includes('t')&&!(head.includes('d')&&head.includes('i')))return {erro:'Informe pelo menos duas das colunas Total ProgxReal, Diferente e Igual.'};
+  const grupoDeLinha=new Map(D.lines.map((l,i)=>[norm(l),D.groups[D.lineGroup[i]]]));
+  const ok=[],rej=[];
+  for(let n=1;n<linhas.length;n++){
+    const c=splitLine(linhas[n],sep),o={};
+    head.forEach((k,j)=>{if(k)o[k]=(c[j]||'').trim()});
+    const err=m=>rej.push({n:n+1,m,raw:linhas[n].slice(0,70)});
+    if(!o.id||!o.ln){err('identificação ou linha vazia');continue}
+    let me=null,an=o.an?intOf(o.an):null;
+    const sm=String(o.me).trim();
+    let m1=sm.match(/^(\d{4})-(\d{1,2})-\d{1,2}/)||sm.match(/^(\d{4})-(\d{1,2})$/);
+    if(m1){an=+m1[1];me=+m1[2]}
+    else if(/^\d{1,2}\/\d{4}$/.test(sm)){const p=sm.split('/');me=+p[0];an=+p[1]}
+    else if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(sm)){const p=sm.split('/');me=+p[1];an=+p[2]}
+    else if(/^\d{1,2}$/.test(sm))me=+sm;
+    else if(MESNOME[norm(sm)])me=MESNOME[norm(sm)];
+    if(!me||me<1||me>12){err('mês inválido: "'+sm+'"');continue}
+    if(!an||an<2000||an>2100){err('ano inválido ou ausente');continue}
+    const nd=norm(o.di);
+    const di=nd.startsWith('ut')?0:nd.startsWith('sab')?1:nd.startsWith('dom')?2:-1;
+    if(di<0){err('tipo de dia inválido: "'+o.di+'"');continue}
+    let T=o.t!==undefined&&o.t!==''?intOf(o.t):null, Dg=o.d!==undefined&&o.d!==''?intOf(o.d):null, Ig=o.i!==undefined&&o.i!==''?intOf(o.i):null;
+    const pres=[T,Dg,Ig].filter(v=>v!==null).length;
+    if(pres<2){err('preciso de dois dos três: total, diferente, igual');continue}
+    if(T===null)T=Dg+Ig; if(Ig===null)Ig=T-Dg; if(Dg===null)Dg=T-Ig;
+    if(T<=0){err('total de viagens precisa ser maior que zero');continue}
+    if(Ig<0||Dg<0){err('valores negativos');continue}
+    if(Ig+Dg!==T){err('igual ('+Ig+') + diferente ('+Dg+') ≠ total ('+T+')');continue}
+    let gr=o.gr&&o.gr.trim()?o.gr.trim():grupoDeLinha.get(norm(o.ln));
+    if(!gr){err('linha nova "'+o.ln+'" sem grupo de operação');continue}
+    const grCanon=D.groups.find(g=>norm(g)===norm(gr))||gr;
+    ok.push({id:o.id.trim(),ln:o.ln.trim(),t:T,i:Ig,di,an,me,gr:grCanon});
+  }
+  const chave=e=>e.id+'|'+e.ln+'|'+e.di+'|'+e.an+'|'+e.me;
+  const existentes=new Set(R.map(r=>D.idents[r[I_ID]]+'|'+D.lines[r[I_LN]]+'|'+r[I_DI]+'|'+r[I_AN]+'|'+r[I_ME]));
+  const dedup=new Map(); ok.forEach(e=>dedup.set(chave(e),e));
+  const lista=[...dedup.values()];
+  const sub=lista.filter(e=>existentes.has(chave(e))).length;
+  const linhasNovas=[...new Set(lista.map(e=>e.ln))].filter(l=>!D.lines.some(x=>norm(x)===norm(l)));
+  return {ok:lista,rej,sub,novos:lista.length-sub,linhasNovas,dupInterno:ok.length-lista.length,viagens:lista.reduce((a,e)=>a+e.t,0)};
+}
+
+function mostrarValidacao(res){
+  const el=document.getElementById('msg'),ap=document.getElementById('btnAplic');
+  if(res.erro){el.innerHTML=`<div class="msg bad"><b>Não consegui ler o arquivo.</b><br>${esc(res.erro)}</div>`;ap.disabled=true;PEND=null;return}
+  PEND=res.ok.length?res.ok:null; ap.disabled=!PEND;
+  const listaRej=res.rej.slice(0,12).map(r=>`<li>Linha ${r.n}: ${esc(r.m)} <span class="mono">${esc(r.raw)}</span></li>`).join('');
+  el.innerHTML=`<div class="msg ${res.rej.length?(res.ok.length?'warn':'bad'):'ok'}">
+    <b>${nf(res.ok.length)} registro${res.ok.length===1?'':'s'} válido${res.ok.length===1?'':'s'}</b> — ${nf(res.novos)} novo${res.novos===1?'':'s'}, ${nf(res.sub)} substituindo registros existentes, ${nf(res.viagens)} viagens.
+    ${res.dupInterno?`<br>${nf(res.dupInterno)} linha(s) duplicada(s) dentro do próprio arquivo: mantida a última ocorrência de cada chave.`:''}
+    ${res.linhasNovas.length?`<br>Linhas que não existem na base e serão criadas: <b>${res.linhasNovas.map(esc).join(', ')}</b>.`:''}
+    ${res.rej.length?`<br><b>${nf(res.rej.length)} registro(s) rejeitado(s):</b><ul>${listaRej}</ul>${res.rej.length>12?`<small>… e mais ${nf(res.rej.length-12)}.</small>`:''}`:''}
+    ${res.ok.length?'<br>Nada foi alterado ainda. Use <b>Aplicar à base</b> para confirmar.':''}
+  </div>`;
+}
+
+async function aplicar(){
+  if(!PEND)return;
+  const btn=document.getElementById('btnAplic');
+  btn.disabled=true;
+  let resp;
+  try{
+    resp=await authFetch('/api/aderencia/importar',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({registros:PEND})
+    });
+  }catch(e){
+    document.getElementById('msg').innerHTML='<div class="msg bad">Não consegui enviar os dados ao servidor. Tente de novo.</div>';
+    btn.disabled=false; return;
+  }
+  if(!resp.ok){
+    document.getElementById('msg').innerHTML='<div class="msg bad">O servidor recusou os dados enviados.</div>';
+    btn.disabled=false; return;
+  }
+  const r=await resp.json();
+  D=await (await authFetch('/api/aderencia/dataset')).json();
+  R=D.rows;
+  fillSelects(); Object.keys(F).forEach(k=>F[k]=k==='min'?0:'');
+  ['fAno','fMes','fGrupo','fDia','fLinha'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('fMin').value=0;
+  renderAll();
+  document.getElementById('msg').innerHTML=`<div class="msg ok"><b>Base atualizada.</b> ${nf(r.novos)} registro(s) novo(s), ${nf(r.substituidos)} substituído(s). Agora a base tem ${nf(R.length)} registros, ${D.lines.length} linhas e ${nf(tot(R).t)} viagens comparadas.</div>`;
+  PEND=null; btn.disabled=true;
+  document.getElementById('paste').value=''; document.getElementById('file').value='';
+}
+
+function baixar(nome,txt){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+txt],{type:'text/csv;charset=utf-8'}));
+  a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function csvModelo(){
+  return 'Identificação;Linha;Total ProgxReal;Diferente;Igual;Dia;Mês;Ano;Grupo de Operação\n'+
+    'HA004;680;22;3;19;Útil;5;2026;Alimentador\nHA004;680;4;1;3;Sábado;5;2026;Alimentador\nHL350;210;6;2;4;Domingo;5;2026;Linha Direta\n';
+}
+function csvBase(){
+  const l=['Identificação;Linha;Total ProgxReal;Diferente;% Diferente;Igual;Percentual Realizado;Dia;Mês;Ano;Grupo de Operação'];
+  for(const r of R){const t=r[I_TT],i=r[I_IG],d=t-i;
+    l.push([D.idents[r[I_ID]],D.lines[r[I_LN]],t,d,pct(d,t).toFixed(6).replace('.',','),i,pct(i,t).toFixed(6).replace('.',','),D.days[r[I_DI]],r[I_ME],r[I_AN],D.groups[D.lineGroup[r[I_LN]]]].join(';'))}
+  return l.join('\n');
+}
+
+function bindDados(){
+  const file=document.getElementById('file'),drop=document.getElementById('drop'),paste=document.getElementById('paste');
+  const lerArquivo=f=>{const rd=new FileReader();rd.onload=()=>{paste.value=rd.result;mostrarValidacao(parseTexto(rd.result))};rd.onerror=()=>{document.getElementById('msg').innerHTML='<div class="msg bad">Não consegui ler esse arquivo.</div>'};rd.readAsText(f,'utf-8')};
+  file.onchange=e=>{if(e.target.files[0])lerArquivo(e.target.files[0])};
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot')}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot')}));
+  drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)lerArquivo(f)});
+  document.getElementById('btnVal').onclick=()=>{const v=paste.value.trim();if(!v){document.getElementById('msg').innerHTML='<div class="msg">Cole os dados ou escolha um arquivo primeiro.</div>';return}mostrarValidacao(parseTexto(v))};
+  document.getElementById('btnAplic').onclick=aplicar;
+  document.getElementById('btnModelo').onclick=()=>baixar('modelo_aderencia.csv',csvModelo());
+  document.getElementById('btnExp').onclick=()=>baixar('base_aderencia_consolidada.csv',csvBase());
+}
+
+/* ===================== BOOT ===================== */
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.hidden=p.id!=='tab-'+b.dataset.tab);
+  if(window.__ready&&b.dataset.tab!=='dados')renderAll();
+});
+let __rz;window.addEventListener('resize',()=>{clearTimeout(__rz);__rz=setTimeout(()=>{if(window.__ready)renderAll()},200)});
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>runReport(c.dataset.rep));
+document.getElementById('askBtn').onclick=()=>{const o=document.getElementById('out');delete o.dataset.rep;o.innerHTML=responder(document.getElementById('ask').value)};
+document.getElementById('ask').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('askBtn').click()});
+fillSelects();bindFilters();bindDados();renderAll();
+document.getElementById('out').innerHTML=REPORTS.exec(CUR);document.getElementById('out').dataset.rep='exec';
+window.__ready=true;
+})();
+</script>
+</body>
+</html>
