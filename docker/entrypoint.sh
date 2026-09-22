@@ -108,15 +108,6 @@ EOF
     fi
 fi
 
-# A chave do site vive no HTML, não em PHP — é o navegador que a usa.
-# Fica vazia no repositório e só é preenchida aqui, para o quadro do
-# Google não ser pedido em ambiente onde a chave não vale. Sem isto, a
-# tela de login abre com "domínio inválido para a chave do site".
-if [ -n "$RECAPTCHA_SITE" ] && [ -f "$RAIZ/index.html" ]; then
-    sed -i "s|class=\"g-recaptcha\" data-sitekey=\"\"|class=\"g-recaptcha\" data-sitekey=\"$RECAPTCHA_SITE\"|" "$RAIZ/index.html"
-    echo "  reCAPTCHA ligado no index.html"
-fi
-
 if [ ! -f "$RAIZ/auth_secrets.php" ] && [ -n "$RECAPTCHA_SITE" ]; then
     cat > "$RAIZ/auth_secrets.php" <<EOF
 <?php /* gerado pelo entrypoint */

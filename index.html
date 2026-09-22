@@ -713,25 +713,22 @@ body.theme-dark .cb-sres:hover{background:#141b30;}
     <div class="login-extras">
       <label class="remember-label"><input type="checkbox" id="loginRemember"> Lembrar meus dados</label>
     </div>
-    <!-- Verificação humana do Google (reCAPTCHA v2).
-         Se o script do Google não carregar — rede da empresa bloqueando,
-         serviço fora do ar — a caixa própria aparece no lugar, para
-         ninguém ficar trancado fora do portal por causa de terceiro.
+    <!-- Verificação humana.
+         O reCAPTCHA do Google foi removido daqui. Ele amarra a chave a
+         um domínio, então qualquer endereço que não seja o registrado
+         — a VPS, um ambiente de teste — abre a tela de login com
+         "domínio inválido para a chave do site" em vermelho. E a caixa
+         própria não assumia nesse caso, porque o script do Google
+         carregava bem; quem falhava era só a chave.
 
-         A chave do site fica VAZIA no repositório, e o entrypoint a
-         preenche a partir de RECAPTCHA_SITE. Sem a variável, o quadro
-         do Google nem é pedido. Chave do reCAPTCHA é amarrada a um
-         domínio: a de produção, pedida de qualquer outro endereço,
-         devolve "domínio inválido para a chave do site" em vermelho no
-         meio da tela de login — e sem cair na caixa própria, porque do
-         ponto de vista do navegador o script do Google carregou bem.
-         Isto é o par do lado servidor, onde RECAPTCHA_SECRET vazia já
-         desligava a checagem. -->
-    <div id="capBox" style="margin:4px 0 12px;display:flex;justify-content:center">
-      <div class="g-recaptcha" data-sitekey=""
-           data-theme="light" data-callback="capMarcado"></div>
-    </div>
-    <div class="humano-box" id="humanoBox" onclick="marcarHumano(event)" style="display:none">
+         O que barra robô nunca foi o quadro do Google: é a armadilha
+         invisível, o tempo mínimo entre abrir e enviar, e o bloqueio
+         por tentativas — tudo conferido no servidor, em auth.php. Esta
+         caixa é o gesto consciente de quem entra; o resto é o que de
+         fato segura.
+
+         Para trazer o Google de volta, `git revert` neste commit. -->
+    <div class="humano-box" id="humanoBox" onclick="marcarHumano(event)" style="display:flex">
       <label class="humano-check">
         <input type="checkbox" id="humanoOk" onclick="event.stopPropagation();marcarHumano(event)">
         <span>N&atilde;o sou um rob&ocirc;</span>
@@ -1442,25 +1439,12 @@ function capMarcado(){
     try{ if(window.grecaptcha) grecaptcha.reset(); }catch(e){}
   }, 100000);
 }
-(function carregarCaptcha(){
-  /* Sem chave do site, não adianta pedir o script: o Google carrega,
-     recusa a chave e desenha o erro dentro do próprio quadro. O
-     onerror não dispara nesse caso — para o navegador deu tudo certo —
-     e a pessoa fica olhando um aviso vermelho que não é problema dela.
-     Melhor ir direto para a caixa própria. */
-  var w = document.querySelector('#capBox .g-recaptcha');
-  if(!w || !w.getAttribute('data-sitekey')){ usarCaixaPropria(); return; }
-  var sc = document.createElement('script');
-  sc.src = 'https://www.google.com/recaptcha/api.js?hl=pt-BR';
-  sc.async = true; sc.defer = true;
-  sc.onload = function(){ capPronto = true; };
-  sc.onerror = usarCaixaPropria;
-  document.head.appendChild(sc);
-  /* Sem resposta em 6 segundos, não espera mais. */
-  setTimeout(function(){
-    if(!window.grecaptcha) usarCaixaPropria();
-  }, 6000);
-})();
+/* O script do Google não é mais carregado: a tela de entrada não deve
+   depender de um serviço de fora para abrir. As variáveis capPronto e
+   capToken continuam existindo e valendo vazio, e o auth.php já trata
+   token vazio como "desligado" — por isso nada mais precisou mudar no
+   caminho do login. */
+usarCaixaPropria();
 function usarCaixaPropria(){
   capPronto = false;
   var cb = document.getElementById('capBox'); if(cb) cb.style.display = 'none';
