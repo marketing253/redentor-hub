@@ -45,6 +45,15 @@ function portal_db(){
   $pass = _pick($vars, array('DB_PASS','DB_PASSWORD','pass','password','db_pass','dbpass','senha','mysql_pass'), $DB_PASS);
   $name = _pick($vars, array('DB_NAME','db','dbname','database','db_name','banco','mysql_db'), $DB_NAME);
 
+  /* A partir do PHP 8.1 o mysqli lança exceção em vez de devolver erro.
+     Sem desligar isso, o tratamento abaixo — que diz QUAL host, usuário e
+     banco falharam — vira código morto: a exceção sobe antes, e quem lê a
+     tela recebe só "No such file or directory", que não ajuda ninguém.
+     Esse texto, aliás, é o erro 2002: o mysqli tentou socket Unix porque o
+     host é 'localhost' ou está vazio. Numa VPS com o banco em outro
+     container, o host tem de ser o nome do serviço. */
+  if(function_exists('mysqli_report')) mysqli_report(MYSQLI_REPORT_OFF);
+
   $m = @new mysqli($host, $user, $pass, $name);
   if($m->connect_errno){
     header('Content-Type: application/json; charset=utf-8');

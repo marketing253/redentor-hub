@@ -102,11 +102,25 @@ return array(
   'pass' => '$(php_str "$DB_PASS")',
 );
 EOF
-        echo "  criado: db_secrets.php"
+        echo "  criado: db_secrets.php  (host=${DB_HOST:-mysql} banco=$DB_NAME usuario=$DB_USER)"
     else
         echo "  AVISO: DB_NAME não definido e db_secrets.php não existe — o Hub não vai conectar no banco."
     fi
+else
+    echo "  db_secrets.php já existia — variáveis DB_* ignoradas"
 fi
+
+# Um host vazio ou 'localhost' faz o mysqli procurar socket Unix e falhar
+# com "No such file or directory", que não diz nada a quem lê. Aqui o
+# banco está em outro container: tem de ser o nome do serviço.
+case "${DB_HOST:-}" in
+    ''|localhost|127.0.0.1)
+        echo "  AVISO: DB_HOST='${DB_HOST:-vazio}' aponta para a própria máquina."
+        echo "         O MySQL roda em OUTRO container — use o nome do serviço"
+        echo "         (algo como academy_mysql). Do contrário o login falha com"
+        echo "         'No such file or directory'."
+        ;;
+esac
 
 if [ ! -f "$RAIZ/auth_secrets.php" ] && [ -n "$RECAPTCHA_SITE" ]; then
     cat > "$RAIZ/auth_secrets.php" <<EOF
