@@ -1,0 +1,27 @@
+# O projeto é editado no Windows e roda em container Linux.
+#
+# Sem esta regra o Git entrega estes arquivos com fim de linha CRLF, e
+# o container não sobe: o Linux lê o "\r" como parte do caminho do
+# interpretador e responde "bad interpreter: /bin/sh^M". O mesmo vale
+# para Dockerfile e arquivos de configuração do Apache e do PHP.
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.conf          text eol=lf
+*.ini           text eol=lf
+.dockerignore   text eol=lf
+.htaccess       text eol=lf
+*.php           text eol=lf
+
+# Binários: o Git não deve tentar converter nada.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.mp4  binary
+*.woff  binary
+*.woff2 binary
+*.ttf  binary
+*.apk  binary
+*.zip  binary

@@ -1,0 +1,30 @@
+# O build só precisa do código. Tudo que é dado de produção fica em
+# volume no EasyPanel — se entrar na imagem, além de inchar o build,
+# o deploy passa a sobrescrever dado real com cópia velha.
+uploads/
+midias_tv/
+backups_hub/
+auxilio/backups/
+auxilio/.atualizacoes/
+auxilio/uploads_auxilio/
+app/*.apk
+
+# Cópia órfã, já fora do Git.
+servidor/
+
+# Segredos: entram por variável de ambiente ou arquivo montado,
+# nunca dentro da imagem — imagem se copia, se exporta e se vaza.
+db_secrets.php
+auth_secrets.php
+cron_secrets.php
+push_secrets.php
+auxilio/config.php
+auxilio/.backup_estado.json
+
+# Histórico e lixo.
+.git/
+.github/
+*.log
+*.zip
+.DS_Store
+Thumbs.db
