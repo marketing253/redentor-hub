@@ -2082,12 +2082,27 @@ function alertas(d){
 
   var TXT = {
     midia_falhou: 'não conseguiu exibir',
-  peca_vazia:   'pulou (sem conteúdo)',
+    peca_vazia:   'pulou (sem conteúdo)',
     tela_parada:  'tela parada em',
     sync_falhou:  'falhou ao sincronizar',
     manifesto:    'não recebeu a programação',
     cache:        'sem espaço para guardar',
-    sessao:       'aberta em outro lugar'
+    sessao:       'aberta em outro lugar',
+    /* Não é falha: é a TV se defendendo. O servidor não respondeu e ela
+       exibiu a última versão boa que tinha guardada, em vez de pular a
+       peça e deixar a parede vazia. Aparece na lista porque repetição
+       aqui significa internet instável naquele ponto — que é informação,
+       não defeito. */
+    peca_local:   'usou a cópia guardada na TV',
+    /* Este é sério: o navegador da TV ficou sem espaço e a programação
+       não pôde ser gravada. A tela continua funcionando agora, mas não
+       volta sozinha depois de uma queda de energia. */
+    manifesto_nao_guardado: 'sem espaço: não volta sozinha após queda de energia',
+    /* A programação já está sendo corrigida pela hora do servidor, então a
+       tela exibe certo. Mas o aparelho precisa ter a hora acertada: sem
+       internet, ele volta a decidir sozinho — e aí erra. O detalhe do erro
+       traz de quanto é o desvio. */
+    relogio_torto: 'relógio do aparelho fora da hora'
   };
   /* Mais repetições primeiro: é onde está o problema real. */
   ordem.sort(function(a,b){ return grupos[b].vezes - grupos[a].vezes; });
@@ -3223,8 +3238,33 @@ el('biblio').addEventListener('click', function(e){
   /* ID lido no clique, não no callback: a lista é redesenhada entre as
      confirmações e o botão deixa de existir. */
   var idMid = Number(b.getAttribute('data-delm'));
-  var nomeM = nomeDaLinha(b) || 'este arquivo';
-  var emUso = linhaM ? (linhaM.children[4] ? linhaM.children[4].textContent.trim() : '') : '';
+
+  /* ── O CLIQUE NÃO FAZIA NADA ──────────────────────────────────
+     A linha de baixo lia uma variável chamada linhaM que nunca foi
+     declarada em lugar nenhum deste arquivo. Ler variável inexistente
+     lança ReferenceError na hora, o handler morre nesta linha, e o
+     confirmarDuplo logo abaixo nunca chega a ser chamado. Da tela, o
+     efeito é o pior possível: clicar em Excluir e não acontecer nada,
+     sem aviso, sem erro visível.
+
+     É o mesmo tropeço que já tinha sido corrigido no botão de excluir
+     TV — inclusive com comentário explicando. O de mídia ficou de fora.
+
+     Agora a linha vem do próprio botão, e cada leitura é defensiva: se a
+     estrutura da tabela mudar um dia, o nome e o "em uso" somem da
+     pergunta, mas o botão continua excluindo. Enfeite da confirmação
+     nunca pode ser o que impede a ação. */
+  var linhaM = b.closest('tr');
+
+  /* A célula do nome pode trazer junto a etiqueta "pendente" quando a
+     aprovação está ligada; ela não faz parte do nome. */
+  var nomeM = '';
+  if(linhaM && linhaM.children[0]){
+    nomeM = (linhaM.children[0].textContent || '').replace(/\s*pendente\s*$/i, '').trim();
+  }
+  if(!nomeM) nomeM = nomeDaLinha(b) || 'este arquivo';
+
+  var emUso = (linhaM && linhaM.children[4]) ? linhaM.children[4].textContent.trim() : '';
 
   confirmarDuplo(
     { marca: 'Excluir da biblioteca',
@@ -6949,16 +6989,17 @@ el('btnDiagTop').addEventListener('click', function(){ diagnostico(); });
 carregarConfig(); carregarResumo(); carregarGrupos(); carregarListas(); carregarMidias(); carregarLinks();
 periodo(30);
 
-/* Atualiza sozinho, mas só enquanto alguém está olhando.
+/* ── Atualização do painel ───────────────────────────────────
+   Era de dez em dez segundos, sem parar nunca. Uma aba esquecida aberta na
+   sexta ficava batendo no servidor o fim de semana inteiro — seis chamadas
+   por minuto, cada uma consultando as TVs, os erros, a disponibilidade e a
+   biblioteca de mídias.
 
-   Sem a checagem de visibilidade, uma aba esquecida aberta segue pedindo
-   o resumo de dez em dez segundos a noite inteira — 8.640 consultas por
-   dia, por aba, para uma tela que ninguém está vendo. Na VPS isso disputa
-   banco com o heartbeat das TVs, que é justamente o que não pode atrasar.
-
-   Ao voltar para a aba, atualiza na hora: quem volta quer o número de
-   agora, não o de quando saiu. */
-setInterval(function(){ if(!document.hidden) carregarResumo(); }, 10000);
+   Trinta segundos é tempo de sobra para um painel de parede: o que muda
+   nesta tela é estado de TV, e uma TV leva dois minutos para ser
+   considerada offline. E quando a aba não está à vista, não atualiza —
+   volta a atualizar sozinha assim que alguém olha de novo. */
+setInterval(function(){ if(!document.hidden) carregarResumo(); }, 30000);
 document.addEventListener('visibilitychange', function(){
   if(!document.hidden) carregarResumo();
 });
