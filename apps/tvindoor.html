@@ -2404,7 +2404,21 @@ var TV_EDIT = 0;
 
 function editarTv(id){
   var t = D.tvs.filter(function(x){ return Number(x.id) === Number(id); })[0];
-  if(!t) return;
+  if(!t){
+    /* Era um return calado. Quem clicava em Editar via a tela não fazer
+       absolutamente nada — sem erro, sem aviso, sem pista — e a conclusão
+       natural é que o botão está quebrado.
+
+       Acontece quando a tabela na tela está mais velha que os dados em
+       memória: uma TV excluída em outro navegador, ou um resumo que
+       falhou e deixou D.tvs sem esta linha. O botão continua desenhado
+       porque o HTML antigo continua lá.
+
+       Agora diz o que houve e recarrega, que é o conserto. */
+    toast('⚠ Esta TV não está na lista carregada. Atualizando…');
+    carregarResumo();
+    return;
+  }
   TV_EDIT = Number(id);
   el('tvNome').value   = t.name || '';
   el('tvLocal').value  = t.location || '';

@@ -1989,7 +1989,21 @@ if($acao === 'tv_salvar'){
   $obs = isset($body['observacao']) ? $body['observacao'] : null;
   $a   = isset($body['ativo'])  ? (int)$body['ativo'] : null;
   $st->bind_param('sissssii', $nome, $g, $loc, $cid, $uf, $obs, $a, $id);
-  $st->execute();
+
+  /* O resultado do execute() era ignorado e a resposta dizia ok:true de
+     qualquer jeito. Se o UPDATE falhasse, o painel comemorava "TV
+     atualizada" e o nome continuava o antigo na tela seguinte — do lado
+     de quem usa, um botão que não funciona e não explica nada. */
+  if(!$st->execute()) fail('Não consegui salvar a TV: '.$st->error);
+
+  /* affected_rows zero não é erro por si: salvar sem mudar nada dá zero.
+     Mas se a linha nem existe, o painel precisa saber, em vez de
+     confirmar uma gravação que não aconteceu. */
+  if($st->affected_rows === 0){
+    $chk = $db->query("SELECT id FROM tvi_tvs WHERE id=".(int)$id);
+    if(!$chk || !$chk->num_rows) fail('A TV #'.$id.' não existe mais. Atualize a página.');
+  }
+
   out(array('ok'=>true,'id'=>$id));
 }
 
