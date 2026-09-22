@@ -8,8 +8,8 @@
 #    2) preparar as pastas graváveis (volumes nascem vazios)
 #    3) escrever os arquivos de segredo a partir das variáveis
 #
-#  Tudo aqui é idempotente: rodar de novo não estraga nada e
-#  nunca sobrescreve arquivo que já existe.
+#  Tudo aqui é idempotente: rodar de novo não estraga nada.
+#
 # ============================================================
 set -e
 
@@ -86,8 +86,10 @@ done
 # ------------------------------------------------------------
 # 3) Segredos vindos das variáveis do EasyPanel
 #
-# Só escreve se o arquivo não existir — assim, se você preferir
-# montar o arquivo direto no EasyPanel, o montado ganha.
+# Arquivo que você montou no EasyPanel sempre ganha; arquivo escrito
+# por um deploy anterior é refeito, para trocar uma variável no painel
+# valer no deploy seguinte. Quem distingue os dois é a marca no
+# cabeçalho — veja deve_gerar() logo abaixo.
 #
 # Quem monta o PHP é o próprio PHP, com var_export. A primeira
 # versão escapava aspas e barras na mão, com sed, e o sed falhava
@@ -100,6 +102,16 @@ done
 # Uso: escreve_segredos ARQUIVO chave1 chave2 …
 #      com o valor de cada chave em SEC_<chave>.
 # ------------------------------------------------------------
+# Gera quando o arquivo não existe, ou quando existe mas foi gerado aqui
+# — trocar DB_NAME no EasyPanel tem de valer no próximo deploy, e não
+# ficar preso a um arquivo escrito por um deploy anterior. Arquivo
+# montado por você não tem essa marca e é respeitado como está.
+deve_gerar() {
+    [ ! -f "$1" ] && return 0
+    grep -q "gerado pelo entrypoint" "$1" 2>/dev/null && return 0
+    return 1
+}
+
 escreve_segredos() {
     SEC_ARQUIVO="$1"; shift
     SEC_CHAVES="$*"
@@ -127,20 +139,18 @@ escreve_segredos() {
     unset SEC_ARQUIVO SEC_CHAVES
 }
 
-if [ ! -f "$RAIZ/db_secrets.php" ]; then
-    if [ -n "$DB_NAME" ]; then
-        export SEC_host="${DB_HOST:-mysql}"
-        export SEC_name="$DB_NAME"
-        export SEC_user="$DB_USER"
-        export SEC_pass="$DB_PASS"
-        escreve_segredos "$RAIZ/db_secrets.php" host name user pass
-        echo "         host=${DB_HOST:-mysql}  banco=$DB_NAME  usuario=$DB_USER"
-        unset SEC_host SEC_name SEC_user SEC_pass
-    else
-        echo "  AVISO: DB_NAME não definido e db_secrets.php não existe — o Hub não vai conectar no banco."
-    fi
+if [ -n "$DB_NAME" ] && deve_gerar "$RAIZ/db_secrets.php"; then
+    export SEC_host="${DB_HOST:-mysql}"
+    export SEC_name="$DB_NAME"
+    export SEC_user="$DB_USER"
+    export SEC_pass="$DB_PASS"
+    escreve_segredos "$RAIZ/db_secrets.php" host name user pass
+    echo "         host=${DB_HOST:-mysql}  banco=$DB_NAME  usuario=$DB_USER"
+    unset SEC_host SEC_name SEC_user SEC_pass
+elif [ -f "$RAIZ/db_secrets.php" ]; then
+    echo "  db_secrets.php montado por você — variáveis DB_* ignoradas"
 else
-    echo "  db_secrets.php já existia — variáveis DB_* ignoradas"
+    echo "  AVISO: DB_NAME não definido e db_secrets.php não existe — o Hub não vai conectar no banco."
 fi
 
 # Um host vazio ou 'localhost' faz o mysqli procurar socket Unix e falhar
@@ -155,14 +165,14 @@ case "${DB_HOST:-}" in
         ;;
 esac
 
-if [ ! -f "$RAIZ/auth_secrets.php" ] && [ -n "$RECAPTCHA_SITE" ]; then
+if [ -n "$RECAPTCHA_SITE" ] && deve_gerar "$RAIZ/auth_secrets.php"; then
     export SEC_recaptcha_site="$RECAPTCHA_SITE"
     export SEC_recaptcha_secret="$RECAPTCHA_SECRET"
     escreve_segredos "$RAIZ/auth_secrets.php" recaptcha_site recaptcha_secret
     unset SEC_recaptcha_site SEC_recaptcha_secret
 fi
 
-if [ ! -f "$RAIZ/cron_secrets.php" ] && [ -n "$CRON_LEMBRETE" ]; then
+if [ -n "$CRON_LEMBRETE" ] && deve_gerar "$RAIZ/cron_secrets.php"; then
     export SEC_lembrete_backup="$CRON_LEMBRETE"
     export SEC_painel_sala="${CRON_PAINEL_SALA:-$CRON_LEMBRETE}"
     export SEC_tvi_saude="${CRON_TVI_SAUDE:-$CRON_LEMBRETE}"
@@ -170,7 +180,7 @@ if [ ! -f "$RAIZ/cron_secrets.php" ] && [ -n "$CRON_LEMBRETE" ]; then
     unset SEC_lembrete_backup SEC_painel_sala SEC_tvi_saude
 fi
 
-if [ ! -f "$RAIZ/push_secrets.php" ] && [ -n "$VAPID_PUBLIC" ]; then
+if [ -n "$VAPID_PUBLIC" ] && deve_gerar "$RAIZ/push_secrets.php"; then
     export SEC_public="$VAPID_PUBLIC"
     export SEC_private="$VAPID_PRIVATE"
     export SEC_subject="${VAPID_SUBJECT:-mailto:marketing@avredentor.com.br}"
