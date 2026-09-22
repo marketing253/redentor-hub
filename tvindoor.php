@@ -2240,8 +2240,19 @@ if($acao === 'upload'){
     $mime  = $f['type'];
     $bytes = (int)$f['size'];
     $dur   = isset($cfg['media']['duration_ms']) ? (int)$cfg['media']['duration_ms'] : null;
+    /* O painel mede no navegador e envia. Mas medida vinda do cliente é
+       palpite: um envio por script, um navegador que engasgou no onload, e
+       o campo chega vazio. E é justamente a resolução que decide se a peça
+       vai serrilhar na parede — agora que o painel avisa quem envia, o
+       dado precisa ser confiável. Para imagem o servidor confere sozinho;
+       vídeo continua vindo do navegador, porque ler dimensão de MP4 no PHP
+       exigiria ffmpeg, que a hospedagem não tem. */
     $larg  = isset($cfg['media']['width'])  ? (int)$cfg['media']['width']  : null;
     $alt   = isset($cfg['media']['height']) ? (int)$cfg['media']['height'] : null;
+    if($tipo === 'imagem' && (!$larg || !$alt)){
+      $dim = @getimagesize(PASTA_MIDIA.'/'.$nomeArq);
+      if($dim){ $larg = (int)$dim[0]; $alt = (int)$dim[1]; }
+    }
     $pasta = isset($cfg['media']['folder']) ? $cfg['media']['folder'] : null;
     $tags  = isset($cfg['media']['tags']) ? implode(',', (array)$cfg['media']['tags']) : null;
     $vd    = !empty($cfg['media']['valid_from'])  ? $cfg['media']['valid_from']  : null;

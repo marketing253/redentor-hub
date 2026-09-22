@@ -2677,6 +2677,40 @@ function sondar(f, done){
   done();
 }
 
+/* ── Aviso de resolução ───────────────────────────────────────
+   A TV amplia o que recebe. Uma foto de 800×600 numa tela Full HD é
+   esticada duas vezes e meia, e é daí que vem o serrilhado — não existe
+   filtro que invente pixel que não foi enviado. O sistema media as
+   dimensões desde sempre, mas guardava só para exibir; ninguém era
+   avisado enquanto ainda dava para trocar o arquivo.
+
+   O alvo é a MAIOR resolução entre as TVs cadastradas, porque é ela que
+   manda: uma peça que fica aceitável na tela pequena denuncia na grande. */
+function resolucaoAlvo(){
+  var lg = 1920, at = 1080;   // Full HD, o padrão de signage, quando não há TV cadastrada
+  for(var i = 0; i < D.tvs.length; i++){
+    var p = String(D.tvs[i].res || '').split('x');
+    var l = parseInt(p[0], 10), a = parseInt(p[1], 10);
+    if(l > lg) lg = l;
+    if(a > at) at = a;
+  }
+  return { larg: lg, alt: at };
+}
+
+/* Devolve null quando está bom, ou o aviso quando vai pixelar. */
+function avisoResolucao(f){
+  if(!f.larg || !f.alt) return null;                       // não medimos: não opinamos
+  if(f.tipo !== 'imagem' && f.tipo !== 'video') return null;
+  var alvo = resolucaoAlvo();
+  if(f.larg >= alvo.larg && f.alt >= alvo.alt) return null;
+  var vezes = Math.max(alvo.larg / f.larg, alvo.alt / f.alt);
+  return {
+    vezes: Math.round(vezes * 10) / 10,
+    grave: vezes >= 1.5,
+    alvo:  alvo.larg + '×' + alvo.alt
+  };
+}
+
 function renderFila(){
   el('areaEnvio').style.display = fila.length ? '' : 'none';
   /* A ajuda acima do quadro só faz sentido enquanto não há nada escolhido. */
@@ -2699,6 +2733,18 @@ function renderFila(){
     return '<div class="it' + (i===sel?' sel':'') + '" data-i="' + i + '">' +
       '<div class="th">' + th + '</div><div class="nm"><b>' + esc(f.nome) + '</b>' +
       '<span>' + meta + '</span></div>' +
+      (function(){
+        var av = avisoResolucao(f);
+        if(!av) return '';
+        /* Vermelho só a partir de uma ampliação de uma vez e meia, que é
+           quando o serrilhado fica visível de longe. Abaixo disso o aviso
+           existe, mas não grita: a peça pode estar boa o bastante, e quem
+           decide é quem olhou a parede. */
+        var cor = av.grave ? 'var(--neg)' : 'var(--ouro-cl)';
+        return '<span class="tag" title="A TV vai ampliar esta peça ' + av.vezes +
+               '× para preencher ' + av.alvo + '. Envie um arquivo maior para a imagem sair limpa."' +
+               ' style="border-color:' + cor + ';color:' + cor + '">amplia ' + av.vezes + '×</span>';
+      })() +
       (f.listas.length
         ? '<span class="tag">' + f.listas.length + ' lista(s)</span>'
         : '<span class="tag" style="border-color:var(--ouro);color:var(--ouro-cl)">falta configurar</span>') +
@@ -2719,6 +2765,21 @@ function renderCfg(){
     '<h3>Arquivo</h3>' +
     '<div class="r r2"><div><label class="f">Nome</label><input id="cNome" value="' + esc(f.nome) + '"></div>' +
     '<div><label class="f">Pasta</label><input id="cPasta" value="' + esc(f.pasta) + '" placeholder="Campanhas/Agosto"></div></div>' +
+
+    /* Aqui há espaço para dizer o PORQUÊ e o que fazer. A etiqueta na fila
+       só chama atenção; é neste ponto que a pessoa ainda pode trocar o
+       arquivo, e é a única hora em que o conselho serve para alguma coisa. */
+    (function(){
+      var av = avisoResolucao(f);
+      if(!av) return '';
+      var cor = av.grave ? 'var(--neg)' : 'var(--ouro-cl)';
+      return '<p class="dica" style="margin-top:10px;border-left:2px solid ' + cor +
+        ';padding-left:10px;color:var(--txt2)">' +
+        '<b style="color:' + cor + '">Esta peça tem ' + f.larg + '×' + f.alt + '.</b> ' +
+        'Sua maior TV é ' + av.alvo + ', então ela vai ampliar ' + av.vezes +
+        '× para preencher — e ampliar não inventa detalhe: a imagem sai serrilhada. ' +
+        'Se puder, envie o mesmo arquivo em ' + av.alvo + ' ou maior.</p>';
+    })() +
 
     '<h3 style="margin-top:16px">Validade do arquivo</h3>' +
     '<div class="r r3">' +
