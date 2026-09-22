@@ -716,9 +716,19 @@ body.theme-dark .cb-sres:hover{background:#141b30;}
     <!-- Verificação humana do Google (reCAPTCHA v2).
          Se o script do Google não carregar — rede da empresa bloqueando,
          serviço fora do ar — a caixa própria aparece no lugar, para
-         ninguém ficar trancado fora do portal por causa de terceiro. -->
+         ninguém ficar trancado fora do portal por causa de terceiro.
+
+         A chave do site fica VAZIA no repositório, e o entrypoint a
+         preenche a partir de RECAPTCHA_SITE. Sem a variável, o quadro
+         do Google nem é pedido. Chave do reCAPTCHA é amarrada a um
+         domínio: a de produção, pedida de qualquer outro endereço,
+         devolve "domínio inválido para a chave do site" em vermelho no
+         meio da tela de login — e sem cair na caixa própria, porque do
+         ponto de vista do navegador o script do Google carregou bem.
+         Isto é o par do lado servidor, onde RECAPTCHA_SECRET vazia já
+         desligava a checagem. -->
     <div id="capBox" style="margin:4px 0 12px;display:flex;justify-content:center">
-      <div class="g-recaptcha" data-sitekey="6Lc54X4tAAAAAHT9ZTokIKyOfzNhvrq6X2p6iigE"
+      <div class="g-recaptcha" data-sitekey=""
            data-theme="light" data-callback="capMarcado"></div>
     </div>
     <div class="humano-box" id="humanoBox" onclick="marcarHumano(event)" style="display:none">
@@ -1433,6 +1443,13 @@ function capMarcado(){
   }, 100000);
 }
 (function carregarCaptcha(){
+  /* Sem chave do site, não adianta pedir o script: o Google carrega,
+     recusa a chave e desenha o erro dentro do próprio quadro. O
+     onerror não dispara nesse caso — para o navegador deu tudo certo —
+     e a pessoa fica olhando um aviso vermelho que não é problema dela.
+     Melhor ir direto para a caixa própria. */
+  var w = document.querySelector('#capBox .g-recaptcha');
+  if(!w || !w.getAttribute('data-sitekey')){ usarCaixaPropria(); return; }
   var sc = document.createElement('script');
   sc.src = 'https://www.google.com/recaptcha/api.js?hl=pt-BR';
   sc.async = true; sc.defer = true;
