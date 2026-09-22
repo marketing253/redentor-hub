@@ -200,7 +200,7 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
   var S = { layoutAtual:null, bloqueado:false, manifesto:null, versao:null, pool:[], cursor:0, atual:null,
             estado:'idle', ultimoSinal:0, sinalOk:false, cacheBytes:0,
             logs:[], camadas:null, ativa:0, timer:null, sincronizando:false,
-            blobs:{}, paradas:[] };
+            blobs:{}, blobTam:{}, paradas:[] };
 
   function el(id){ return document.getElementById(id); }
   function pad(n){ return n < 10 ? '0'+n : ''+n; }
@@ -433,11 +433,32 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
 
   /* Remove o que saiu do manifesto: a TV tem disco limitado. */
   function limpar(c, manter){
+    var fica = {};
+    for(var i=0;i<manter.length;i++) fica[manter[i]] = 1;
+
     c.keys().then(function(reqs){
-      var q = {};
-      for(var i=0;i<manter.length;i++) q[manter[i]] = 1;
-      for(var j=0;j<reqs.length;j++) if(!q[reqs[j].url]) c.delete(reqs[j]);
+      for(var j=0;j<reqs.length;j++) if(!fica[reqs[j].url]) c.delete(reqs[j]);
     });
+
+    /* E solta a memória junto com o disco.
+
+       O blob criado em resolver() segura o arquivo INTEIRO na memória
+       enquanto a URL existir, e ela não se desfaz sozinha — tem de ser
+       revogada à mão. Sem isto, um vídeo tirado da programação continua
+       ocupando memória até alguém reiniciar a TV, e uma tela que roda há
+       semanas acumula tudo o que já passou por ela.
+
+       Era este o vazamento que o reload das 4h da manhã escondia. O
+       reload continua, como rede de segurança — mas agora ele não é mais
+       a única coisa impedindo a TV de travar. */
+    for(var url in S.blobs){
+      if(fica[url] || !S.blobs.hasOwnProperty(url)) continue;
+      try{ URL.revokeObjectURL(S.blobs[url]); }catch(e){}
+      S.cacheBytes -= (S.blobTam[url] || 0);
+      if(S.cacheBytes < 0) S.cacheBytes = 0;
+      delete S.blobTam[url];
+      delete S.blobs[url];
+    }
   }
 
   /* Serve do cache por blob URL. É o que faz a TV continuar tocando com o
@@ -451,6 +472,7 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
         if(!r){ done(url); return; }
         r.blob().then(function(b){
           S.blobs[url] = URL.createObjectURL(b);
+          S.blobTam[url] = b.size;
           S.cacheBytes += b.size;
           done(S.blobs[url]);
         }, function(){ done(url); });

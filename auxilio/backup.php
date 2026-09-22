@@ -13,7 +13,14 @@
  * Backup cheio (todos os arquivos):  backup.php?chave=...&tudo=1
  */
 declare(strict_types=1);
-ini_set('display_errors', '1');
+/* Erro vai para o log do servidor, nunca para a tela: mensagem de erro
+   do PHP entrega caminho de arquivo, nome de banco e, às vezes, trecho
+   de consulta com dado real dentro. Esta página é administrativa, mas
+   o entrar.php é anterior ao login — e bastava um erro para expor a
+   estrutura do servidor a quem nem entrou. Para ver o erro, olhe o log
+   (no EasyPanel, aba Logs do serviço). */
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 error_reporting(E_ALL);
 set_time_limit(600);
 

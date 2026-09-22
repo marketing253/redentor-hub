@@ -54,8 +54,25 @@ Options -Indexes
   ExpiresByType font/woff2  "access plus 30 days"
 </IfModule>
 
-<FilesMatch "\.(php|html)$">
+# PHP é resposta montada na hora, muitas vezes com dado de sessão dentro.
+# Não pode ser guardado em lugar nenhum.
+<FilesMatch "\.php$">
   <IfModule mod_headers.c>
     Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+  </IfModule>
+</FilesMatch>
+
+# HTML é outra história. "no-store" proíbe guardar, então o navegador
+# rebaixava o index.html inteiro — 361 KB — a cada abertura do portal, e o
+# painel do TV Indoor, 331 KB, a cada vez que alguém abria o card.
+#
+# "no-cache" não é o que o nome sugere: ele permite guardar, mas obriga a
+# perguntar ao servidor antes de usar. Quando nada mudou, a resposta é um
+# 304 de duzentos bytes em vez do arquivo inteiro. A garantia continua a
+# mesma — layout novo aparece na hora, que era o motivo da regra —, só
+# para de pagar o download quando não há novidade.
+<FilesMatch "\.html$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, must-revalidate"
   </IfModule>
 </FilesMatch>
