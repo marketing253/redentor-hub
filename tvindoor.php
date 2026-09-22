@@ -1877,6 +1877,10 @@ if($acao === 'resumo'){
     $tvs[] = array(
       'id'=>(int)$t['id'], 'code'=>$t['codigo'], 'name'=>$t['nome'],
       'location'=>$t['local'], 'group'=>$t['grupo'], 'state'=>$est, 'seen'=>$seg,
+      /* A tela de edição preenche a cidade a partir daqui. Sem este campo
+         ela caía no padrão e mostrava "Curitiba" para toda TV — inclusive
+         para as que não são de Curitiba. */
+      'cidade'=>$t['cidade'],
       'ip'=>$t['ultimo_ip'], 'so'=>$t['so'], 'res'=>$t['resolucao'],
       'player'=>$t['versao_player'], 'token'=>$t['token'],
       'tocando'=>$t['ultima_midia'] ? (int)$t['ultima_midia'] : null,
@@ -1962,10 +1966,29 @@ if($acao === 'tv_salvar'){
     out($tv);
   }
 
-  $st = $db->prepare("UPDATE tvi_tvs SET nome=?, grupo_id=?, local=?, cidade=?, uf=?, observacao=?, ativo=? WHERE id=?");
-  $g = isset($body['grupo_id']) && $body['grupo_id'] ? (int)$body['grupo_id'] : null;
-  $a = isset($body['ativo']) ? (int)$body['ativo'] : 1;
-  $st->bind_param('sissssii', $nome,$g,$body['local'],$body['cidade'],$body['uf'],$body['observacao'],$a,$id);
+  /* COALESCE em vez de gravar tudo sempre.
+
+     O formulário de TV administra nome, grupo, local e cidade. UF,
+     observação e "ativo" ele não mostra — mas mandava valores fixos
+     mesmo assim, e este UPDATE os gravava por cima. Renomear uma tela
+     apagava a observação dela e reativava tela desativada de propósito,
+     em silêncio.
+
+     Agora o que não vem fica como está. Vale também para qualquer outro
+     cliente da API: quem não mandou o campo não quis mudá-lo. */
+  $st = $db->prepare(
+    "UPDATE tvi_tvs SET nome=?, grupo_id=?, local=?, cidade=?,
+                        uf=COALESCE(?, uf),
+                        observacao=COALESCE(?, observacao),
+                        ativo=COALESCE(?, ativo)
+     WHERE id=?");
+  $g   = isset($body['grupo_id']) && $body['grupo_id'] ? (int)$body['grupo_id'] : null;
+  $loc = isset($body['local'])  ? $body['local']  : null;
+  $cid = isset($body['cidade']) ? $body['cidade'] : null;
+  $uf  = isset($body['uf'])     ? $body['uf']     : null;
+  $obs = isset($body['observacao']) ? $body['observacao'] : null;
+  $a   = isset($body['ativo'])  ? (int)$body['ativo'] : null;
+  $st->bind_param('sissssii', $nome, $g, $loc, $cid, $uf, $obs, $a, $id);
   $st->execute();
   out(array('ok'=>true,'id'=>$id));
 }

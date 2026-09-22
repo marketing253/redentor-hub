@@ -2540,11 +2540,22 @@ el('tvFiltro').addEventListener('click', function(e){
 el('btnNovaTv').addEventListener('click', function(){
   var nome = el('tvNome').value.trim();
   if(!nome){ toast('Informe o nome da TV.'); el('tvNome').focus(); return; }
+  /* Só os campos que este formulário realmente administra.
+
+     Antes ia sempre observacao:'' , uf:'PR' e ativo:1 — mesmo editando.
+     Como o servidor gravava os oito campos, renomear uma TV apagava a
+     observação dela, forçava a UF para PR e reativava uma tela que
+     alguém tinha desativado de propósito. Nada disso aparecia na tela:
+     o painel dizia "TV atualizada" e o dado ia embora calado.
+
+     No cadastro os três continuam indo, porque aí são valores iniciais
+     de uma TV que ainda não existe. */
   var corpo = {
     nome: nome, local: el('tvLocal').value, cidade: el('tvCidade').value,
-    uf: 'PR', grupo_id: el('tvGrupo').value, observacao: '', ativo: 1
+    grupo_id: el('tvGrupo').value
   };
   if(TV_EDIT) corpo.id = TV_EDIT;
+  else { corpo.uf = 'PR'; corpo.observacao = ''; corpo.ativo = 1; }
 
   api('tv_salvar', corpo, function(d){
     if(!d || !d.ok) return;
