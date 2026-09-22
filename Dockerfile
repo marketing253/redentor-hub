@@ -32,8 +32,9 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 # mod_rewrite (endereço curto das TVs), mod_headers e mod_expires:
-# os .htaccess do projeto usam os três.
-RUN a2enmod rewrite headers expires
+# os .htaccess do projeto usam os três. mod_deflate comprime a resposta:
+# o painel do TV Indoor tem 331 KB, e sai com 96 KB comprimido.
+RUN a2enmod rewrite headers expires deflate
 
 # AllowOverride All — é isto que faz os .htaccess valerem. A imagem
 # oficial vem com "None", que silenciosamente desliga as proteções.

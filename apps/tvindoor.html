@@ -5175,7 +5175,12 @@ el('parVincular').addEventListener('click', function(){
 var PAR_TIMER = null;
 function vigiarAparelhos(ligar){
   if(PAR_TIMER){ clearInterval(PAR_TIMER); PAR_TIMER = null; }
-  if(ligar) PAR_TIMER = setInterval(carregarAparelhos, 8000);
+  /* Também de oito em oito segundos, e também só com a aba à vista: quem
+     está instalando sai para olhar o box e volta, e nesse intervalo não
+     há por que continuar perguntando ao servidor. */
+  if(ligar) PAR_TIMER = setInterval(function(){
+    if(!document.hidden) carregarAparelhos();
+  }, 8000);
 }
 
 /* ── Aba Agenda: calendário clicável ──────────────────────────
@@ -6857,7 +6862,20 @@ el('btnDiagTop').addEventListener('click', function(){ diagnostico(); });
 
 carregarConfig(); carregarResumo(); carregarGrupos(); carregarListas(); carregarMidias(); carregarLinks();
 periodo(30);
-setInterval(carregarResumo, 10000);
+
+/* Atualiza sozinho, mas só enquanto alguém está olhando.
+
+   Sem a checagem de visibilidade, uma aba esquecida aberta segue pedindo
+   o resumo de dez em dez segundos a noite inteira — 8.640 consultas por
+   dia, por aba, para uma tela que ninguém está vendo. Na VPS isso disputa
+   banco com o heartbeat das TVs, que é justamente o que não pode atrasar.
+
+   Ao voltar para a aba, atualiza na hora: quem volta quer o número de
+   agora, não o de quando saiu. */
+setInterval(function(){ if(!document.hidden) carregarResumo(); }, 10000);
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden) carregarResumo();
+});
 
 })();
 </script>
