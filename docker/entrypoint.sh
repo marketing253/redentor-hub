@@ -88,21 +88,54 @@ done
 #
 # Só escreve se o arquivo não existir — assim, se você preferir
 # montar o arquivo direto no EasyPanel, o montado ganha.
+#
+# Quem monta o PHP é o próprio PHP, com var_export. A primeira
+# versão escapava aspas e barras na mão, com sed, e o sed falhava
+# ("unknown option to `s'"): devolvia string vazia, o arquivo
+# nascia com 'host' => '' e o mysqli ia procurar socket Unix,
+# falhando com "No such file or directory" na tela de login.
+# Escapar string de uma linguagem usando a sintaxe de outra é o
+# tipo de esperteza que sempre cobra depois.
+#
+# Uso: escreve_segredos ARQUIVO chave1 chave2 …
+#      com o valor de cada chave em SEC_<chave>.
 # ------------------------------------------------------------
-php_str() { printf "%s" "$1" | sed "s/\\/\\\\/g; s/'/\\'/g"; }
+escreve_segredos() {
+    SEC_ARQUIVO="$1"; shift
+    SEC_CHAVES="$*"
+    export SEC_ARQUIVO SEC_CHAVES
+
+    php -r '
+        $linhas = array();
+        foreach (preg_split("/[[:space:]]+/", trim(getenv("SEC_CHAVES"))) as $chave) {
+            if ($chave === "") { continue; }
+            $valor = getenv("SEC_" . $chave);
+            if ($valor === false) { $valor = ""; }
+            $linhas[] = "  " . var_export($chave, true) . " => " . var_export($valor, true) . ",";
+        }
+        file_put_contents(getenv("SEC_ARQUIVO"),
+            "<?php /* gerado pelo entrypoint a partir das variaveis do EasyPanel */" . PHP_EOL
+            . "return array(" . PHP_EOL . implode(PHP_EOL, $linhas) . PHP_EOL . ");" . PHP_EOL);
+    ' || true
+
+    if php -l "$SEC_ARQUIVO" > /dev/null 2>&1; then
+        echo "  criado: ${SEC_ARQUIVO#$RAIZ/}"
+    else
+        echo "  ERRO: ${SEC_ARQUIVO#$RAIZ/} saiu com PHP inválido — o Hub não vai conseguir lê-lo."
+    fi
+
+    unset SEC_ARQUIVO SEC_CHAVES
+}
 
 if [ ! -f "$RAIZ/db_secrets.php" ]; then
     if [ -n "$DB_NAME" ]; then
-        cat > "$RAIZ/db_secrets.php" <<EOF
-<?php /* gerado pelo entrypoint a partir das variáveis do EasyPanel */
-return array(
-  'host' => '$(php_str "${DB_HOST:-mysql}")',
-  'name' => '$(php_str "$DB_NAME")',
-  'user' => '$(php_str "$DB_USER")',
-  'pass' => '$(php_str "$DB_PASS")',
-);
-EOF
-        echo "  criado: db_secrets.php  (host=${DB_HOST:-mysql} banco=$DB_NAME usuario=$DB_USER)"
+        export SEC_host="${DB_HOST:-mysql}"
+        export SEC_name="$DB_NAME"
+        export SEC_user="$DB_USER"
+        export SEC_pass="$DB_PASS"
+        escreve_segredos "$RAIZ/db_secrets.php" host name user pass
+        echo "         host=${DB_HOST:-mysql}  banco=$DB_NAME  usuario=$DB_USER"
+        unset SEC_host SEC_name SEC_user SEC_pass
     else
         echo "  AVISO: DB_NAME não definido e db_secrets.php não existe — o Hub não vai conectar no banco."
     fi
@@ -123,38 +156,26 @@ case "${DB_HOST:-}" in
 esac
 
 if [ ! -f "$RAIZ/auth_secrets.php" ] && [ -n "$RECAPTCHA_SITE" ]; then
-    cat > "$RAIZ/auth_secrets.php" <<EOF
-<?php /* gerado pelo entrypoint */
-return array(
-  'recaptcha_site'   => '$(php_str "$RECAPTCHA_SITE")',
-  'recaptcha_secret' => '$(php_str "$RECAPTCHA_SECRET")',
-);
-EOF
-    echo "  criado: auth_secrets.php"
+    export SEC_recaptcha_site="$RECAPTCHA_SITE"
+    export SEC_recaptcha_secret="$RECAPTCHA_SECRET"
+    escreve_segredos "$RAIZ/auth_secrets.php" recaptcha_site recaptcha_secret
+    unset SEC_recaptcha_site SEC_recaptcha_secret
 fi
 
 if [ ! -f "$RAIZ/cron_secrets.php" ] && [ -n "$CRON_LEMBRETE" ]; then
-    cat > "$RAIZ/cron_secrets.php" <<EOF
-<?php /* gerado pelo entrypoint */
-return array(
-  'lembrete_backup' => '$(php_str "$CRON_LEMBRETE")',
-  'painel_sala'     => '$(php_str "${CRON_PAINEL_SALA:-$CRON_LEMBRETE}")',
-  'tvi_saude'       => '$(php_str "${CRON_TVI_SAUDE:-$CRON_LEMBRETE}")',
-);
-EOF
-    echo "  criado: cron_secrets.php"
+    export SEC_lembrete_backup="$CRON_LEMBRETE"
+    export SEC_painel_sala="${CRON_PAINEL_SALA:-$CRON_LEMBRETE}"
+    export SEC_tvi_saude="${CRON_TVI_SAUDE:-$CRON_LEMBRETE}"
+    escreve_segredos "$RAIZ/cron_secrets.php" lembrete_backup painel_sala tvi_saude
+    unset SEC_lembrete_backup SEC_painel_sala SEC_tvi_saude
 fi
 
 if [ ! -f "$RAIZ/push_secrets.php" ] && [ -n "$VAPID_PUBLIC" ]; then
-    cat > "$RAIZ/push_secrets.php" <<EOF
-<?php /* gerado pelo entrypoint */
-return array(
-  'public'  => '$(php_str "$VAPID_PUBLIC")',
-  'private' => '$(php_str "$VAPID_PRIVATE")',
-  'subject' => '$(php_str "${VAPID_SUBJECT:-mailto:marketing@avredentor.com.br}")',
-);
-EOF
-    echo "  criado: push_secrets.php"
+    export SEC_public="$VAPID_PUBLIC"
+    export SEC_private="$VAPID_PRIVATE"
+    export SEC_subject="${VAPID_SUBJECT:-mailto:marketing@avredentor.com.br}"
+    escreve_segredos "$RAIZ/push_secrets.php" public private subject
+    unset SEC_public SEC_private SEC_subject
 fi
 
 # Segredo nenhum pode ser lido pelo Apache como arquivo estático,
