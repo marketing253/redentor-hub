@@ -3,7 +3,7 @@
 /* Versão do player. Entra na URL dos widgets para o navegador da TV ser
    obrigado a buscar de novo quando algo muda. Sobe a cada alteração
    visual: é o único jeito de a parede atualizar sem alguém ir até lá. */
-define('VERSAO', '75.7.1');
+define('VERSAO', '79.1.0');
 header('X-TVIndoor-Versao: '.VERSAO);
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
@@ -72,8 +72,11 @@ html,body{height:100%;background:var(--bg);overflow:hidden;color:var(--ink);
 .stage{position:relative;flex:1;min-width:0}
 .lateral{display:none;width:24%;min-width:230px;flex-direction:column;background:#0C0E1C;
   border-left:1px solid rgba(236,219,174,.16)}
-.lateral iframe{flex:1;width:100%;border:0;display:block}
-.lateral iframe+iframe{border-top:1px solid rgba(236,219,174,.16)}
+/* Cada zona ganhou um contêiner próprio: é ele que permite trocar o iframe
+   ao vivo pelo da cópia guardada sem desmontar a outra zona ao lado. */
+.zona{flex:1;min-height:0;display:flex}
+.zona+.zona{border-top:1px solid rgba(236,219,174,.16)}
+.lateral iframe{flex:1;width:100%;height:100%;border:0;display:block}
 /* Filete dourado separando a faixa do conteúdo: é a marca aparecendo
    sem ocupar espaço. */
 .rodape{display:none;position:fixed;left:0;right:0;bottom:0;height:9vh;min-height:56px;
@@ -152,7 +155,8 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
   <span>TV <b id="dCode">–</b></span>
   <span>Sinal <b id="dBeat">–</b></span>
   <span>Cache <b id="dCache">–</b></span>
-  <span>v<b>1.0.0</b></span>
+  <span>Rel&oacute;gio <b id="dRel">–</b></span>
+  <span>v<b id="dVer">–</b></span>
 </footer>
 
 <script>
@@ -162,7 +166,12 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
 (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  /* A versão que o player informa ao painel é a do ARQUIVO, não um número
+     escrito à mão que ninguém lembrava de mexer. Ficou parada em '1.0.0'
+     desde o começo: a coluna "player" do painel mostrava 1.0.0 em todas as
+     TVs, e depois de publicar não havia como saber quais já tinham pegado a
+     versão nova — que é exatamente a pergunta daquele momento. */
+  var VERSION = <?php echo json_encode(VERSAO); ?>;
   var TOKEN = <?php echo json_encode($token); ?>;
   /* Versão do player na URL do widget. Navegador de TV guarda página com
      unhas e dentes — foi o que segurou a atualização de tamanho. Mudando a
@@ -172,13 +181,6 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
   var PREVIA = <?php echo (int)$previa; ?>;
   var API = location.origin + '/tvindoor.php';
   var CACHE = 'tvindoor-midia-v1';
-  /* Cache separado (não some quando limpar() varre o que saiu do
-     manifesto de vídeo/imagem) só para a última versão boa de cada
-     peça "web" (clima, notícias, aniversariantes...). Essas peças se
-     atualizam sozinhas a cada troca — isso aqui não é a fonte normal,
-     é só a rede de segurança para quando a internet da TV falhar bem
-     na hora da troca. */
-  var CACHE_WEB = 'tvindoor-web-v1';
   var LS = { man: 'tvi.manifesto', ver: 'tvi.versao' };
 
   /* Identidade desta aba. Fica em sessionStorage e não em localStorage de
@@ -199,11 +201,65 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
 
   var S = { layoutAtual:null, bloqueado:false, manifesto:null, versao:null, pool:[], cursor:0, atual:null,
             estado:'idle', ultimoSinal:0, sinalOk:false, cacheBytes:0,
+            desvio:0, relogioAviso:0,
             logs:[], camadas:null, ativa:0, timer:null, sincronizando:false,
-            blobs:{}, blobTam:{}, paradas:[] };
+            blobs:{} };
 
   function el(id){ return document.getElementById(id); }
   function pad(n){ return n < 10 ? '0'+n : ''+n; }
+
+  /* ── O RELÓGIO DA TV ────────────────────────────────────────
+     Toda a programação é resolvida AQUI, no relógio do aparelho: dias da
+     semana, faixas de horário, validade. É o que faz a TV sem internet
+     continuar exibindo a coisa certa — e é a decisão acertada.
+
+     O que faltava era conferir se esse relógio está certo. Um box que
+     perdeu a hora, ou que veio de fábrica em UTC, exibe a peça da manhã à
+     noite e mantém no ar a promoção que venceu. E o painel mostra essa TV
+     verde, online, tocando: para ele está tudo bem. O defeito é invisível
+     exatamente para quem poderia corrigi-lo.
+
+     O servidor já mandava a hora certa em toda batida e ninguém lia. Agora
+     lemos, guardamos o desvio, e passamos a resolver a programação pela
+     hora do servidor. A TV com relógio torto passa a exibir CERTO mesmo
+     assim, e o aviso no painel vira manutenção sem pressa.
+
+     Comparamos hora de PAREDE, não epoch: assim uma medida só pega os dois
+     defeitos — relógio errado e fuso errado. */
+  function relogio(){ return new Date(Date.now() + (S.desvio || 0)); }
+
+  function duracaoHumana(ms){
+    var s = Math.round(ms / 1000);
+    var d = Math.floor(s / 86400); s -= d * 86400;
+    var h = Math.floor(s / 3600);  s -= h * 3600;
+    var m = Math.floor(s / 60);
+    var p = [];
+    if(d) p.push(d + (d === 1 ? ' dia' : ' dias'));
+    if(h) p.push(h + 'h');
+    if(m) p.push(m + 'min');
+    return p.length ? p.join(' ') : 'menos de 1min';
+  }
+
+  function medirRelogio(txt){
+    var m = String(txt).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if(!m) return;
+    /* Montado com os componentes soltos, e não com Date.parse: assim a data
+       nasce no fuso da própria TV, e a subtração abaixo devolve a diferença
+       de hora de parede — que é o que interessa. */
+    var servidor = new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]).getTime();
+    S.desvio = servidor - Date.now();
+
+    var fora = Math.abs(S.desvio);
+    if(fora < 120000) return;   // dois minutos de folga: relógio de TV oscila
+
+    /* Uma vez por hora, não a cada batida. Isto é manutenção — alguém
+       precisa ir até a TV acertar a hora —, não emergência. */
+    if(S.relogioAviso && (Date.now() - S.relogioAviso) < 3600000) return;
+    S.relogioAviso = Date.now();
+    reportar('relogio_torto', null,
+      'relógio ' + (S.desvio > 0 ? 'atrasado' : 'adiantado') + ' ' + duracaoHumana(fora) +
+      '; a programação está sendo corrigida pela hora do servidor');
+  }
 
   function req(metodo, url, corpo, done){
     var x = new XMLHttpRequest();
@@ -222,6 +278,114 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
 
   function guardar(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
   function ler(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
+  /* ── Cópia das peças, guardada na própria TV ─────────────────
+     Vídeo e imagem a TV já guarda: estão na Cache Storage e tocam com o
+     cabo de rede fora. As peças do servidor — notícias, clima,
+     aniversariantes — não tinham nada disso. Sem internet o iframe não
+     carregava, a peça era pulada, e quando TODAS as peças eram destas a
+     parede caía no cartão "Aguardando conteúdo". Tela apagada, portanto.
+
+     Agora, toda vez que uma peça abre direito, o HTML dela fica guardado
+     aqui. Quando o servidor não responde, é esta cópia que vai ao ar: a
+     última notícia continua na parede em vez de tela vazia.
+
+     Só o HTML. As fotos das notícias vêm por endereço e, sem rede, não
+     aparecem — mas a manchete, a data e o veículo continuam lá, que é o
+     que alguém lê de longe. */
+  /* Teto baixo de propósito. O localStorage de uma TV costuma ter 5 MB no
+     total, e nele mora também o MANIFESTO — que é o dado que a TV não pode
+     perder: sem ele, ela não volta a exibir sozinha depois de uma queda de
+     energia. Guardar seis peças de 400 KB era ocupar quase metade do espaço
+     com conveniência e arriscar o essencial. Três de 250 KB cabem folgado, e
+     uma peça de notícias inteira dá 60 a 120 KB. */
+  var COPIA_MAX = 250000;   // ~250 KB por peça
+  /* Oito, e não três: além das peças da lista, as duas zonas laterais
+     (relógio e clima) também guardam cópia. Com poucas vagas, uma
+     expulsaria a outra o tempo todo e nenhuma estaria lá na hora que
+     precisasse. Oito de 250 KB dão 2 MB no pior caso, e o manifesto tem
+     prioridade sobre todas elas — ver guardarManifesto. */
+  var COPIA_QTD = 8;
+
+  function chaveDe(url){
+    var h = 0;
+    for(var i=0;i<url.length;i++) h = (h*31 + url.charCodeAt(i)) % 2147483647;
+    return 'tvi.cp.' + h.toString(36);
+  }
+
+  function guardarCopia(url, html){
+    if(!html || html.length > COPIA_MAX) return;
+    var k = chaveDe(url), idx = [], i;
+    try { idx = JSON.parse(ler('tvi.copias') || '[]'); } catch(e){ idx = []; }
+    var lim = [];
+    for(i=0;i<idx.length;i++) if(idx[i] !== k) lim.push(idx[i]);
+    lim.push(k);
+    idx = lim;
+    while(idx.length > COPIA_QTD){
+      var velho = idx.shift();
+      try { localStorage.removeItem(velho); } catch(e){}
+    }
+    try {
+      localStorage.setItem(k, html);
+      guardar('tvi.copias', JSON.stringify(idx));
+    } catch(e){
+      /* Sem espaço. Joga a mais antiga fora e tenta uma vez — se ainda não
+         couber, fica sem cópia desta peça e o resto segue funcionando. */
+      try {
+        var v = idx.shift();
+        if(v) localStorage.removeItem(v);
+        localStorage.setItem(k, html);
+        guardar('tvi.copias', JSON.stringify(idx));
+      } catch(e2){}
+    }
+  }
+
+  function lerCopia(url){
+    try { return localStorage.getItem(chaveDe(url)); } catch(e){ return null; }
+  }
+
+  function soltarCopias(){
+    var idx = [];
+    try { idx = JSON.parse(ler('tvi.copias') || '[]'); } catch(e){ idx = []; }
+    for(var i=0;i<idx.length;i++){ try { localStorage.removeItem(idx[i]); } catch(e){} }
+    try { localStorage.removeItem('tvi.copias'); } catch(e){}
+  }
+
+  /* O MANIFESTO TEM PRIORIDADE SOBRE AS CÓPIAS.
+     O guardar() engole erro de espaço em silêncio. Se o localStorage
+     enchesse, a gravação do manifesto falharia sem ninguém saber — e a TV
+     só descobriria na próxima queda de energia, ficando sem voltar a
+     exibir. É o único dado aqui que não pode ser perdido.
+     Então: se não couber, as cópias das peças saem, e o manifesto entra. */
+  function guardarManifesto(d){
+    var txt = JSON.stringify(d);
+    try { localStorage.setItem(LS.man, txt); guardar(LS.ver, d.version); return true; }
+    catch(e){}
+    soltarCopias();
+    try { localStorage.setItem(LS.man, txt); guardar(LS.ver, d.version); return true; }
+    catch(e){}
+    reportar('manifesto_nao_guardado', null,
+             'sem espaço no navegador da TV: ela não volta sozinha após queda de energia');
+    return false;
+  }
+
+  /* document.write num iframe em branco: é o caminho que funciona no
+     Chromium 38 do webOS e no WebView do Android. srcdoc não existe lá.
+     O iframe vai SEM src de propósito — assim o documento em branco já
+     existe quando ele entra na página. */
+  function escreverLocal(f, html, pronto){
+    function tentar(){
+      try{
+        var d = f.contentDocument || (f.contentWindow && f.contentWindow.document);
+        if(!d) return false;
+        d.open(); d.write(html); d.close();
+        return true;
+      } catch(e){ return false; }
+    }
+    if(tentar()){ pronto(true); return; }
+    // Documento ainda não montado: uma segunda tentativa no quadro seguinte.
+    setTimeout(function(){ pronto(tentar()); }, 60);
+  }
 
   /* ── Cartão ─────────────────────────────────────────────────── */
   function cartao(sobre, titulo, dica, prog){
@@ -259,6 +423,13 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
     el('dCode').textContent = S.manifesto && S.manifesto.tv ? S.manifesto.tv.code : '–';
     el('dBeat').textContent = S.ultimoSinal ? Math.round((Date.now()-S.ultimoSinal)/1000)+'s' : '–';
     el('dCache').textContent = S.cacheBytes ? (S.cacheBytes/1048576).toFixed(0)+' MB' : '–';
+    el('dVer').textContent = VERSION;
+    /* Quem abre esta barra está de pé na frente da TV, para resolver algo.
+       "certo" encerra a dúvida; o desvio diz o que ir acertar no aparelho. */
+    var dv = S.desvio || 0;
+    el('dRel').textContent = !S.sinalOk && !dv ? '–'
+      : (Math.abs(dv) < 120000 ? 'certo'
+        : (dv > 0 ? 'atrasado ' : 'adiantado ') + duracaoHumana(Math.abs(dv)));
     if(S.bloqueado) el('dStatus').textContent = 'Aberta em outra janela';
   }
 
@@ -283,6 +454,7 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
       if(S.bloqueado) liberar();
       S.sinalOk = true;
       S.ultimoSinal = Date.now();
+      if(d.server_local) medirRelogio(d.server_local);
       if(d.manifest_version && d.manifest_version !== S.versao) agendarSync(d.rollout_seconds||0);
       if(d.commands && d.commands.length) comandos(d.commands);
       diag();
@@ -322,7 +494,11 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
       var c = lista[i];
       if(c.type === 'reload'){ location.reload(); return; }
       if(c.type === 'sync'){ sincronizar(); }
-      if(c.type === 'clear_cache'){ if(window.caches) caches.delete(CACHE); S.cacheBytes = 0; }
+      if(c.type === 'clear_cache'){
+        if(window.caches) caches.delete(CACHE);
+        soltarBlobs([]);          // limpar o disco sem soltar a memória não limpa nada
+        S.cacheBytes = 0;
+      }
       if(c.type === 'screenshot'){ capturar(); }
       if(c.type === 'message' && c.payload && c.payload.text){
         cartao('Mensagem', c.payload.text, '');
@@ -376,7 +552,9 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
         // Chegou tarde: o heartbeat já barrou esta janela enquanto baixava.
         if(S.bloqueado){ S.sincronizando = false; return; }
         S.manifesto = d; S.versao = d.version;
-        guardar(LS.man, JSON.stringify(d)); guardar(LS.ver, d.version);
+        // Programação nova: o que saiu dela pode devolver a memória.
+        soltarBlobs(urlsDo(d));
+        guardarManifesto(d);
         S.sincronizando = false; S.estado = 'playing'; S.cursor = 0;
         aplicarLayout();
         // Só esconde o cartão se ele era nosso. Se nada está tocando, o
@@ -389,11 +567,17 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
   }
 
   function urlsDo(m){
-    var u = [], pl = m.playlists || [];
+    var u = [], vistos = {}, pl = m.playlists || [];
     for(var i=0;i<pl.length;i++){
       var it = pl[i].items || [];
-      for(var j=0;j<it.length;j++)
-        if(it[j].url && (it[j].type === 'video' || it[j].type === 'image')) u.push(it[j].url);
+      for(var j=0;j<it.length;j++){
+        var x = it[j];
+        if(!x.url || (x.type !== 'video' && x.type !== 'image')) continue;
+        // A mesma peça em duas listas é um arquivo só: não baixa duas vezes.
+        if(vistos[x.url]) continue;
+        vistos[x.url] = 1;
+        u.push(x.url);
+      }
     }
     return u;
   }
@@ -411,73 +595,99 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
     if(!mudo) cartao('Atualizando','Baixando conteúdo','Primeira carga desta TV.',0);
 
     caches.open(CACHE).then(function(c){
-      var feitos = 0;
+      /* Fila de dois por vez, e não todos de uma vez.
+         O laço antigo disparava um download para CADA arquivo no mesmo
+         instante: uma lista com quinze vídeos abria quinze conexões no
+         wi-fi da TV, e todas ficavam lentas juntas. Dois por vez terminam
+         antes e não sufocam o resto da rede do prédio. */
+      var LIMITE = 2;
+      var i = 0, feitos = 0, ativos = 0, acabou = false;
+
+      function fim(){
+        if(acabou) return;
+        acabou = true;
+        limpar(c, urls);
+        done();
+      }
       function passo(){
         feitos++;
+        ativos--;
         if(!mudo){
           cartao('Atualizando','Baixando conteúdo',
                  feitos+' de '+urls.length+' arquivos.', feitos/urls.length);
         }
-        if(feitos >= urls.length){ limpar(c, urls); done(); }
+        if(feitos >= urls.length){ fim(); return; }
+        puxar();
       }
-      for(var i=0;i<urls.length;i++){
-        (function(u){
-          c.match(u).then(function(hit){
-            if(hit){ passo(); return; }
-            c.add(u).then(passo, passo);
-          });
-        })(urls[i]);
+      function puxar(){
+        while(ativos < LIMITE && i < urls.length){
+          ativos++;
+          (function(u){
+            c.match(u).then(function(hit){
+              if(hit){ passo(); return; }
+              c.add(u).then(passo, passo);
+            }, passo);   /* <- o match também pode falhar */
+          })(urls[i++]);
+        }
       }
+      puxar();
+
+      /* O match não tinha tratador de erro. Quando ele falhava, o passo()
+         nunca rodava, o done() nunca era chamado e o S.sincronizando ficava
+         preso em true — a TV parava de sincronizar de vez, até alguém
+         recarregar. Agora a falha conta como passo, e este prazo é a última
+         rede: com tudo dando errado, a programação segue mesmo assim. */
+      setTimeout(fim, 180000);
     }, function(){ done(); });
   }
 
   /* Remove o que saiu do manifesto: a TV tem disco limitado. */
   function limpar(c, manter){
-    var fica = {};
-    for(var i=0;i<manter.length;i++) fica[manter[i]] = 1;
-
     c.keys().then(function(reqs){
-      for(var j=0;j<reqs.length;j++) if(!fica[reqs[j].url]) c.delete(reqs[j]);
+      var q = {};
+      for(var i=0;i<manter.length;i++) q[manter[i]] = 1;
+      for(var j=0;j<reqs.length;j++) if(!q[reqs[j].url]) c.delete(reqs[j]);
     });
-
-    /* E solta a memória junto com o disco.
-
-       O blob criado em resolver() segura o arquivo INTEIRO na memória
-       enquanto a URL existir, e ela não se desfaz sozinha — tem de ser
-       revogada à mão. Sem isto, um vídeo tirado da programação continua
-       ocupando memória até alguém reiniciar a TV, e uma tela que roda há
-       semanas acumula tudo o que já passou por ela.
-
-       Era este o vazamento que o reload das 4h da manhã escondia. O
-       reload continua, como rede de segurança — mas agora ele não é mais
-       a única coisa impedindo a TV de travar. */
-    for(var url in S.blobs){
-      if(fica[url] || !S.blobs.hasOwnProperty(url)) continue;
-      try{ URL.revokeObjectURL(S.blobs[url]); }catch(e){}
-      S.cacheBytes -= (S.blobTam[url] || 0);
-      if(S.cacheBytes < 0) S.cacheBytes = 0;
-      delete S.blobTam[url];
-      delete S.blobs[url];
-    }
   }
 
   /* Serve do cache por blob URL. É o que faz a TV continuar tocando com o
      cabo de rede fora — sem service worker, sem brigar com o /sw.js do Hub. */
   function resolver(url, done){
     if(PREVIA){ done(url); return; }
-    if(S.blobs[url]){ done(S.blobs[url]); return; }
+    if(S.blobs[url]){ done(S.blobs[url].u); return; }
     if(!window.caches){ done(url); return; }
     caches.open(CACHE).then(function(c){
       c.match(url).then(function(r){
         if(!r){ done(url); return; }
         r.blob().then(function(b){
-          S.blobs[url] = URL.createObjectURL(b);
-          S.blobTam[url] = b.size;
+          /* Guarda o tamanho junto com o endereço. Sem isso não há como
+             descontar do total quando a peça for solta lá embaixo. */
+          S.blobs[url] = { u: URL.createObjectURL(b), n: b.size };
           S.cacheBytes += b.size;
-          done(S.blobs[url]);
+          done(S.blobs[url].u);
         }, function(){ done(url); });
       }, function(){ done(url); });
     }, function(){ done(url); });
+  }
+
+  /* Devolve a memória das peças que saíram da programação.
+     Cada createObjectURL prende o arquivo inteiro na memória do navegador
+     até alguém revogar — e não havia um revokeObjectURL no player inteiro.
+     Todo vídeo e toda imagem que a TV já exibiu ficava lá, inclusive os que
+     saíram do manifesto há semanas. Num aparelho de 1 GB é exatamente o que
+     aperta, e era o que o reload das quatro da manhã vinha disfarçando. */
+  function soltarBlobs(manter){
+    var q = {}, i;
+    for(i = 0; i < manter.length; i++) q[manter[i]] = 1;
+    for(var u in S.blobs){
+      if(!S.blobs.hasOwnProperty(u) || q[u]) continue;
+      // O que está no ar agora fica: revogar debaixo do próprio vídeo não.
+      if(S.atual && S.atual.url === u) continue;
+      try { URL.revokeObjectURL(S.blobs[u].u); } catch(e){}
+      S.cacheBytes -= (S.blobs[u].n || 0);
+      delete S.blobs[u];
+    }
+    if(S.cacheBytes < 0) S.cacheBytes = 0;
   }
 
   /* ── Zonas ──────────────────────────────────────────────────
@@ -486,8 +696,106 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
      definido também não. As zonas laterais são iframes do widget.php, que
      já se atualizam sozinhos; o player não precisa saber o que tem dentro. */
 
+  /* A primeira lista QUE TEM CONTEÚDO manda no layout.
+     Era playlists[0] direto. Só que uma lista pode chegar vazia — um
+     comunicado urgente que venceu, por exemplo, some do manifesto item a
+     item mas a lista continua lá. Se ela caísse em primeiro, a parede
+     adotava o layout dela: sem lateral, sem faixa, sem clima. */
+  function listaBase(){
+    var pl = (S.manifesto && S.manifesto.playlists) || [];
+    for(var i=0;i<pl.length;i++) if(pl[i].items && pl[i].items.length) return pl[i];
+    return pl[0] || {};
+  }
+
+  /* ── ZONA LATERAL, TAMBÉM SEM INTERNET ──────────────────────
+     A cópia guardada resolveu as peças da lista de reprodução, mas o
+     relógio e o clima entram por outro caminho: dois iframes fixos
+     apontando direto para o servidor. Sem rede, eles não carregavam e um
+     quarto da tela ficava preto — do lado do palco tocando normalmente do
+     cache, o que é pior do que se tudo estivesse fora.
+
+     O relógio é o mais visível, e o mais bobo: ele conta a hora sozinho no
+     navegador. Só o carregamento da página é que dependia da rede.
+
+     Agora cada zona guarda a própria cópia quando carrega bem, e recorre a
+     ela quando o servidor não responde. E quem manda renovar passou a ser
+     o player, de quinze em quinze minutos: assim que a internet voltar, a
+     zona volta ao vivo sozinha, sem ninguém subir na escada. */
+  var ZONAS = [];
+
+  function pararZonas(){
+    for(var i=0;i<ZONAS.length;i++) clearInterval(ZONAS[i]);
+    ZONAS = [];
+  }
+
+  function montarLateral(elLat, base, cidade){
+    pararZonas();
+    elLat.innerHTML = '';
+    montarZona(elLat, base + '/widget.php?tipo=relogio&v=' + VER);
+    montarZona(elLat, base + '/widget.php?tipo=clima&v=' + VER +
+                      '&cidade=' + encodeURIComponent(cidade));
+  }
+
+  function montarZona(elLat, url){
+    var cx = document.createElement('div');
+    cx.className = 'zona';
+    elLat.appendChild(cx);
+
+    function novoIframe(){
+      cx.innerHTML = '';
+      var f = document.createElement('iframe');
+      f.setAttribute('referrerpolicy','no-referrer');
+      cx.appendChild(f);
+      return f;
+    }
+
+    var aoVivoOk = false;   // a última tentativa ao vivo deu certo?
+
+    function aoVivo(){
+      var f = novoIframe();
+      var respondeu = false;
+      f.onload = function(){
+        respondeu = true;
+        aoVivoOk = true;
+        /* Guarda o que acabou de carregar. Mesma origem, então dá para ler
+           o documento montado — é esta cópia que segura a zona depois. */
+        try {
+          var d = f.contentDocument;
+          if(d && d.documentElement){
+            guardarCopia(url, '<!DOCTYPE html>' + d.documentElement.outerHTML);
+          }
+        } catch(e){}
+      };
+      f.src = url;
+      setTimeout(function(){
+        if(respondeu) return;
+        aoVivoOk = false;
+        porCopia();
+      }, 9000);
+    }
+
+    function porCopia(){
+      var salvo = lerCopia(url);
+      if(!salvo) return;   // nunca chegou a carregar: não há cópia para pôr
+      var g = novoIframe();
+      /* Tira os recarregamentos que a própria peça agenda. Num iframe
+         escrito à mão, recarregar leva para about:blank — ou seja, para o
+         branco que estamos justamente evitando. Aqui quem decide quando
+         renovar é o player, no intervalo abaixo. */
+      escreverLocal(g, salvo.replace(/location\.reload\(\)/g, 'void 0'), function(){});
+    }
+
+    aoVivo();
+    /* Só insiste enquanto NÃO está ao vivo. Com a peça carregada do
+       servidor, ela já se renova sozinha; insistir aqui seria recarregar a
+       mesma coisa duas vezes e piscar na parede à toa.
+       Cinco minutos, e não quinze: este intervalo é a volta da internet,
+       e a zona deve voltar ao vivo assim que puder. */
+    ZONAS.push(setInterval(function(){ if(!aoVivoOk) aoVivo(); }, 300000));
+  }
+
   function aplicarLayout(){
-    var pl = (S.manifesto && S.manifesto.playlists && S.manifesto.playlists[0]) || {};
+    var pl = listaBase();
     var lay = pl.layout || 'cheia';
     var base = pl.base || location.origin;
 
@@ -505,12 +813,10 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
       elLat.style.display = 'flex';
       // Recria só quando o layout muda, não a cada item: iframe recarregando
       // sem parar pisca e come banda.
-      elLat.innerHTML =
-        '<iframe referrerpolicy="no-referrer" src="' + base + '/widget.php?tipo=relogio&v=' + VER + '"></iframe>' +
-        '<iframe referrerpolicy="no-referrer" src="' + base + '/widget.php?tipo=clima&v=' + VER + '&cidade=' +
-          encodeURIComponent(pl.clima || 'Curitiba') + '"></iframe>';
+      montarLateral(elLat, base, pl.clima || 'Curitiba');
     } else {
       elLat.style.display = 'none';
+      pararZonas();
       elLat.innerHTML = '';
     }
 
@@ -532,7 +838,7 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
      É isto que faz a TV sem internet continuar certa e parar de exibir a
      promoção que venceu ontem. */
   function agora(){
-    var d = new Date();
+    var d = relogio();          // hora do servidor, não a do aparelho
     return {
       data: d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),
       hora: pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()),
@@ -595,21 +901,6 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
       try{ reportar('tela_parada', S.atual || {}, vazia ? 'camada vazia'
              : (estourou ? 'item passou do tempo' : 'sem item em exibição')); }catch(e){}
       S.desde = Date.now();
-
-      /* Travar uma vez é normal (rede, aparelho dormiu). Travar 3 vezes em
-         10 minutos não é mais "pular pra próxima peça" que resolve — é
-         sinal de memória acumulada ou o navegador preso num jeito que só
-         um recarregamento completo desempaca. Recarregar tudo é mais caro
-         (perde alguns segundos de tela), mas é mais barato que ficar
-         travando de peça em peça o resto do dia até o reinício das 4h. */
-      var agora = Date.now();
-      S.paradas.push(agora);
-      S.paradas = S.paradas.filter(function(t){ return agora - t < 600000; });
-      if(S.paradas.length >= 3){
-        try{ reportar('tela_parada', S.atual || {}, 'recarregando: 3ª trava em menos de 10min'); }catch(e){}
-        location.reload();
-        return;
-      }
       proximo();
     }
   }
@@ -676,13 +967,21 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
     /* Guarda o veredito por 2 minutos: a mesma peça volta a cada rodada e
        não se deve pedir a página de novo a cada vez. */
     var c = _cacheConf[url];
-    if(c && (Date.now() - c.t) < 120000){ pronto(c.ok, c.motivo); return; }
+    if(c && (Date.now() - c.t) < 120000){
+      it._local = c.local ? lerCopia(url) : null;
+      pronto(c.ok, c.motivo); return;
+    }
 
     var abortou = false;
     var t = setTimeout(function(){
       abortou = true;
       /* Demorou demais para responder: deixa passar e o limite de 9s da
-         exibição resolve. Melhor um risco do que segurar a programação. */
+         exibição resolve. Melhor um risco do que segurar a programação.
+         Mas se há cópia guardada, ela entra já — cinco segundos calado é
+         servidor fora do ar para quem está olhando a parede, e esperar
+         mais nove em branco não melhora nada. */
+      var salvo = lerCopia(url);
+      if(salvo) it._local = salvo;
       pronto(true);
     }, 5000);
 
@@ -694,7 +993,7 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
     x.onload = function(){
       if(abortou) return;
       clearTimeout(t);
-      var txt = x.responseText || '', ok = true, motivo = '';
+      var txt = x.responseText || '', ok = true, motivo = '', local = false;
       if(txt.indexOf('data-peca-ok') > -1){
         ok = txt.indexOf('data-peca-ok="0"') === -1;
         if(!ok){
@@ -702,18 +1001,37 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
           motivo = m ? m[1] : 'sem conteúdo';
         }
       }
-      _cacheConf[url] = {t: Date.now(), ok: ok, motivo: motivo};
+      if(ok){
+        /* Peça boa: fica guardada na TV. É esta cópia que segura a parede
+           quando a internet cair. */
+        guardarCopia(url, txt);
+        it._local = null;
+      } else {
+        /* O servidor respondeu, mas sem conteúdo — a fonte caiu do lado de
+           lá. A última boa continua valendo mais que peça vazia. */
+        var salvo = lerCopia(url);
+        if(salvo){ it._local = salvo; ok = true; motivo = ''; local = true; }
+      }
+      _cacheConf[url] = {t: Date.now(), ok: ok, motivo: motivo, local: local};
       pronto(ok, motivo);
     };
     /* Falha na conferência não é motivo para pular: a peça pode estar boa
-       e o problema ser da consulta. */
-    x.onerror = x.ontimeout = function(){ if(!abortou){ clearTimeout(t); pronto(true); } };
+       e o problema ser da consulta. Mas se nem falar com o servidor deu, é
+       sinal de rede fora — e aí a cópia da TV entra direto, sem esperar o
+       iframe tentar e falhar. */
+    x.onerror = x.ontimeout = function(){
+      if(abortou) return;
+      clearTimeout(t);
+      var salvo = lerCopia(url);
+      if(salvo) it._local = salvo;
+      pronto(true);
+    };
     try { x.send(); } catch(e){ clearTimeout(t); pronto(true); }
   }
 
   function exibir(it){
     var prox = S.camadas[1 - S.ativa];
-    var inicio = Date.now(), passou = false;
+    var inicio = Date.now(), passou = false, trocou = false;
 
     prox.innerHTML = '';
     prox.className = 'layer fit-' + (it.fit || 'cover');
@@ -726,6 +1044,14 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
       proximo();
     }
     function trocar(){
+      /* Uma peça troca UMA vez. Vários caminhos podem chamar isto — o
+         onload do iframe, a folga de 4s, a cópia local entrando aos 9s — e
+         chamar duas vezes inverte as camadas de novo: apaga a que está no
+         ar e acende a que já foi esvaziada. Era assim que a tela ficava
+         preta. O guarda abaixo é o que garante que isso não volte a
+         acontecer por nenhum caminho, hoje ou depois. */
+      if(trocou) return;
+      trocou = true;
       var saindo = S.camadas[S.ativa];
       saindo.className = saindo.className.replace(' on','');
       prox.className += ' on';
@@ -828,6 +1154,34 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
     // loading=eager: o Android às vezes adia o carregamento de iframe fora
     // de vista, e aí ele começa a montar tudo NO instante da transição.
     f.setAttribute('loading','eager');
+
+    var pintou = false;
+
+    /* Monta a peça a partir da cópia guardada na TV, dentro de um iframe
+       em branco. Usada nos dois casos em que o servidor não entrega: rede
+       fora e fonte sem conteúdo. */
+    function porCopia(html, aoTerminar){
+      prox.innerHTML = '';
+      var g = document.createElement('iframe');
+      g.setAttribute('referrerpolicy','no-referrer');
+      prox.appendChild(g);
+      escreverLocal(g, html, aoTerminar);
+    }
+
+    /* A conferência já sabia que não ia adiantar pedir ao servidor: entra
+       direto a última versão boa desta peça, sem os nove segundos de
+       espera no meio. */
+    if(it._local){
+      S.timer = setTimeout(function(){ avancar(true); }, it.duration||20000);
+      porCopia(it._local, function(ok){
+        if(passou) return;
+        if(ok){ pintou = true; trocar(); return; }
+        reportar('midia_falhou', it, 'cópia da TV não abriu');
+        avancar(false);
+      });
+      return;
+    }
+
     f.src = it.type === 'youtube' ? ytEmbed(it.url) : it.url;
 
     /* onload dispara quando o HTML terminou, não quando a primeira pintura
@@ -837,54 +1191,55 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
        Dois quadros de folga (requestAnimationFrame aninhado) deixam o
        navegador terminar a primeira pintura antes de a camada aparecer. */
     f.onload = function(){
+      pintou = true;
       if(window.requestAnimationFrame){
         requestAnimationFrame(function(){ requestAnimationFrame(trocar); });
       } else {
         setTimeout(trocar, 32);
       }
     };
-    var pintou = false;
-    var onloadOriginal = f.onload;
-    f.onload = function(){ pintou = true; if(onloadOriginal) onloadOriginal(); };
     prox.appendChild(f);
     S.timer = setTimeout(function(){ avancar(true); }, it.duration||20000);
-
-    /* Peça "web" (clima, notícias, aniversariantes...): guarda em silêncio
-       uma cópia do último HTML que carregou com sucesso. Não é a fonte
-       normal — a peça continua vindo direto do widget.php, sempre
-       atualizada. Isso só entra em ação se a internet da TV falhar bem
-       na hora da troca (ver rede de segurança abaixo). */
-    if(it.type === 'web' && !PREVIA && window.caches){
-      f.addEventListener('load', function(){
-        fetch(it.url, {cache:'no-store'}).then(function(r){
-          if(r && r.ok) caches.open(CACHE_WEB).then(function(c){ c.put(it.url, r); });
-        }).catch(function(){});
-      }, {once:true});
-    }
-
     /* Rede de segurança: página que nunca dispara onload não pode travar a
        programação. Mostra assim mesmo aos 4s — mas se aos 9s continuar sem
-       carregar, pula. Antes ficava preto até a duração inteira acabar.
-       Antes de pular, para peça "web" tenta a última cópia salva: uma
-       notícia de uma hora atrás é melhor que a tela pular sozinha. */
-    setTimeout(function(){ if(S.atual !== it) trocar(); }, 4000);
+       carregar, pula. Antes ficava preto até a duração inteira acabar. */
+    /* O !passou é o que faltava, e era a TELA PRETA.
+       Este temporizador não é cancelado pelo avancar() — o avancar só limpa
+       o S.timer. Numa peça web com duração menor que 4 segundos (o painel
+       aceita 1s, e o comunicado urgente aceita 3s), a peça já tinha
+       terminado quando ele disparava: via S.atual diferente, chamava
+       trocar() de novo e apagava a camada do item SEGUINTE, acendendo no
+       lugar uma camada que já havia sido esvaziada. Resultado: preto até o
+       vigia perceber, cinco segundos depois, e um 'tela_parada' no
+       relatório a cada volta da lista. */
+    setTimeout(function(){ if(!passou && S.atual !== it) trocar(); }, 4000);
+    /* Nove segundos sem carregar. Antes: pulava a peça. Se todas as peças
+       da lista fossem do servidor — notícias, clima, aniversariantes — a
+       parede pulava todas e caía no cartão "Aguardando conteúdo": tela
+       apagada por causa da internet, e não por falta de conteúdo.
+
+       Agora entra a cópia guardada na TV. A notícia é a de meia hora
+       atrás, e a peça mostra isso; mas a parede continua com conteúdo, que
+       é o ponto. Só pula quando não há nem cópia. */
     setTimeout(function(){
       if(pintou || passou) return;
-      if(it.type === 'web' && window.caches){
-        caches.open(CACHE_WEB).then(function(c){ return c.match(it.url); }).then(function(r){
-          if(!r){ reportar('midia_falhou', it, 'página não carregou em 9s'); avancar(false); return; }
-          r.text().then(function(html){
-            if(pintou || passou) return;
-            f.removeAttribute('src');
-            f.srcdoc = html;
-            pintou = true;
-            trocar();
-          });
-        }, function(){ reportar('midia_falhou', it, 'página não carregou em 9s'); avancar(false); });
-      } else {
+      var salvo = lerCopia(it.url);
+      if(!salvo){
         reportar('midia_falhou', it, 'página não carregou em 9s');
         avancar(false);
+        return;
       }
+      porCopia(salvo, function(ok){
+        if(passou) return;
+        if(ok){
+          pintou = true;
+          reportar('peca_local', it, 'servidor sem resposta: entrou a cópia da TV');
+          trocar();          // não faz nada se a camada já estiver no ar
+          return;
+        }
+        reportar('midia_falhou', it, 'página não carregou em 9s');
+        avancar(false);
+      });
     }, 9000);
   }
 
@@ -927,7 +1282,10 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
   }
 
   function registrar(it, ms, ok){
-    var d = new Date();
+    /* Também pela hora corrigida: sem isto, uma TV com relógio torto
+       lançaria o relatório de veiculação no dia ou na hora errada, e o
+       número ficaria errado sem ninguém entender por quê. */
+    var d = relogio();
     S.logs.push({
       media_id: it.media_id, playlist_id: it._plId,
       played_at: d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+
@@ -997,7 +1355,7 @@ body.lay-rodape .palco,body.lay-completo .palco{bottom:9vh}
 
     // Recarrega de madrugada: navegador de TV aberto por semanas acumula
     // vazamento de memória. Reiniciar é mais barato que caçar.
-    setInterval(function(){ if(new Date().getHours() === 4) location.reload(); }, 3600000);
+    setInterval(function(){ if(relogio().getHours() === 4) location.reload(); }, 3600000);
 
     if(window.addEventListener) window.addEventListener('online', function(){ sincronizar(); sinal(); });
 

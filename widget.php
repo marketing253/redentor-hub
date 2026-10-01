@@ -191,8 +191,86 @@ function com_cache($db, $chave, $ttl, $buscador){
   return $c ? $c['dados'] : null;   // fonte fora do ar: vale o último bom
 }
 
+/* ── Renovação demorada, fora do caminho da TV ─────────────────
+   A leitura do feed de notícias não é uma busca: é uma varredura. Abre o
+   feed, abre a página de cada notícia atrás da foto, mede o tamanho das
+   imagens, procura a og:image. No pior caso são vinte requisições em
+   série, e o com_cache comum fazia isso DENTRO do pedido da televisão.
+
+   Três coisas davam errado ao mesmo tempo, a cada quinze minutos:
+
+     · a TV esperava a varredura inteira, desistia aos nove segundos e
+       registrava falha na peça;
+     · não havia trava, então TODA TV que passasse pela peça naquela janela
+       começava a própria varredura — dez telas, dez varreduras iguais;
+     · e como a hospedagem corta o PHP em 30 ou 60 segundos, o processo
+       morria ANTES de gravar o cache. Ou seja: nunca guardava nada, e
+       tentava tudo de novo na volta seguinte, para sempre.
+
+   Agora: quem tem cópia guardada recebe a cópia na hora. A renovação
+   acontece depois que a conexão com a TV já fechou, e só um processo por
+   vez faz isso. Se o servidor não souber fechar a conexão adiantado, a
+   renovação ainda acontece, mas com prazo curto e trava — nunca mais as
+   dez telas juntas.                                                      */
+
+function _prazo_estourou(){
+  return isset($GLOBALS['_prazo']) && microtime(true) > $GLOBALS['_prazo'];
+}
+
+/* Trava de arquivo, não de banco: é uma trava para controlar quem escreve
+   no banco, então usar o banco para isso seria andar em círculo. */
+function _trava_abrir($nome){
+  $f = @fopen(sys_get_temp_dir().'/tvi_trava_'.md5($nome), 'c');
+  if(!$f) return null;
+  if(!@flock($f, LOCK_EX | LOCK_NB)){ @fclose($f); return null; }
+  return $f;
+}
+function _trava_soltar($f){
+  if($f){ @flock($f, LOCK_UN); @fclose($f); }
+}
+
+/* Entrega a página e continua trabalhando. LiteSpeed (Hostinger) e PHP-FPM
+   têm isso; quem não tiver, devolve false e o chamador se vira. */
+function _fechar_conexao(){
+  if(function_exists('litespeed_finish_request')){ @litespeed_finish_request(); return true; }
+  if(function_exists('fastcgi_finish_request')){  @fastcgi_finish_request();  return true; }
+  return false;
+}
+
+function com_cache_lento($db, $chave, $ttl, $buscador){
+  $c = cache_get($db, $chave, $ttl);
+  if($c && !$c['velho']) return $c['dados'];
+
+  $temCopia = ($c && $c['dados']);
+
+  /* Outro processo já está renovando: a cópia guardada serve. Numa parede,
+     notícia de meia hora atrás vale muito mais que peça vazia. */
+  $trava = _trava_abrir($chave);
+  if(!$trava){
+    $GLOBALS['_renovando'] = true;
+    return $temCopia ? $c['dados'] : null;
+  }
+
+  /* Tem cópia: responde com ela agora e renova no fim do arquivo, depois
+     de a conexão com a TV ter sido fechada. */
+  if($temCopia){
+    $GLOBALS['_renovar'][]  = array('chave'=>$chave, 'busca'=>$buscador, 'trava'=>$trava);
+    $GLOBALS['_renovando']  = true;
+    return $c['dados'];
+  }
+
+  /* Primeiro carregamento desta fonte: não há o que mostrar mesmo, então
+     vale esperar — com prazo, para não estourar o limite do PHP. */
+  $GLOBALS['_prazo'] = microtime(true) + 12;
+  $novo = $buscador();
+  unset($GLOBALS['_prazo']);
+  _trava_soltar($trava);
+  if($novo !== null){ cache_set($db, $chave, $novo); return $novo; }
+  return null;
+}
+
 $db = null;
-if(in_array($tipo, array('clima','futebol','seguranca','aniversarios','noticias','instagram','qualidade','redes','grupo','cotacao','agenda'), true)){
+if(in_array($tipo, array('clima','futebol','seguranca','aniversarios','noticias','instagram','qualidade','redes','grupo','cotacao','agenda','lembretes'), true)){
   $db = portal_db();
   if($db){
     $db->set_charset('utf8mb4');
@@ -367,6 +445,77 @@ if($tipo === 'grupo' && $db){
 /* ── Agenda por setor ─────────────────────────────────────────
    Um calendário do mês com os compromissos marcados, mais a lista ao lado.
    Quem passa vê a grade e acha a data; quem para lê a lista. */
+/* ── Feriados ─────────────────────────────────────────────────
+   Um calendário de parede sem feriado engana: a pessoa olha, vê o dia 20
+   livre e programa a entrega para uma data em que não vai ter ninguém.
+
+   Ficam no código, e não numa tabela: são os mesmos todo ano, definidos em
+   lei, e ninguém deveria ter que cadastrar Natal à mão. Os móveis saem da
+   Páscoa, calculada aqui mesmo.                                          */
+
+/* Meeus/Jones/Butcher. Não uso a easter_date() do PHP porque ela depende
+   da extensão calendar, que falta em boa parte das hospedagens
+   compartilhadas — e a peça não pode morrer por causa disso. */
+function pascoa($ano){
+  $a = $ano % 19;
+  $b = intdiv($ano, 100);
+  $c = $ano % 100;
+  $d = intdiv($b, 4);
+  $e = $b % 4;
+  $f = intdiv($b + 8, 25);
+  $g = intdiv($b - $f + 1, 3);
+  $h = (19 * $a + $b - $d - $g + 15) % 30;
+  $i = intdiv($c, 4);
+  $k = $c % 4;
+  $l = (32 + 2 * $e + 2 * $i - $h - $k) % 7;
+  $m = intdiv($a + 11 * $h + 22 * $l, 451);
+  $mes = intdiv($h + $l - 7 * $m + 114, 31);
+  $dia = (($h + $l - 7 * $m + 114) % 31) + 1;
+  return array($mes, $dia);
+}
+
+/**
+ * Feriados válidos em Curitiba: nacionais + o estadual do Paraná + o
+ * municipal. Devolve array 'Y-m-d' => array(nome, tipo).
+ *
+ * A soma de dias é feita pelo mktime com o dia estourando o mês (mktime
+ * normaliza sozinho), e não somando 86400 ao timestamp: segundos escorregam
+ * em mudança de horário e o feriado cairia um dia fora.
+ */
+function feriados_curitiba($ano){
+  $f = array();
+  $por = function($mes, $dia, $nome, $tipo) use (&$f, $ano){
+    $f[date('Y-m-d', mktime(0, 0, 0, $mes, $dia, $ano))] = array('nome' => $nome, 'tipo' => $tipo);
+  };
+
+  /* Nacionais de data fixa. */
+  $por(1,   1, 'Confraternização Universal', 'nacional');
+  $por(4,  21, 'Tiradentes',                 'nacional');
+  $por(5,   1, 'Dia do Trabalho',            'nacional');
+  $por(9,   7, 'Independência',              'nacional');
+  $por(10, 12, 'N. Sra. Aparecida',          'nacional');
+  $por(11,  2, 'Finados',                    'nacional');
+  $por(11, 15, 'Proclamação da República',   'nacional');
+  /* Feriado nacional desde a Lei 14.759/2023. */
+  $por(11, 20, 'Consciência Negra',          'nacional');
+  $por(12, 25, 'Natal',                      'nacional');
+
+  /* Móveis, contados a partir da Páscoa. */
+  list($pm, $pd) = pascoa($ano);
+  $por($pm, $pd - 48, 'Carnaval',           'nacional');
+  $por($pm, $pd - 47, 'Carnaval',           'nacional');
+  $por($pm, $pd -  2, 'Sexta-feira Santa',  'nacional');
+  $por($pm, $pd + 60, 'Corpus Christi',     'nacional');
+
+  /* Paraná. */
+  $por(12, 19, 'Emancipação do Paraná', 'estadual');
+
+  /* Curitiba: padroeira da cidade. */
+  $por(9, 8, 'N. Sra. da Luz dos Pinhais', 'municipal');
+
+  return $f;
+}
+
 $ag = null;
 if($tipo === 'agenda' && $db){
   $setor = isset($_GET['setor']) ? preg_replace('/[^a-z]/', '', $_GET['setor']) : 'contabilidade';
@@ -392,14 +541,39 @@ if($tipo === 'agenda' && $db){
   $porDia = array();
   foreach($itens as $x) $porDia[(int)substr($x['data'], 8, 2)] = $x;
 
+  /* Só os feriados DESTE mês: a grade mostra um mês, e carregar o ano
+     inteiro para filtrar na hora de desenhar seria trabalho à toa. */
+  $ferAno = feriados_curitiba((int)substr($mes, 0, 4));
+  $ferMes = array();
+  foreach($ferAno as $data => $x){
+    if(substr($data, 0, 7) === $mes) $ferMes[(int)substr($data, 8, 2)] = $x;
+  }
+  ksort($ferMes);
+
   $ag = array(
-    'mes'     => $mes,
-    'itens'   => $itens,
-    'porDia'  => $porDia,
+    'mes'      => $mes,
+    'itens'    => $itens,
+    'porDia'   => $porDia,
+    'feriados' => $ferMes,
     'titulo'  => cfg_valor($db, 'agenda_titulo', 'Calendário Contábil'),
     'frase'   => cfg_valor($db, 'agenda_frase', ''),
     'rodape'  => cfg_valor($db, 'agenda_rodape', ''),
   );
+}
+
+/* ── Lembretes da contabilidade ───────────────────────────────
+   Só o título e há quanto tempo está atrasado: é para ser lido de
+   passagem. A descrição fica no painel e no e-mail das 08:30. */
+$lb = null;
+if($tipo === 'lembretes' && $db){
+  require_once __DIR__.'/lembretes_lib.php';
+  lembretes_tabela($db);
+  $hoje = date('Y-m-d');
+  $lb = array();
+  foreach(lembretes_pendentes($db) as $x){
+    $x['situacao'] = lembrete_situacao($x['prazo'], $hoje);
+    $lb[] = $x;
+  }
 }
 
 /* ── Cotação ──────────────────────────────────────────────────
@@ -412,7 +586,12 @@ if($tipo === 'agenda' && $db){
    peça diz isso na tela: cotação sem data é cotação em que não se confia. */
 $cot = null;
 if($tipo === 'cotacao' && $db){
-  $cot = tvi_com_cache($db, 'cotacao:ptax', 900, function(){
+  /* com_cache, e não tvi_com_cache direto: o include do comum.php é feito
+     com @, então a falta dele é silenciosa — e estas três chamadas eram as
+     únicas do arquivo sem a proteção do function_exists. O resultado era
+     "função indefinida", erro fatal, e a peça abrindo BRANCA na parede.
+     O com_cache local já usa a versão do comum.php quando ela existe. */
+  $cot = com_cache($db, 'cotacao:ptax', 900, function(){
     $hoje = new DateTime('now', new DateTimeZone('America/Sao_Paulo'));
     // Busca 10 dias para trás: fim de semana e feriado não têm boletim.
     $de = clone $hoje; $de->modify('-10 days');
@@ -437,7 +616,7 @@ if($tipo === 'cotacao' && $db){
   /* Variação: guarda o valor do dia anterior para mostrar se subiu ou
      caiu. Um número sozinho não diz nada; com a seta, diz. */
   if($cot){
-    $ant = tvi_cache_ler($db, 'cotacao:ontem', 999999);
+    $ant = cache_get($db, 'cotacao:ontem', 999999);
     $hojeStr = substr($cot['quando'], 0, 10);
     if($ant && !empty($ant['dados']['dia']) && $ant['dados']['dia'] !== $hojeStr){
       $cot['antes'] = (float)$ant['dados']['venda'];
@@ -445,7 +624,7 @@ if($tipo === 'cotacao' && $db){
       $cot['antes'] = (float)$ant['dados']['antes'];
     }
     if(!$ant || empty($ant['dados']['dia']) || $ant['dados']['dia'] !== $hojeStr){
-      tvi_cache_gravar($db, 'cotacao:ontem', array(
+      cache_set($db, 'cotacao:ontem', array(
         'dia' => $hojeStr, 'venda' => $cot['venda'],
         'antes' => isset($cot['antes']) ? $cot['antes'] : null));
     }
@@ -576,12 +755,18 @@ if($tipo === 'noticias' && $db){
       $antesDe = cache_get($db, 'rss:'.md5($real), 900);
       /* $db entra no use: a leitura do feed agora precisa dele para
          guardar as og:image que busca nas páginas das notícias. */
-      $news = com_cache($db, 'rss:'.md5($real), 900, function() use ($real, $db){
+      $news = com_cache_lento($db, 'rss:'.md5($real), 900, function() use ($real, $db){
         $xml = buscar($real, array(), 10);
         return $xml ? ler_feed($xml, $db) : null;
       });
-      // Se o cache estava velho e a busca não trouxe nada, é conteúdo antigo.
-      if($news && $antesDe && $antesDe['velho'] && $news === $antesDe['dados']) $newsVelho = true;
+      /* Se o cache estava velho e a busca não trouxe nada, é conteúdo antigo.
+         O _renovando é o que separa os dois casos que ficaram parecidos: o
+         conteúdo também vem "velho" quando a renovação foi só ADIADA para
+         depois de a página ser entregue — e nesse caso está tudo certo, não
+         é falta de conexão. Sem esta parte, a peça passaria a estampar
+         "sem conexão" a cada quinze minutos, com a internet funcionando. */
+      if($news && $antesDe && $antesDe['velho'] && $news === $antesDe['dados']
+         && empty($GLOBALS['_renovando'])) $newsVelho = true;
       if(!$news) $newsErro = 'A fonte respondeu, mas sem notícias aproveitáveis agora.';
     }
   }
@@ -748,6 +933,9 @@ function ler_feed($xml, $db = null){
      cada busca abre uma página do portal. */
   $buscas = 0;
   foreach($itens as $k => $it){
+    // Prazo estourado: o que já veio do feed vai ao ar assim mesmo. Peça com
+    // manchete e sem foto é melhor que peça que não chega a tempo.
+    if(_prazo_estourou()) break;
     if($it['link'] === '' || $buscas >= 4) continue;
     /* Quando a URL não declara o tamanho, o cabeçalho do arquivo declara:
        getimagesize baixa só os primeiros bytes. Sem isso, miniatura com nome
@@ -833,6 +1021,7 @@ function pedir_maior($url){
    a og:image. O @ é porque imagem quebrada não pode derrubar a peça. */
 function largura_real($url){
   if(!preg_match('#^https?://#i', $url)) return 0;
+  if(_prazo_estourou()) return 0;   // medir imagem é luxo; entregar não é
   $antes = ini_get('default_socket_timeout');
   @ini_set('default_socket_timeout', 6);
   $t = @getimagesize($url);
@@ -893,6 +1082,7 @@ function img_do_html($html){
 /* Lê a meta que os sites publicam para prévia em rede social. */
 function og_image($url){
   if(!preg_match('#^https?://#i', $url)) return '';
+  if(_prazo_estourou()) return '';
   $html = buscar($url, array(), 6);
   if(!$html) return '';
   $cabeca = substr($html, 0, 120000);
@@ -939,7 +1129,14 @@ function img_da_pagina($db, $link){
   $guardado = cache_get($db, $chave, 21600);
   if($guardado !== null && $guardado !== false) return (string)$guardado;
 
-  $html = tvi_http($link, array('timeout' => 8));
+  /* Sem prazo, desiste — e SEM gravar. Gravar vazio aqui prenderia esta
+     notícia sem foto por seis horas por causa de um segundo a mais. */
+  if(_prazo_estourou()) return '';
+
+  /* Mesmo motivo da cotação: sem a proteção, a falta do comum.php derrubava
+     a peça de notícias inteira com erro fatal. */
+  $html = function_exists('tvi_http') ? tvi_http($link, array('timeout' => 8))
+                                      : buscar($link, array(), 8);
   $img = '';
   if($html){
     /* og:image primeiro; twitter:image como segunda opção. A ordem dos
@@ -959,7 +1156,8 @@ function img_pelo_servidor($url){
   if($url === '') return '';
   if(strpos($url, 'data:') === 0) return $url;          // já embutida
   if(!preg_match('#^https?://#i', $url)) return $url;   // relativa: deixa como está
-  return tvi_base_url() . '/img.php?u=' . rawurlencode($url);
+  $raiz = function_exists('tvi_base_url') ? tvi_base_url() : base_url_widget();
+  return $raiz . '/img.php?u=' . rawurlencode($url);
 }
 
 function montar_item($titulo, $desc, $img, $data, $veiculo, $link = '', $origem = '', $db = null){
@@ -1189,6 +1387,20 @@ body.qualidade{background:
 body.niver{background:
   radial-gradient(1400px 720px at 78% -16%,#2E3478 0,transparent 60%),
   radial-gradient(1000px 620px at -10% 108%,#3A2A10 0,transparent 56%),#0C0E1C}
+
+/* ── Agenda: fundo claro ──────────────────────────────────────
+   Calendário é a única peça da parede que as pessoas param para LER de
+   perto — procurar um dia, conferir um vencimento. As outras são vistas
+   de passagem, e para essas o fundo escuro é melhor: chama menos atenção
+   do que uma tela branca acesa no meio do corredor.
+
+   Ler é diferente de olhar. Texto preto sobre branco é o que o olho faz
+   mais rápido, e num calendário de trinta números isso conta. Por isso
+   esta peça — e só ela — inverte a paleta.
+
+   O branco não é puro: #FAFAFC tira o brilho de tela acesa sem chegar a
+   parecer cinza. A logo é azul e dourada, então continua legível. */
+body.agenda{background:#FAFAFC;color:#111827}
 @media (prefers-reduced-motion:reduce){
   .balao{animation:none;display:none}
   .festa,.festa__sup,.festa__tit,.festa__qtd,.pgNiver.on{animation:none}
@@ -1605,10 +1817,13 @@ body.pronto .ig2__fundo{filter:blur(22px) saturate(1.2) brightness(.6)}
 .ag__topo{display:flex;align-items:flex-start;gap:2vw;flex:0 0 auto}
 .ag__tit{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   font-size:3.4vw;font-weight:400;margin:0;letter-spacing:-.02em;line-height:1.05}
-.ag__mes{font-size:1.7vw;color:#C08A28;font-weight:700;letter-spacing:.18em;
+.ag__tit{color:#111827}
+/* Dourado escurecido: o #C08A28 da marca foi feito para brilhar no escuro
+   e some no branco. Este mantém a cor e devolve o contraste. */
+.ag__mes{font-size:2.1vw;color:#8A6015;font-weight:700;letter-spacing:.14em;
   text-transform:uppercase;margin-top:.4vw}
-.ag__frase{flex:1;font-size:1.15vw;color:#9EA2C0;line-height:1.5;max-width:30ch;
-  border-left:2px solid #C08A28;padding-left:1.2vw;margin-top:.6vw;font-style:italic}
+.ag__frase{flex:1;font-size:1.25vw;color:#3A3F55;line-height:1.5;max-width:30ch;
+  border-left:3px solid #A87520;padding-left:1.2vw;margin-top:.6vw;font-style:italic}
 .ag__logo{height:4vw;width:auto;margin-left:auto}
 
 .ag__corpo{flex:1;display:flex;gap:2vw;min-height:0}
@@ -1617,27 +1832,106 @@ body.pronto .ig2__fundo{filter:blur(22px) saturate(1.2) brightness(.6)}
    obriga a reaprender a leitura toda vez. */
 .ag__grade{flex:1;display:grid;grid-template-columns:repeat(7,1fr);
   grid-auto-rows:minmax(0,1fr);gap:.5vw;min-height:0}
-.ag__dia-sem{font-size:1.1vw;letter-spacing:.16em;text-transform:uppercase;
-  color:#6A6F98;font-weight:700;text-align:center;padding-bottom:.4vw;
+.ag__dia-sem{font-size:1.5vw;letter-spacing:.14em;text-transform:uppercase;
+  color:#3A3F55;font-weight:700;text-align:center;padding-bottom:.4vw;
   align-self:center}
-.ag__dia-sem.fds{color:#C08A28}
-.ag__vazio{border-radius:4px;background:rgba(236,219,174,.02)}
+.ag__dia-sem.fds{color:#3B4192}
+.ag__vazio{border-radius:4px;background:#F0F2F7}
 
-.ag__dia{position:relative;border:1px solid rgba(236,219,174,.10);border-radius:4px;
-  padding:.5vw .6vw;display:flex;flex-direction:column;gap:.2vw;overflow:hidden;
-  background:rgba(236,219,174,.03)}
-.ag__dia.fds{background:rgba(12,14,28,.5)}
-.ag__n{font-size:1.5vw;font-weight:300;color:#D8DAE8;line-height:1}
-/* Hoje: contorno dourado. É a primeira coisa que se procura num calendário. */
-.ag__dia.hoje{border-color:#C08A28;border-width:2px;background:rgba(192,138,40,.10)}
-.ag__dia.hoje .ag__n{color:#ECDBAE;font-weight:600}
+/* ── Tamanho pensado para TRÊS METROS ─────────────────────────
+   Na tela do computador o calendário parecia certo; na parede, não dava
+   para ler os dias. É a diferença de sempre entre olhar de perto e olhar
+   de longe — e o segundo é o único que importa aqui.
 
-/* Dia com compromisso: cor cheia, número maior e o nome embaixo. */
+   O número do dia é o elemento principal desta peça: é o que a pessoa
+   procura. Passou de 1,5vw peso 300 (fino, e do tamanho de um texto
+   corrido) para 3vw peso 600. Em tela cheia de 1920 isso é 29px virando
+   58px, e leve virando firme.
+
+   O número também foi para o CENTRO da célula. Encostado no canto, com a
+   célula quase toda vazia, o olho não tinha onde se fixar — era isso que
+   fazia a grade parecer em branco. */
+.ag__dia{position:relative;border:1px solid #C9CFE0;border-radius:4px;
+  padding:.4vw .5vw;display:flex;flex-direction:column;gap:.15vw;overflow:hidden;
+  background:#fff;align-items:center;justify-content:center;text-align:center}
+.ag__n{font-size:3vw;font-weight:600;color:#111827;line-height:1;
+  font-variant-numeric:tabular-nums}
+
+/* Célula que também carrega texto usa um número um pouco menor.
+   A linha da grade tem cerca de 93px numa tela de 1080: número de 58px
+   MAIS duas linhas de texto não cabe, e o overflow:hidden cortaria o
+   texto sem avisar. Aqui o número cede um pouco e o texto vai a uma
+   linha só — o nome completo já está na coluna ao lado, em corpo bem
+   maior. O que a grade precisa responder é QUANDO, não o quê. */
+.ag__dia.tem .ag__n,
+.ag__dia.feriado .ag__n{font-size:2.6vw}
+
+/* ── Fim de semana ────────────────────────────────────────────
+   Azul da marca, bem lavado. Não é aviso, é só "aqui não se trabalha":
+   precisa dar para ver de relance sem disputar atenção com o vencimento
+   que está três casas ao lado. */
+/* O azul do fim de semana foi reforçado: o tom anterior era correto no
+   monitor e simplesmente desaparecia na TV. Painel de televisão lava as
+   diferenças sutis — o que é discreto de perto some de longe. */
+/* O :not(.tem) em todos os fundos de estado não é detalhe — é correção.
+   Estas regras têm duas classes de especificidade; as cores do compromisso
+   (.c-azul e companhia) têm uma só. Sem o :not, o fundo do estado ganhava
+   do fundo do vencimento, e um vencimento que caísse em feriado saía com o
+   fundo rosa-claro do feriado E o número branco do compromisso: branco
+   sobre rosa claro, ilegível. Não matching resolve melhor que disputa de
+   especificidade. */
+.ag__dia.fds:not(.tem){background:#DDE4F4;border-color:#BCC6E2}
+.ag__dia.fds .ag__n{color:#2A2F6C;font-weight:600}
+
+/* ── Feriado ──────────────────────────────────────────────────
+   Vermelho, que é a convenção de calendário no mundo inteiro — e por isso
+   não precisa de legenda para ser entendido. Vem DEPOIS do fim de semana
+   nesta folha porque feriado que cai no sábado continua sendo feriado, e
+   é essa a informação que importa. */
+.ag__dia.feriado:not(.tem){background:#F8D8D8;border-color:#E0A9A9}
+.ag__dia.feriado .ag__n{color:#8E2438;font-weight:700}
+.ag__fer{font-size:1vw;line-height:1.15;color:#8E2438;font-weight:700;
+  text-transform:uppercase;letter-spacing:.02em;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Hoje: contorno dourado, agora com 3px e fundo cheio.
+   Com 2px e fundo quase branco, na parede virava um retângulo cinza que
+   não se distinguia de célula vazia — justamente o dia que mais se
+   procura num calendário. */
+.ag__dia.hoje:not(.tem){border-color:#A87520;border-width:3px;background:#FBE9BE}
+.ag__dia.hoje:not(.tem) .ag__n{color:#5E3F12;font-weight:700}
+/* Hoje COM vencimento: mantém a cor do compromisso e ganha o contorno
+   dourado por fora. Perder o "hoje" no dia em que algo vence seria perder
+   justamente o dia mais importante do mês. */
+.ag__dia.hoje.tem{outline:3px solid #A87520;outline-offset:-3px}
+
+/* Dia com compromisso: cor cheia, número maior e o nome embaixo.
+   Continua sendo o elemento mais forte da grade — agora ainda mais, porque
+   é o único bloco de cor saturada numa folha clara. */
 .ag__dia.tem{border-width:0}
-.ag__dia.tem .ag__n{font-size:1.9vw;font-weight:600;color:#fff}
-.ag__ev{font-size:.72vw;line-height:1.2;color:rgba(255,255,255,.92);font-weight:600;
-  text-transform:uppercase;letter-spacing:.04em;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ag__dia.tem .ag__n{font-size:2.6vw;font-weight:700;color:#fff}
+/* Compromisso vence feriado e fim de semana: a peça existe para mostrar
+   vencimento, e a cor cheia não pode ser encoberta pelo fundo do dia. */
+.ag__dia.tem .ag__fer{color:rgba(255,255,255,.92)}
+
+/* ── Vencimento em dia NÃO ÚTIL ───────────────────────────────
+   Com a correção acima, a cor do compromisso passou a cobrir o fundo do
+   feriado e do fim de semana — certo para a leitura, mas some uma
+   informação que em contabilidade muda a data: vencimento que cai em dia
+   não útil antecipa ou posterga, conforme a obrigação.
+
+   Este ponto devolve o aviso sem tirar a cor: quem conhece a peça vê o
+   ponto e confere; quem não conhece continua lendo o vencimento normal.
+   Vermelho com anel branco para valer sobre qualquer um dos cinco fundos
+   de cor. */
+.ag__dia.tem.feriado::after,
+.ag__dia.tem.fds::after{
+  content:"";position:absolute;top:.3vw;right:.3vw;
+  width:.7vw;height:.7vw;border-radius:50%;
+  background:#E0576E;border:.14vw solid #fff}
+.ag__ev{font-size:1vw;line-height:1.15;color:#fff;font-weight:700;
+  text-transform:uppercase;letter-spacing:.02em;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 
 /* Cinco cores, para a contabilidade separar tipos de obrigação. */
 .c-azul   { background:linear-gradient(150deg,#3B4192,#2A2F6C) }
@@ -1647,22 +1941,41 @@ body.pronto .ig2__fundo{filter:blur(22px) saturate(1.2) brightness(.6)}
 .c-vermelho{background:linear-gradient(150deg,#B03A50,#7E2537) }
 
 /* Lista lateral */
-.ag__lado{flex:0 0 26vw;display:flex;flex-direction:column;gap:.8vh;min-height:0}
-.ag__lado-tit{font-size:1.1vw;letter-spacing:.2em;text-transform:uppercase;
-  color:#C08A28;font-weight:700;margin-bottom:.4vh}
-.ag__card{border-radius:4px;padding:.9vh 1vw;display:flex;flex-direction:column;
-  gap:.15vh;animation:qaSurge .7s both;flex:0 1 auto}
-.ag__card.passou{opacity:.42}   /* já venceu: continua visível, sem competir */
-.ag__data{font-size:1.5vw;font-weight:700;color:#fff;line-height:1}
-.ag__nome{font-size:.95vw;font-weight:600;color:rgba(255,255,255,.95);
-  text-transform:uppercase;letter-spacing:.04em;line-height:1.25}
-.ag__det{font-size:.8vw;color:rgba(255,255,255,.72);line-height:1.3;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ag__nada{font-size:1.1vw;color:#6A6F98;line-height:1.6}
+/* overflow:hidden porque a lista de feriados entrou embaixo dos
+   compromissos: num mês cheio dos dois, o que não couber é cortado no pé
+   da coluna em vez de empurrar a grade para fora da tela. */
+.ag__lado{flex:0 0 26vw;display:flex;flex-direction:column;gap:.8vh;
+  min-height:0;overflow:hidden}
+.ag__lado-tit{font-size:1.35vw;letter-spacing:.16em;text-transform:uppercase;
+  color:#8A6015;font-weight:700;margin-bottom:.4vh}
 
-.ag__rodape{flex:0 0 auto;text-align:center;font-size:1vw;color:#C08A28;
-  letter-spacing:.2em;text-transform:uppercase;font-weight:600;
-  border-top:1px solid rgba(236,219,174,.14);padding-top:1.4vh}
+/* Lista de feriados do mês, embaixo dos compromissos. Na grade o nome do
+   feriado sai miúdo demais para ler a três metros; aqui ele fica legível,
+   e a grade continua servindo para localizar o dia. */
+/* Faixa dos feriados: largura inteira, uma linha, embaixo da grade. */
+.ag__fer-faixa{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:baseline;
+  gap:.4vw 1.8vw;padding-top:1vh}
+.ag__fer-rot{font-size:1.15vw;letter-spacing:.16em;text-transform:uppercase;
+  color:#8E2438;font-weight:700}
+.ag__fer-lin{font-size:1.3vw;color:#22263A;line-height:1.3;white-space:nowrap}
+.ag__fer-dia{font-weight:700;color:#8E2438;margin-right:.4vw;
+  font-variant-numeric:tabular-nums}
+/* min-height:0 + overflow:hidden: um título comprido que quebre em duas
+   linhas aumenta o card e empurra o último para fora da coluna. Assim ele
+   cede espaço em vez de derrubar a lista inteira. */
+.ag__card{border-radius:4px;padding:.9vh 1vw;display:flex;flex-direction:column;
+  gap:.15vh;animation:qaSurge .7s both;flex:0 1 auto;min-height:0;overflow:hidden}
+.ag__card.passou{opacity:.42}   /* já venceu: continua visível, sem competir */
+.ag__data{font-size:1.8vw;font-weight:700;color:#fff;line-height:1}
+.ag__nome{font-size:1.15vw;font-weight:700;color:#fff;
+  text-transform:uppercase;letter-spacing:.02em;line-height:1.25}
+.ag__det{font-size:.95vw;color:rgba(255,255,255,.85);line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ag__nada{font-size:1.25vw;color:#3A3F55;line-height:1.6}
+
+.ag__rodape{flex:0 0 auto;text-align:center;font-size:1.15vw;color:#8A6015;
+  letter-spacing:.16em;text-transform:uppercase;font-weight:700;
+  border-top:1px solid #C9CFE0;padding-top:1.4vh}
 
 /* Tela em pé: a lista vai para baixo da grade. */
 @media (max-aspect-ratio:1/1){
@@ -1670,15 +1983,88 @@ body.pronto .ig2__fundo{filter:blur(22px) saturate(1.2) brightness(.6)}
   .ag__corpo{flex-direction:column}
   .ag__lado{flex:0 0 auto;flex-direction:row;flex-wrap:wrap;gap:1vh}
   .ag__card{flex:1 1 30%}
-  .ag__tit{font-size:4vh}.ag__mes{font-size:1.8vh}.ag__frase{display:none}
-  .ag__n{font-size:2vh}.ag__dia.tem .ag__n{font-size:2.4vh}
-  .ag__ev{font-size:1vh}.ag__dia-sem{font-size:1.3vh}
-  .ag__data{font-size:2vh}.ag__nome{font-size:1.3vh}.ag__det{font-size:1.1vh}
-  .ag__lado-tit{font-size:1.3vh}.ag__rodape{font-size:1.2vh}
+  /* Mesma correção da tela deitada: em pé os números também estavam
+     pequenos demais para a distância de leitura. */
+  .ag__tit{font-size:4vh}.ag__mes{font-size:2.4vh}.ag__frase{display:none}
+  .ag__n{font-size:3.4vh}
+  .ag__dia.tem .ag__n,.ag__dia.feriado .ag__n{font-size:2.9vh}
+  .ag__ev{font-size:1.3vh}.ag__dia-sem{font-size:1.8vh}
+  .ag__data{font-size:2.4vh}.ag__nome{font-size:1.6vh}.ag__det{font-size:1.3vh}
+  .ag__lado-tit{font-size:1.7vh}.ag__rodape{font-size:1.5vh}
+  /* Em pé a lateral vira linha, e os feriados precisam ocupar a faixa
+     inteira — senão viram colunas magras de uma palavra só. */
+  .ag__fer{font-size:1.3vh}
+  .ag__fer-rot{font-size:1.5vh}
+  .ag__fer-lin{font-size:1.6vh}
 }
 
 .erro{font-size:3vw;color:#9EA2C0;text-align:center}
 @media (prefers-reduced-motion:reduce){.sep{transition:none}}
+
+/* ── Lembretes da contabilidade ───────────────────────────────
+   Fundo branco, como a agenda no painel em tema claro, com o azul e o
+   dourado da Redentor. Uma coluna só, um embaixo do outro, o mais
+   atrasado no topo. O tamanho da letra depende de quantos são (classes
+   g/m/p): poucos lembretes, letra enorme; muitos, menor — mas sempre
+   cabendo na tela, sem rolar. Medidas em vh porque o que limita uma TV
+   deitada é a altura. */
+html:has(body.claro),body.claro{background:#FFFFFF;color:#16202C}
+.lb{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
+  padding:5vh 6vw 5vh 5vw;box-sizing:border-box;gap:2.6vh;background:#FFFFFF}
+.lb__topo{display:flex;align-items:center;gap:2.4vw;flex:0 0 auto;
+  border-bottom:4px solid #C08A28;padding-bottom:1.8vh}
+.lb__tit{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  font-size:7vh;font-weight:400;margin:0;letter-spacing:-.02em;line-height:1.05;color:#3B4192}
+.lb__sub{font-size:2.4vh;color:#C08A28;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;margin-top:.6vh}
+.lb__resumo{font-size:3vh;color:#B03A50;font-weight:600;background:#FBEDEF;
+  border-radius:100px;padding:.9vh 2.4vh}
+.lb__resumo b{font-size:3.8vh}
+.lb__logo{height:8vh;width:auto;margin-left:auto;
+  filter:drop-shadow(0 0 1px rgba(22,32,44,.7))}   /* "ISO 9001" é branco na logo */
+
+.lb__lista{flex:1;display:flex;flex-direction:column;gap:2.4vh;min-height:0}
+.lb__item{display:flex;align-items:center;justify-content:space-between;gap:3vw;
+  background:#F5F6FB;border:1px solid #E3E6F2;border-left:1vh solid #3B4192;border-radius:8px;
+  padding:2.8vh 2.6vw;animation:qaSurge .7s both;flex:0 0 auto}
+.lb__item.atrasado{border-left-color:#B03A50;background:#FDF4F5;border-color:#F3DADF}
+.lb__item.hoje{border-left-color:#C08A28;background:#FCF7EC;border-color:#F0E2C4}
+.lb__nome{font-size:6.2vh;font-weight:600;color:#16202C;line-height:1.3;min-width:0;padding-bottom:.1em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lb__atraso{font-size:4.8vh;font-weight:700;white-space:nowrap;color:#3B4192;flex:0 0 auto}
+.lb__item.atrasado .lb__atraso{color:#B03A50}
+.lb__item.hoje .lb__atraso{color:#A0721C}
+
+/* 4 ou 5 lembretes */
+.lb__lista.m{gap:2vh}
+.lb__lista.m .lb__item{padding:2.3vh 2.4vw}
+.lb__lista.m .lb__nome{font-size:5.4vh;-webkit-line-clamp:1}
+.lb__lista.m .lb__atraso{font-size:4.4vh}
+/* 6 ou 7 lembretes */
+.lb__lista.p{gap:1.3vh}
+.lb__lista.p .lb__item{padding:1.1vh 2.2vw}
+.lb__lista.p .lb__nome{font-size:4.4vh;-webkit-line-clamp:1}
+.lb__lista.p .lb__atraso{font-size:3.7vh}
+
+.lb__nada{font-size:4vh;color:#5B6775}
+.lb__mais{flex:0 0 auto;text-align:center;font-size:2.4vh;color:#5B6775;
+  letter-spacing:.12em;text-transform:uppercase}
+
+/* Tela em pé: sobra altura e falta largura, então o atraso desce para
+   baixo do título e as medidas passam a seguir a largura. */
+@media (max-aspect-ratio:1/1){
+  .lb{padding:5vh 6vw}
+  .lb__tit{font-size:9vw}.lb__sub{font-size:2.8vw}.lb__resumo{font-size:3.4vw}.lb__resumo b{font-size:4.2vw}
+  .lb__logo{height:9vw}
+  .lb__item{flex-direction:column;align-items:flex-start;gap:.8vh;padding:2.6vh 5vw}
+  .lb__nome{font-size:7vw}.lb__atraso{font-size:5.4vw}
+  .lb__lista.m .lb__item{padding:2vh 5vw}
+  .lb__lista.m .lb__nome{font-size:5.6vw;-webkit-line-clamp:1}.lb__lista.m .lb__atraso{font-size:4.5vw}
+  .lb__lista.p .lb__item{padding:1vh 5vw;gap:.3vh}
+  .lb__lista.p{gap:1.1vh}
+  .lb__lista.p .lb__nome{font-size:4.8vw;-webkit-line-clamp:1}.lb__lista.p .lb__atraso{font-size:3.9vw}
+  .lb__nada{font-size:5vw}.lb__mais{font-size:3vw}
+}
 </style>
 </head>
 <?php
@@ -1700,6 +2086,26 @@ if($tipo === 'noticias'){
   if(empty($niverHoje)){ $pecaOk = false; $pecaMotivo = 'ninguém faz aniversário hoje'; }
 } elseif($tipo === 'instagram'){
   if(empty($insta)){ $pecaOk = false; $pecaMotivo = 'sem publicações'; }
+
+/* ── Três peças que não sabiam se declarar vazias ──────────────
+   Estas caíam no padrão "tem conteúdo" e ocupavam a parede pelos quinze ou
+   vinte segundos inteiros estampando "indisponível no momento" — que não
+   diz nada a quem está esperando o ônibus. Agora saem de cena, e o player
+   coloca no lugar a última versão boa que a TV guardou. */
+} elseif($tipo === 'clima'){
+  if(!$previsao){ $pecaOk = false; $pecaMotivo = 'previsão indisponível'; }
+} elseif($tipo === 'cotacao'){
+  if(!$cot){ $pecaOk = false; $pecaMotivo = 'cotação indisponível'; }
+} elseif($tipo === 'agenda'){
+  /* Só a falha de verdade — quando nem o banco respondeu. Mês SEM
+     vencimento não é peça vazia: é a resposta certa, e quem colocou a
+     agenda na parede quer justamente poder olhar e ver que não há nada
+     vencendo. Marcar isso como vazio tiraria da tela uma informação que
+     alguém pediu para ver. */
+  if(!$ag){ $pecaOk = false; $pecaMotivo = 'não consegui ler a agenda'; }
+} elseif($tipo === 'lembretes'){
+  /* Tudo feito: a peça sai da vez em vez de mostrar uma tela vazia. */
+  if(empty($lb)){ $pecaOk = false; $pecaMotivo = 'nenhum lembrete pendente'; }
 }
 ?>
 <body data-peca-ok="<?php echo $pecaOk ? '1' : '0'; ?>"
@@ -1709,7 +2115,8 @@ if($tipo === 'noticias'){
   elseif($tipo === 'redes' && $redes) echo ' class="qualidade"';   // mesmo fundo institucional
   elseif($tipo === 'grupo' && $grupo) echo ' class="qualidade"';
   elseif($tipo === 'cotacao') echo ' class="qualidade"';
-  elseif($tipo === 'agenda' && $ag) echo ' class="qualidade"';
+  elseif($tipo === 'agenda' && $ag) echo ' class="agenda"';
+  elseif($tipo === 'lembretes') echo ' class="claro"';
 ?>>
 
 <?php if($tipo === 'futebol'):
@@ -2059,17 +2466,23 @@ if($tipo === 'noticias'){
       <?php for($v = 0; $v < $comecaEm; $v++): ?><span class="ag__vazio"></span><?php endfor; ?>
 
       <?php for($d = 1; $d <= $diasNoMes; $d++):
-        $ev = isset($ag['porDia'][$d]) ? $ag['porDia'][$d] : null;
+        $ev  = isset($ag['porDia'][$d]) ? $ag['porDia'][$d] : null;
+        $fer = isset($ag['feriados'][$d]) ? $ag['feriados'][$d] : null;
         $sem = (int)date('w', mktime(0,0,0,$mn,$d,$ano));
         $cls = 'ag__dia';
         if($ev) $cls .= ' tem c-'.$ev['cor'];
         if($sem === 0 || $sem === 6) $cls .= ' fds';
+        /* Feriado depois do fim de semana: feriado que cai no sábado
+           continua sendo feriado, e é essa a informação que importa. */
+        if($fer) $cls .= ' feriado';
         if($d === $hojeDia) $cls .= ' hoje';
       ?>
         <div class="<?php echo $cls; ?>">
           <span class="ag__n"><?php echo $d; ?></span>
           <?php if($ev): ?>
             <span class="ag__ev"><?php echo htmlspecialchars($ev['titulo']); ?></span>
+          <?php elseif($fer): ?>
+            <span class="ag__fer"><?php echo htmlspecialchars($fer['nome']); ?></span>
           <?php endif; ?>
         </div>
       <?php endfor; ?>
@@ -2079,7 +2492,12 @@ if($tipo === 'noticias'){
     <aside class="ag__lado">
       <p class="ag__lado-tit">Principais compromissos</p>
       <?php if($ag['itens']): ?>
-        <?php foreach(array_slice($ag['itens'], 0, 6) as $k => $it):
+        <?php /* Cinco, e não seis: medido na tela, com os corpos aumentados
+                 para leitura a três metros, o sexto card estourava a coluna
+                 em 53px — e era cortado sem aviso pelo overflow. A grade ao
+                 lado continua mostrando TODOS os vencimentos do mês; esta
+                 coluna é a leitura de perto, dos principais. */ ?>
+        <?php foreach(array_slice($ag['itens'], 0, 5) as $k => $it):
           $passou = $hojeDia && (int)substr($it['data'], 8, 2) < $hojeDia;
         ?>
           <div class="ag__card c-<?php echo $it['cor']; ?><?php echo $passou ? ' passou' : ''; ?>"
@@ -2094,8 +2512,30 @@ if($tipo === 'noticias'){
       <?php else: ?>
         <p class="ag__nada">Nenhum compromisso lançado para este mês.</p>
       <?php endif; ?>
+
     </aside>
   </div>
+
+  <?php if($ag['feriados']): ?>
+    <!-- Faixa própria, largura inteira.
+         Os feriados começaram na coluna da direita, embaixo dos
+         compromissos, e não cabiam: medindo na tela, num mês com seis
+         vencimentos e três feriados a coluna estourava em mais de cem
+         pixels — e o overflow cortava justamente os feriados, calado.
+
+         Aqui embaixo eles têm a largura toda para uma linha só, ficam
+         legíveis de longe e param de disputar espaço com a lista de
+         vencimentos, que é o conteúdo principal da coluna. -->
+    <div class="ag__fer-faixa">
+      <span class="ag__fer-rot">Feriados</span>
+      <?php foreach($ag['feriados'] as $fd => $fx): ?>
+        <span class="ag__fer-lin">
+          <span class="ag__fer-dia"><?php echo str_pad($fd, 2, '0', STR_PAD_LEFT); ?></span>
+          <?php echo htmlspecialchars($fx['nome']); ?>
+        </span>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
 
   <?php if($ag['rodape']): ?>
     <p class="ag__rodape"><?php echo htmlspecialchars($ag['rodape']); ?></p>
@@ -2105,6 +2545,51 @@ if($tipo === 'noticias'){
 <script>
 /* Recarrega à meia-noite: o "hoje" destacado e o que já passou mudam de
    dia, e uma parede ligada direto continuaria marcando ontem. */
+(function(){
+  var a = new Date();
+  var m = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1, 0, 0, 30);
+  setTimeout(function(){ location.reload(); }, Math.min(m - a, 3600000));
+})();
+</script>
+
+<?php elseif($tipo === 'lembretes'): ?>
+<?php
+  $nAtr = 0;
+  foreach((array)$lb as $x) if($x['situacao']['estado'] === 'atrasado') $nAtr++;
+  $mostrar = array_slice((array)$lb, 0, 7);   // 7 é o que cabe em uma coluna com letra legível
+  $resto = count((array)$lb) - count($mostrar);
+?>
+<div class="lb">
+  <header class="lb__topo">
+    <div>
+      <h1 class="lb__tit">Lembretes</h1>
+      <p class="lb__sub">Contabilidade · <?php echo date('d/m/Y'); ?></p>
+    </div>
+    <?php if($nAtr): ?>
+      <p class="lb__resumo"><b><?php echo $nAtr; ?></b> atrasado<?php echo $nAtr > 1 ? 's' : ''; ?></p>
+    <?php endif; ?>
+    <img class="lb__logo" src="data:image/png;base64,<?php echo LOGO_B64; ?>" alt="">
+  </header>
+
+  <!-- Uma coluna, o mais atrasado no topo. g/m/p = tamanho da letra
+       conforme a quantidade, para tudo caber sem rolar. -->
+  <div class="lb__lista <?php $q = count($mostrar); echo $q <= 3 ? 'g' : ($q <= 5 ? 'm' : 'p'); ?>">
+    <?php if($mostrar): foreach($mostrar as $k => $it): $s = $it['situacao']; ?>
+      <div class="lb__item <?php echo $s['estado']; ?>" style="animation-delay:<?php echo 0.2 + $k * 0.08; ?>s">
+        <span class="lb__nome"><?php echo htmlspecialchars($it['titulo']); ?></span>
+        <span class="lb__atraso"><?php echo htmlspecialchars($s['texto']); ?></span>
+      </div>
+    <?php endforeach; else: ?>
+      <p class="lb__nada">Nenhum lembrete pendente.</p>
+    <?php endif; ?>
+  </div>
+
+  <?php if($resto > 0): ?>
+    <p class="lb__mais">e mais <?php echo $resto; ?> lembrete<?php echo $resto > 1 ? 's' : ''; ?> no painel</p>
+  <?php endif; ?>
+</div>
+<script>
+/* O atraso muda à meia-noite ("3 dias" vira "4 dias"). */
 (function(){
   var a = new Date();
   var m = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1, 0, 0, 30);
@@ -2781,3 +3266,34 @@ setTimeout(function(){ location.reload(); }, 3600000);
 </script>
 </body>
 </html>
+
+<?php
+/* ══════════════ RENOVAÇÃO DEPOIS DA ENTREGA ══════════════
+
+   Daqui para baixo a televisão já recebeu a página inteira. O que roda
+   agora não faz ninguém esperar: é a varredura do feed de notícias, que
+   leva dezenas de segundos e antes acontecia com a TV parada esperando.
+
+   A trava foi aberta lá em cima, no com_cache_lento, e continua nossa até
+   o fim deste bloco — é ela que garante que só um processo varre, mesmo
+   com dez telas passando pela peça ao mesmo tempo.                       */
+if(!empty($GLOBALS['_renovar'])){
+  $__fechou = _fechar_conexao();
+
+  /* Sem fechar a conexão, quem está esperando é a TV: prazo curto.
+     Com a conexão fechada, dá para fazer o trabalho direito. */
+  @ignore_user_abort(true);
+  @set_time_limit($__fechou ? 120 : 15);
+  $GLOBALS['_prazo'] = microtime(true) + ($__fechou ? 90 : 10);
+
+  foreach($GLOBALS['_renovar'] as $__p){
+    $__novo = null;
+    try { $__novo = call_user_func($__p['busca']); } catch(Exception $e){ $__novo = null; }
+    /* null é fonte fora do ar: mantém o que já estava guardado, que é o
+       que a TV acabou de exibir. */
+    if($__novo !== null) cache_set($db, $__p['chave'], $__novo);
+    _trava_soltar($__p['trava']);
+  }
+  $GLOBALS['_renovar'] = array();
+  unset($GLOBALS['_prazo']);
+}

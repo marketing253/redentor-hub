@@ -28,3 +28,6 @@ auxilio/.backup_estado.json
 *.zip
 .DS_Store
 Thumbs.db
+
+# Testes rodam na máquina de quem desenvolve, não no servidor.
+testes/

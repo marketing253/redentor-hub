@@ -3,15 +3,13 @@ date_default_timezone_set('America/Sao_Paulo');
 /* ============================================================
    BACKUP AUTOMÁTICO DIÁRIO — Redentor Hub
    Agende no cron da Hostinger (1x por dia):
-   curl -s "https://SEU-SITE/backup_auto.php?k=SUA_CHAVE" > /dev/null
-   (a chave real fica em cron_secrets.php, fora do controle de versão)
+   curl -s "https://SEU-SITE/backup_auto.php?k=Rdt2026cron7k9QpX" > /dev/null
    Mantém os últimos 14 backups em /backups/.
    ============================================================ */
-$__cronsec = @include __DIR__.'/cron_secrets.php';
-define('CHAVE_CRON', $__cronsec['lembrete_backup'] ?? '');
+define('CHAVE_CRON', 'Rdt2026cron7k9QpX');
 
 header('Content-Type: text/plain; charset=utf-8');
-if(CHAVE_CRON === '' || !isset($_GET['k']) || !hash_equals(CHAVE_CRON, (string)$_GET['k'])){ http_response_code(403); die('Acesso negado.'); }
+if(!isset($_GET['k']) || $_GET['k'] !== CHAVE_CRON){ http_response_code(403); die('Acesso negado.'); }
 
 require __DIR__.'/db_config.php';
 $mysqli = portal_db();

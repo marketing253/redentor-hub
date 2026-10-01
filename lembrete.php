@@ -11,16 +11,14 @@ if(!function_exists('mb_strtolower')){ function mb_strtolower($s,$e=null){ retur
 /* ============================================================
    LEMBRETE DIÁRIO DA AGENDA — Redentor Hub
    Agende no cron da Hostinger (ex.: 07:00, seg-sáb):
-   curl -s "https://SEU-SITE/lembrete.php?k=SUA_CHAVE" > /dev/null
-   (a chave real fica em cron_secrets.php, fora do controle de versão)
+   curl -s "https://SEU-SITE/lembrete.php?k=Rdt2026cron7k9QpX" > /dev/null
    Envia via n8n (webhook configurado no Hub) os compromissos
    de HOJE para cada pessoa cadastrada em Contatos do WhatsApp.
    ============================================================ */
-$__cronsec = @include __DIR__.'/cron_secrets.php';
-define('CHAVE_CRON', $__cronsec['lembrete_backup'] ?? '');
+define('CHAVE_CRON', 'Rdt2026cron7k9QpX');
 
 header('Content-Type: text/plain; charset=utf-8');
-if(CHAVE_CRON === '' || !isset($_GET['k']) || !hash_equals(CHAVE_CRON, (string)$_GET['k'])){ http_response_code(403); die('Acesso negado.'); }
+if(!isset($_GET['k']) || $_GET['k'] !== CHAVE_CRON){ http_response_code(403); die('Acesso negado.'); }
 
 require __DIR__.'/db_config.php';
 $mysqli = portal_db();

@@ -28,6 +28,7 @@ require __DIR__.'/db_config.php';
 /* Funções comuns aos três arquivos. O @ é deliberado: se comum.php faltar,
    cada arquivo ainda tem as próprias cópias e continua funcionando. */
 @include_once __DIR__.'/comum.php';
+require_once __DIR__.'/lembretes_lib.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
@@ -69,16 +70,47 @@ $db = portal_db();
 if(!$db) fail('Sem conexão com o banco. Confira o db_config.php.');
 $db->set_charset('utf8mb4');
 
-/* ══════════════ ESTRUTURA ══════════════ */
+/* ══════════════ ESTRUTURA ══════════════
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_grupos (
+   POR QUE ISTO AGORA É CONDICIONAL
+   --------------------------------
+   Este bloco cria tabelas, confere colunas e cria índices. Escrito assim,
+   ele rodava em TODA requisição: 19 CREATE TABLE, 17 SHOW COLUMNS e 8
+   SHOW INDEX antes de qualquer ação começar.
+
+   Um heartbeat, que precisa de meia dúzia de consultas, custava mais de
+   cinquenta. Com dez telas batendo a cada 30 segundos, isso é perto de mil
+   consultas por minuto só para o banco repetir "sim, a tabela existe".
+
+   Agora a estrutura é carimbada com uma versão. Enquanto o carimbo bater,
+   o bloco inteiro é pulado. Ao subir uma versão nova do portal, muda-se a
+   constante abaixo e a migração roda uma vez, no primeiro acesso.        */
+
+define('ESQUEMA_VERSAO', '79.1');
+
+/* Numa instalação nova a tabela ainda não existe e a consulta falha —
+   o que é a resposta certa: falso, migre. */
+$ESQUEMA_OK = false;
+$__r = @$db->query("SELECT valor FROM tvi_config WHERE chave='esquema_versao'");
+if($__r && $__r->num_rows){
+  $ESQUEMA_OK = ($__r->fetch_assoc()['valor'] === ESQUEMA_VERSAO);
+}
+
+/* Atalho para as criações de tabela. Mesma coisa que $db->query, só que
+   silencioso quando a estrutura já está no lugar. */
+function ddl($db, $sql){
+  if(!empty($GLOBALS['ESQUEMA_OK'])) return;
+  $db->query($sql);
+}
+
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_grupos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(120) NOT NULL,
   cor CHAR(7) DEFAULT '#54d6c8',
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_tvs (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_tvs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   codigo VARCHAR(20) NOT NULL,
   nome VARCHAR(120) NOT NULL,
@@ -104,7 +136,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_tvs (
   KEY idx_sinal (ultimo_sinal)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_midias (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_midias (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(200) NOT NULL,
   tipo ENUM('video','imagem','pdf','web','youtube') NOT NULL,
@@ -127,7 +159,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_midias (
   KEY idx_validade (valido_ate)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_paginas (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_paginas (
   id INT AUTO_INCREMENT PRIMARY KEY,
   midia_id INT NOT NULL,
   pagina SMALLINT NOT NULL,
@@ -135,7 +167,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_paginas (
   UNIQUE KEY uk_pag (midia_id, pagina)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_playlists (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_playlists (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
   descricao VARCHAR(255) NULL,
@@ -144,7 +176,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_playlists (
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_itens (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_itens (
   id INT AUTO_INCREMENT PRIMARY KEY,
   playlist_id INT NOT NULL,
   midia_id INT NOT NULL,
@@ -161,7 +193,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_itens (
   KEY idx_pl (playlist_id, ordem)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_atribuicoes (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_atribuicoes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   playlist_id INT NOT NULL,
   alvo_tipo ENUM('tv','grupo') NOT NULL,
@@ -170,7 +202,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_atribuicoes (
   KEY idx_alvo (alvo_tipo, alvo_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_comandos (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_comandos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   tv_id INT NOT NULL,
   tipo VARCHAR(30) NOT NULL,
@@ -181,7 +213,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_comandos (
   KEY idx_pend (tv_id, confirmado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_exibicoes (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_exibicoes (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   tv_id INT NOT NULL,
   midia_id INT NULL,
@@ -192,20 +224,20 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_exibicoes (
   KEY idx_tv_data (tv_id, exibido_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_sinal_hora (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_sinal_hora (
   tv_id INT NOT NULL,
   hora DATETIME NOT NULL,
   batidas SMALLINT DEFAULT 0,
   PRIMARY KEY (tv_id, hora)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_config (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_config (
   chave VARCHAR(60) PRIMARY KEY,
   valor TEXT NOT NULL,
   atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_cache (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_cache (
   chave VARCHAR(120) PRIMARY KEY,
   valor LONGTEXT,
   atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -230,10 +262,12 @@ $PADRAO = array(
 /* fetch_assoc devolve null se a consulta falhar, e acessar ['n'] em null
    gera aviso. Numa instalação com display_errors ligado, esse aviso sai
    ANTES do JSON e quebra a resposta inteira. */
-$r = $db->query("SELECT COUNT(*) n FROM tvi_config");
-$linha = $r ? $r->fetch_assoc() : null;
-if($linha && (int)$linha['n'] === 0){
-  foreach($PADRAO as $k => $v) $db->query("INSERT IGNORE INTO tvi_config (chave,valor) VALUES ('$k','$v')");
+if(!$ESQUEMA_OK){
+  $r = $db->query("SELECT COUNT(*) n FROM tvi_config");
+  $linha = $r ? $r->fetch_assoc() : null;
+  if($linha && (int)$linha['n'] === 0){
+    foreach($PADRAO as $k => $v) $db->query("INSERT IGNORE INTO tvi_config (chave,valor) VALUES ('$k','$v')");
+  }
 }
 
 function cfg($db, $chave, $padrao = '0'){
@@ -246,8 +280,11 @@ function cfg($db, $chave, $padrao = '0'){
   return isset($c[$chave]) ? $c[$chave] : $padrao;
 }
 
-/* Migrações incrementais. Rodam uma vez e ficam quietas. */
+/* Migrações incrementais. Rodam uma vez e ficam quietas — literalmente uma
+   vez agora, e não a cada requisição: o SHOW COLUMNS custa uma ida ao banco
+   como qualquer outra consulta, e eram dezessete delas por batida de TV. */
 function coluna($db, $tabela, $col, $ddl){
+  if(!empty($GLOBALS['ESQUEMA_OK'])) return;
   $r = $db->query("SHOW COLUMNS FROM $tabela LIKE '$col'");
   if(!$r || !$r->num_rows) $db->query("ALTER TABLE $tabela ADD COLUMN $ddl");
 }
@@ -263,7 +300,7 @@ coluna($db, 'tvi_itens',     'pagina_ms', "pagina_ms INT DEFAULT 8000");
    Quando aparece algo errado na parede, hoje não há como saber quem
    colocou nem quando. Um registro simples resolve — e é o tipo de coisa
    que só faz falta depois que já precisou. */
-$db->query("CREATE TABLE IF NOT EXISTS tvi_historico (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_historico (
   id INT AUTO_INCREMENT PRIMARY KEY,
   quando DATETIME DEFAULT CURRENT_TIMESTAMP,
   usuario VARCHAR(60) NULL,
@@ -281,7 +318,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_historico (
    É como funciona qualquer sistema de sinalização comercial, e pela mesma
    razão: digitar uma URL com token de 39 caracteres no controle remoto de
    uma TV a três metros de altura é onde a instalação trava. */
-$db->query("CREATE TABLE IF NOT EXISTS tvi_aparelhos (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_aparelhos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   aparelho VARCHAR(64) NOT NULL UNIQUE,
   codigo CHAR(6) NOT NULL,
@@ -306,7 +343,7 @@ coluna($db, 'tvi_aparelhos', 'android',     "android VARCHAR(10) NULL");
    isso aqui é uma LISTA que cresce, precisa de ordem por data e de filtro
    por mês. Guardar como texto numa configuração daria o mesmo trabalho de
    parsear tudo a cada exibição. */
-$db->query("CREATE TABLE IF NOT EXISTS tvi_agenda (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_agenda (
   id INT AUTO_INCREMENT PRIMARY KEY,
   setor VARCHAR(30) NOT NULL DEFAULT 'contabilidade',
   data DATE NOT NULL,
@@ -316,6 +353,11 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_agenda (
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
   KEY idx_ag (setor, data)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+/* Lembretes da contabilidade (tarefa com prazo, que some da TV ao ser
+   marcada como feita). Definição em lembretes_lib.php, porque o widget e
+   o e-mail diário também criam a tabela se ela ainda não existir. */
+lembretes_tabela($db);
 
 /* ── Índices ──────────────────────────────────────────────────
    Adicionados depois de olhar as consultas que o relatório realmente faz.
@@ -333,33 +375,27 @@ function idx_existe($db, $tabela, $nome){
   return $r && $r->num_rows > 0;
 }
 function idx($db, $tabela, $nome, $colunas){
+  if(!empty($GLOBALS['ESQUEMA_OK'])) return;
   if(idx_existe($db, $tabela, $nome)) return;
   @$db->query("CREATE INDEX `$nome` ON `$tabela` ($colunas)");
 }
 
-// Relatório por período: filtra por data, sem tv_id na frente.
-idx($db, 'tvi_exibicoes', 'idx_ex_data',  'exibido_em');
-// Agrupamento por conteúdo dentro do período.
-idx($db, 'tvi_exibicoes', 'idx_ex_midia', 'midia_id, exibido_em');
-// Expurgo e consolidação varrem por data.
-idx($db, 'tvi_erros',     'idx_er_data',  'ocorrido_em');
-idx($db, 'tvi_reinicios', 'idx_re_data',  'ocorrido_em');
-// tvi_cache: a limpeza procura por idade.
-idx($db, 'tvi_cache',     'idx_ca_data',  'atualizado_em');
-// Mídia: a biblioteca ordena por data de envio.
-idx($db, 'tvi_midias',    'idx_md_criado','criado_em');
-// Itens por mídia: usado ao editar validade e ao excluir.
-idx($db, 'tvi_itens',     'idx_it_midia', 'midia_id');
-// Capturas: sempre buscadas pela TV mais recente.
-idx($db, 'tvi_capturas',  'idx_cp_tv',    'tv_id, criado_em');
+/* Os índices ficavam AQUI, antes de tvi_erros, tvi_reinicios e tvi_capturas
+   existirem: numa instalação nova o SHOW INDEX falhava, o idx_existe dizia
+   "não existe", o CREATE INDEX falhava também (silenciado pelo @) e o
+   índice simplesmente nunca nascia. Passaram para o fim do bloco, depois
+   da última tabela. Ver mais abaixo.                                     */
+
 coluna($db, 'tvi_tvs',       'sessao_id',  "sessao_id CHAR(16) NULL");
 coluna($db, 'tvi_tvs',       'sessao_ip',  "sessao_ip VARCHAR(45) NULL");
 coluna($db, 'tvi_tvs',       'sessao_em',  "sessao_em DATETIME NULL");
 coluna($db, 'tvi_tvs',       'sessao_liberada_em', "sessao_liberada_em DATETIME NULL");
 // a lista de aniversariantes não cabe em VARCHAR(255)
-$r = $db->query("SHOW COLUMNS FROM tvi_config LIKE 'valor'");
-if($r && ($x = $r->fetch_assoc()) && stripos($x['Type'], 'varchar') !== false){
-  $db->query("ALTER TABLE tvi_config MODIFY valor TEXT NOT NULL");
+if(!$ESQUEMA_OK){
+  $r = $db->query("SHOW COLUMNS FROM tvi_config LIKE 'valor'");
+  if($r && ($x = $r->fetch_assoc()) && stripos($x['Type'], 'varchar') !== false){
+    $db->query("ALTER TABLE tvi_config MODIFY valor TEXT NOT NULL");
+  }
 }
 
 /* Uma TV, uma sessão. Se o mesmo link for aberto num segundo navegador —
@@ -371,7 +407,7 @@ if($r && ($x = $r->fetch_assoc()) && stripos($x['Type'], 'varchar') !== false){
    própria vaga; longo demais e uma TV que caiu de verdade fica travada. */
 define('SESSAO_TTL', 150);
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_erros (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_erros (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   tv_id INT NOT NULL,
   midia_id INT NULL,
@@ -385,7 +421,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_erros (
 
 /* Consolidado mensal. tvi_exibicoes é a fonte detalhada e tem prazo de
    validade; esta tabela é a memória longa, e cabe num dedal. */
-$db->query("CREATE TABLE IF NOT EXISTS tvi_exibicoes_mes (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_exibicoes_mes (
   mes CHAR(7) NOT NULL,
   midia_id INT NOT NULL,
   nome VARCHAR(200) NULL,
@@ -401,7 +437,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_exibicoes_mes (
    o link. Recarregar a página não conta, porque a identidade fica no
    sessionStorage e sobrevive ao reload. É justamente o que se quer medir
    antes de comprar dez aparelhos iguais. */
-$db->query("CREATE TABLE IF NOT EXISTS tvi_reinicios (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_reinicios (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   tv_id INT NOT NULL,
   ocorrido_em DATETIME NOT NULL,
@@ -410,7 +446,7 @@ $db->query("CREATE TABLE IF NOT EXISTS tvi_reinicios (
   KEY idx_re_tv (tv_id, ocorrido_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-$db->query("CREATE TABLE IF NOT EXISTS tvi_capturas (
+ddl($db, "CREATE TABLE IF NOT EXISTS tvi_capturas (
   tv_id INT PRIMARY KEY,
   imagem MEDIUMTEXT NULL,
   capturado_em DATETIME NULL
@@ -428,12 +464,50 @@ define('RETENCAO_DIAS', max(30, min(730, $__ret ?: 90)));
    O token tem 39 caracteres. Ninguém digita isso no controle remoto de uma
    televisão. O código curto tem 6 e existe só para ser datilografado uma vez;
    o tv.php troca ele pelo token de verdade, que o player guarda sozinho. */
-$temCurto = false;
-$r = $db->query("SHOW COLUMNS FROM tvi_tvs LIKE 'codigo_curto'");
-if($r && $r->num_rows) $temCurto = true;
-if(!$temCurto){
-  $db->query("ALTER TABLE tvi_tvs ADD COLUMN codigo_curto CHAR(6) NULL AFTER codigo");
-  $db->query("ALTER TABLE tvi_tvs ADD UNIQUE KEY uk_curto (codigo_curto)");
+if(!$ESQUEMA_OK){
+  $temCurto = false;
+  $r = $db->query("SHOW COLUMNS FROM tvi_tvs LIKE 'codigo_curto'");
+  if($r && $r->num_rows) $temCurto = true;
+  if(!$temCurto){
+    $db->query("ALTER TABLE tvi_tvs ADD COLUMN codigo_curto CHAR(6) NULL AFTER codigo");
+    $db->query("ALTER TABLE tvi_tvs ADD UNIQUE KEY uk_curto (codigo_curto)");
+  }
+}
+
+/* ── Índices ──────────────────────────────────────────────────
+   Adicionados depois de olhar as consultas que o relatório realmente faz.
+   O índice existente em tvi_exibicoes começa por tv_id, então uma consulta
+   que filtra SÓ por data não consegue usá-lo: o banco varre a tabela
+   inteira. Com 90 dias de histórico e dez telas isso já são centenas de
+   milhares de linhas lidas para montar um gráfico.
+
+   Ficam no FIM do bloco de estrutura, e não no meio dele, porque três
+   destas tabelas são criadas depois — e um índice pedido antes da tabela
+   existir falha calado.                                                  */
+
+// Relatório por período: filtra por data, sem tv_id na frente.
+idx($db, 'tvi_exibicoes', 'idx_ex_data',  'exibido_em');
+// Agrupamento por conteúdo dentro do período.
+idx($db, 'tvi_exibicoes', 'idx_ex_midia', 'midia_id, exibido_em');
+// Expurgo e consolidação varrem por data.
+idx($db, 'tvi_erros',     'idx_er_data',  'ocorrido_em');
+idx($db, 'tvi_reinicios', 'idx_re_data',  'ocorrido_em');
+// tvi_cache: a limpeza procura por idade.
+idx($db, 'tvi_cache',     'idx_ca_data',  'atualizado_em');
+// Mídia: a biblioteca ordena por data de envio.
+idx($db, 'tvi_midias',    'idx_md_criado','criado_em');
+// Itens por mídia: usado ao editar validade e ao excluir.
+idx($db, 'tvi_itens',     'idx_it_midia', 'midia_id');
+/* tvi_capturas não entra aqui: tem uma linha por TV, a chave primária já é
+   tv_id, e o índice que existia pedia uma coluna 'criado_em' que a tabela
+   nunca teve — falhava em toda requisição, silenciado pelo @. */
+
+/* Estrutura conferida. O carimbo é o que faz tudo isto acima ser pulado
+   nas próximas requisições, até a versão do esquema mudar. */
+if(!$ESQUEMA_OK){
+  $__ev = ESQUEMA_VERSAO;
+  $db->query("INSERT INTO tvi_config (chave,valor) VALUES ('esquema_versao','$__ev')
+              ON DUPLICATE KEY UPDATE valor='$__ev'");
 }
 
 /* ══════════════ DIAGNÓSTICO ══════════════
@@ -536,7 +610,33 @@ function versao_manifesto($db, $tv){
   // compara a cada batida para saber se precisa sincronizar.
   $pls = playlists_da_tv($db, $tv);
   $p = array();
-  foreach($pls as $pl) $p[] = $pl['id'].':'.$pl['versao'];
+  $ids = array();
+  foreach($pls as $pl){ $p[] = $pl['id'].':'.$pl['versao']; $ids[] = (int)$pl['id']; }
+
+  /* ── Por que a contagem de itens válidos entra no hash ──────────────
+     O comunicado urgente é gravado com uma hora de validade em expira_em,
+     e o montar_manifesto filtra por ela. Só que a validade vencer não muda
+     a versao de lista nenhuma: o hash continuava idêntico, o player nunca
+     ressincronizava e ficava com o manifesto antigo em cache — com o aviso
+     dentro.
+
+     E como o urgente entra com prioridade 2, o player passa a exibir SÓ
+     ele. Ou seja: passada a hora marcada, a parede ficava presa no aviso
+     vencido, e nem recarregar a TV resolvia (ela sobe do localStorage e só
+     sincroniza quando a versão difere). A única saída era alguém abrir o
+     painel e encerrar na mão.
+
+     Contando aqui quantos itens ainda estão dentro da validade, o número
+     cai no minuto em que o aviso vence, o hash muda, a TV sincroniza e a
+     programação normal volta sozinha — que é o que o código já prometia. */
+  if($ids){
+    $lista = implode(',', $ids);
+    $r = $db->query("SELECT COUNT(*) n FROM tvi_itens
+                     WHERE playlist_id IN ($lista)
+                       AND (expira_em IS NULL OR expira_em > NOW())");
+    $n = ($r && $x = $r->fetch_assoc()) ? (int)$x['n'] : 0;
+    $p[] = 'validos:'.$n;
+  }
   return hash('sha256', $p ? implode('|', $p) : 'vazio');
 }
 
@@ -548,9 +648,17 @@ function playlists_da_tv($db, $tv){
   $gid = $tv['grupo_id'] !== null ? (int)$tv['grupo_id'] : 0;
 
   // Atribuição direta na TV vence a do grupo.
+  /* ORDER BY p.id não é enfeite: o player tira o layout, o ticker e a
+     cidade do clima da PRIMEIRA lista do manifesto. Sem ordem definida, o
+     banco devolvia na ordem que quisesse — e como cada comunicado urgente
+     cria uma lista nova que fica atribuída à TV para sempre, bastava uma
+     delas cair em primeiro para o layout da parede mudar sozinho, sem
+     ninguém ter mexido em nada. Por id, a lista mais antiga (a de verdade)
+     vem sempre na frente. */
   $sql = "SELECT p.* FROM tvi_playlists p
           JOIN tvi_atribuicoes a ON a.playlist_id=p.id
-          WHERE p.ativa=1 AND a.alvo_tipo='tv' AND a.alvo_id=$id";
+          WHERE p.ativa=1 AND a.alvo_tipo='tv' AND a.alvo_id=$id
+          ORDER BY p.id";
   $r = $db->query($sql);
   $out = array();
   while($r && $row = $r->fetch_assoc()) $out[] = $row;
@@ -558,7 +666,8 @@ function playlists_da_tv($db, $tv){
 
   $sql = "SELECT p.* FROM tvi_playlists p
           JOIN tvi_atribuicoes a ON a.playlist_id=p.id
-          WHERE p.ativa=1 AND a.alvo_tipo='grupo' AND a.alvo_id=$gid";
+          WHERE p.ativa=1 AND a.alvo_tipo='grupo' AND a.alvo_id=$gid
+          ORDER BY p.id";
   $r = $db->query($sql);
   while($r && $row = $r->fetch_assoc()) $out[] = $row;
   return $out;
@@ -778,58 +887,30 @@ if($acao === 'app_estado'){
    Existe porque "a imagem não aparece" tem cinco causas possíveis, e
    testar uma por uma no escuro é o que consome a tarde. Diz em uma tela:
    o servidor respondeu? o feed tem imagem? em qual formato? */
-if($acao === 'feed_diag'){
-  $url = trim((string)(isset($_GET['url']) ? $_GET['url'] : ''));
-  if(!preg_match('#^https?://#i', $url)) out(array('ok'=>false,'erro'=>'endereço inválido'));
-
-  $r = array('url'=>$url);
-
-  $bruto = function_exists('tvi_http') ? tvi_http($url, array('timeout'=>12)) : null;
-  $r['respondeu'] = ($bruto !== null && $bruto !== '');
-  $r['tamanho']   = $bruto ? strlen($bruto) : 0;
-
-  if(!$r['respondeu']){
-    $r['diagnostico'] = 'O servidor do veículo não respondeu ou recusou. '
-      . 'Alguns bloqueiam qualquer acesso que não seja de navegador.';
-    out(array('ok'=>true,'diag'=>$r));
-  }
-
-  /* Onde a imagem estaria, se estivesse */
-  $formatos = array(
-    'enclosure'      => (int)(bool)preg_match('#<enclosure[^>]+url=#i', $bruto),
-    'media:content'  => (int)(bool)preg_match('#<media:content[^>]+url=#i', $bruto),
-    'media:thumbnail'=> (int)(bool)preg_match('#<media:thumbnail[^>]+url=#i', $bruto),
-    'content:encoded'=> (int)(bool)(strpos($bruto, 'content:encoded') !== false),
-    'img no html'    => (int)(bool)preg_match('#&lt;img|<img#i', $bruto),
-  );
-  $r['formatos'] = $formatos;
-  $r['itens'] = preg_match_all('#<item[\s>]#i', $bruto);
-
-  /* content:encoded NÃO é imagem: é o texto da notícia em HTML. Contar
-     ele como "tem imagem" foi o que me fez dar diagnóstico errado — o
-     feed da Jovem Pan tem content:encoded e nenhuma foto. */
-  $temImagem = $formatos['enclosure'] || $formatos['media:content']
-            || $formatos['media:thumbnail'] || $formatos['img no html'];
-
-  if($temImagem){
-    $r['diagnostico'] = 'O feed traz imagem. Se a peça está sem foto, o '
-      . 'problema é o endereço da imagem não chegar à TV — o que o img.php resolve.';
-  } elseif($formatos['content:encoded']){
-    $r['diagnostico'] = 'O feed NÃO traz imagem em campo próprio, só o texto '
-      . 'da notícia. A foto existe na página do veículo: o sistema busca a '
-      . 'og:image de cada notícia, que é a mesma imagem que aparece quando '
-      . 'alguém compartilha o link no WhatsApp.';
-  } else {
-    $r['diagnostico'] = 'O feed responde, mas não traz imagem nem texto em '
-      . 'HTML. Só há manchete: não há foto para extrair.';
-  }
-
-  out(array('ok'=>true,'diag'=>$r));
-}
+/* feed_diag saiu daqui.
+   Era um diagnóstico de painel exposto SEM sessão: bastava chamar
+   ?action=feed_diag&url=... para o servidor buscar qualquer endereço e
+   devolver se respondeu e de que tamanho — inclusive endereços internos,
+   que só o servidor alcança. Foi para depois do portão de sessão, junto
+   com as outras ações de painel. */
 
 if($acao === 'parear'){
   $ap = preg_replace('/[^A-Za-z0-9\-]/', '', (string)(isset($_GET['d']) ? $_GET['d'] : ''));
   if(strlen($ap) < 8) out(array('ok'=>false,'erro'=>'identificador inválido'));
+
+  /* Teto por endereço. Esta ação não tem sessão — não pode ter, o box
+     ainda não foi vinculado a nada — e cada chamada com identificador novo
+     insere uma linha em tvi_aparelhos. Sem teto, dá para encher a tabela
+     de fora. Um aparelho instalando pergunta a cada poucos segundos; 40 por
+     minuto é folga de sobra para isso e barreira para o resto.
+     Mesmo mecanismo de arquivo usado no teto das ações de dispositivo. */
+  $__jp = sys_get_temp_dir().'/tvi_pr_'.md5(ip_cliente()).'_'.date('YmdHi');
+  $__np = (int)@file_get_contents($__jp);
+  if($__np > 40){
+    http_response_code(429);
+    out(array('ok'=>false,'erro'=>'muitas_requisicoes'));
+  }
+  @file_put_contents($__jp, $__np + 1);
 
   $modelo = _cut(trim((string)(isset($_GET['m']) ? $_GET['m'] : '')), 0, 80);
   $ape = $db->real_escape_string($ap);
@@ -904,7 +985,8 @@ if($acao === 'heartbeat' || $acao === 'manifest' || $acao === 'log'
   @file_put_contents($jan, $n + 1);
   if(random_int(1, 200) === 1){
     // Faxina barata: remove as janelas de minutos passados.
-    foreach(glob(sys_get_temp_dir().'/tvi_rl_*') as $velho){
+    // O tvi_pr_* é o mesmo mecanismo, aplicado ao pareamento.
+    foreach((array)@glob(sys_get_temp_dir().'/tvi_{rl,pr}_*', GLOB_BRACE) as $velho){
       if(filemtime($velho) < time() - 300) @unlink($velho);
     }
   }
@@ -1092,6 +1174,13 @@ if($acao === 'heartbeat' || $acao === 'manifest' || $acao === 'log'
   out(array(
     'ok'               => true,
     'server_time'      => time(),
+    /* Hora de PAREDE do servidor, já em America/Sao_Paulo.
+       O server_time acima é epoch, e serve para medir relógio adiantado ou
+       atrasado — mas não enxerga fuso horário errado, que é o defeito mais
+       comum num box Android saído da caixa. Comparando hora de parede com
+       hora de parede, uma medida só pega os dois casos: a TV que perdeu a
+       hora e a TV que está em UTC achando que está em Curitiba. */
+    'server_local'     => date('Y-m-d H:i:s'),
     'manifest_version' => versao_manifesto($db, $tv),
     'commands'         => $cmds,
     'rollout_seconds'  => 60,
@@ -1107,6 +1196,13 @@ function agenda_tocar($db){
   $r = $db->query("SELECT DISTINCT i.playlist_id p FROM tvi_itens i
                    JOIN tvi_midias m ON m.id=i.midia_id
                    WHERE m.url_externa LIKE '%tipo=agenda%'");
+  while($r && $x = $r->fetch_assoc()) toca_playlist($db, $x['p']);
+}
+/* Mesmo princípio para os lembretes: marcou como feito, sai da parede já. */
+function lembretes_tocar($db){
+  $r = $db->query("SELECT DISTINCT i.playlist_id p FROM tvi_itens i
+                   JOIN tvi_midias m ON m.id=i.midia_id
+                   WHERE m.url_externa LIKE '%tipo=lembretes%'");
   while($r && $x = $r->fetch_assoc()) toca_playlist($db, $x['p']);
 }
 
@@ -1685,32 +1781,57 @@ if(session_status() !== PHP_SESSION_ACTIVE){
 if(empty($_SESSION['uid'])) fail('Sessão expirada. Entre novamente.');
 $usuario = isset($_SESSION['username']) ? $_SESSION['username'] : 'usuario';
 
-/* ── Quem pode fazer ações de alto impacto ────────────────────
-   Antes, qualquer pessoa com login no Hub e acesso ao card do TV Indoor
-   podia excluir uma TV, apagar uma playlist inteira, disparar comunicado
-   urgente pra todas as telas, zerar a chave de segurança dos webhooks ou
-   mudar a configuração geral — o mesmo nível de acesso de quem só queria
-   subir uma mídia no dia a dia. Isso protege só as ações que causam
-   estrago real ou afetam todas as TVs de uma vez; cadastrar TV, montar
-   playlist e subir mídia continuam abertos pra qualquer usuário do
-   módulo, porque é o trabalho normal de quem usa a ferramenta.
-   Mesmo padrão já usado em pode_agenda(): admin sempre pode; os demais,
-   só com a permissão 'tvindoor_admin' ligada em Configurações do Hub. */
-function pode_admin_tv($db){
-  $uid = (int)$_SESSION['uid'];
-  $r = $db->query("SELECT role, perms_json FROM portal_usuarios WHERE id=$uid LIMIT 1");
-  if(!$r || !$r->num_rows) return false;
-  $u = $r->fetch_assoc();
-  if(isset($u['role']) && $u['role'] === 'admin') return true;
-  $p = !empty($u['perms_json']) ? json_decode($u['perms_json'], true) : array();
-  return is_array($p) && !empty($p['tvindoor_admin']);
+/* Diagnóstico de fonte de notícias. Agora depois do portão: é ferramenta
+   de painel, e busca um endereço que quem chama escolhe. */
+if($acao === 'feed_diag'){
+  $url = trim((string)(isset($_GET['url']) ? $_GET['url'] : ''));
+  if(!preg_match('#^https?://#i', $url)) out(array('ok'=>false,'erro'=>'endereço inválido'));
+
+  $r = array('url'=>$url);
+
+  $bruto = function_exists('tvi_http') ? tvi_http($url, array('timeout'=>12)) : null;
+  $r['respondeu'] = ($bruto !== null && $bruto !== '');
+  $r['tamanho']   = $bruto ? strlen($bruto) : 0;
+
+  if(!$r['respondeu']){
+    $r['diagnostico'] = 'O servidor do veículo não respondeu ou recusou. '
+      . 'Alguns bloqueiam qualquer acesso que não seja de navegador.';
+    out(array('ok'=>true,'diag'=>$r));
+  }
+
+  /* Onde a imagem estaria, se estivesse */
+  $formatos = array(
+    'enclosure'      => (int)(bool)preg_match('#<enclosure[^>]+url=#i', $bruto),
+    'media:content'  => (int)(bool)preg_match('#<media:content[^>]+url=#i', $bruto),
+    'media:thumbnail'=> (int)(bool)preg_match('#<media:thumbnail[^>]+url=#i', $bruto),
+    'content:encoded'=> (int)(bool)(strpos($bruto, 'content:encoded') !== false),
+    'img no html'    => (int)(bool)preg_match('#&lt;img|<img#i', $bruto),
+  );
+  $r['formatos'] = $formatos;
+  $r['itens'] = preg_match_all('#<item[\s>]#i', $bruto);
+
+  /* content:encoded NÃO é imagem: é o texto da notícia em HTML. Contar
+     ele como "tem imagem" foi o que me fez dar diagnóstico errado — o
+     feed da Jovem Pan tem content:encoded e nenhuma foto. */
+  $temImagem = $formatos['enclosure'] || $formatos['media:content']
+            || $formatos['media:thumbnail'] || $formatos['img no html'];
+
+  if($temImagem){
+    $r['diagnostico'] = 'O feed traz imagem. Se a peça está sem foto, o '
+      . 'problema é o endereço da imagem não chegar à TV — o que o img.php resolve.';
+  } elseif($formatos['content:encoded']){
+    $r['diagnostico'] = 'O feed NÃO traz imagem em campo próprio, só o texto '
+      . 'da notícia. A foto existe na página do veículo: o sistema busca a '
+      . 'og:image de cada notícia, que é a mesma imagem que aparece quando '
+      . 'alguém compartilha o link no WhatsApp.';
+  } else {
+    $r['diagnostico'] = 'O feed responde, mas não traz imagem nem texto em '
+      . 'HTML. Só há manchete: não há foto para extrair.';
+  }
+
+  out(array('ok'=>true,'diag'=>$r));
 }
-$PODE_ADMIN_TV = array('tv_excluir','recarregar_todas','urgente','urgente_encerrar',
-  'config_salvar','seguranca_zerar','webhook_chave','grupo_excluir','aparelho_excluir',
-  'playlist_excluir','banco_limpar');
-if(in_array($acao, $PODE_ADMIN_TV, true) && !pode_admin_tv($db)){
-  fail('Apenas administradores podem fazer isso. Fale com quem administra o Hub para liberar essa permissão.');
-}
+
 
 /* ── Quem pode mexer na agenda ────────────────────────────────
    A agenda é da contabilidade: quem não é do setor pode VER na TV, mas
@@ -1855,14 +1976,6 @@ if($acao === 'links'){
 /* ── Painel ─────────────────────────────────────────────────────────── */
 
 if($acao === 'resumo'){
-  /* Memória livre e modelo do aparelho entram no resumo: quando UMA tela
-     falha em várias peças diferentes, a causa costuma ser o aparelho, não
-     o conteúdo — e o número que revela isso estava numa outra página. */
-  $apar = array();
-  $r = $db->query("SELECT tv_id, modelo, mem_livre, disco_livre, versao_app, android
-                   FROM tvi_aparelhos WHERE tv_id IS NOT NULL");
-  while($r && $a = $r->fetch_assoc()) $apar[(int)$a['tv_id']] = $a;
-
   $tvs = array();
   $r = $db->query("SELECT t.*, g.nome AS grupo FROM tvi_tvs t
                    LEFT JOIN tvi_grupos g ON g.id=t.grupo_id ORDER BY t.codigo");
@@ -1886,10 +1999,6 @@ if($acao === 'resumo'){
       'tocando'=>$t['ultima_midia'] ? (int)$t['ultima_midia'] : null,
       'sessao_ip'=>$t['sessao_ip'],
       'sessao_viva'=>($t['sessao_em'] && (time() - strtotime($t['sessao_em'])) <= SESSAO_TTL),
-      'modelo'   => $apar[(int)$t['id']]['modelo']      ?? null,
-      'mem'      => isset($apar[(int)$t['id']]) ? (int)$apar[(int)$t['id']]['mem_livre'] : null,
-      'disco'    => isset($apar[(int)$t['id']]) ? (int)$apar[(int)$t['id']]['disco_livre'] : null,
-      'versao_app' => $apar[(int)$t['id']]['versao_app'] ?? null,
     );
   }
 
@@ -1920,11 +2029,21 @@ if($acao === 'resumo'){
                    ORDER BY valido_ate LIMIT 10");
   while($r && $m = $r->fetch_assoc()) $vencendo[] = $m;
 
-  // Nome do que cada TV está exibindo agora — responde "o que está passando
-  // no refeitório?" sem ninguém precisar ir até lá.
+  /* Nome do que cada TV está exibindo agora — responde "o que está passando
+     no refeitório?" sem ninguém precisar ir até lá.
+
+     Só os ids que estão realmente no ar. Antes vinha a biblioteca inteira
+     (SELECT id, nome FROM tvi_midias, sem filtro) para resolver no máximo
+     uma dúzia de nomes — e esta ação é chamada pelo painel de dez em dez
+     segundos, o dia todo. */
   $nomes = array();
-  $r = $db->query("SELECT id, nome FROM tvi_midias");
-  while($r && $x = $r->fetch_assoc()) $nomes[(int)$x['id']] = $x['nome'];
+  $emUso = array();
+  foreach($tvs as $t) if(!empty($t['tocando'])) $emUso[(int)$t['tocando']] = 1;
+  if($emUso){
+    $lista = implode(',', array_keys($emUso));
+    $r = $db->query("SELECT id, nome FROM tvi_midias WHERE id IN ($lista)");
+    while($r && $x = $r->fetch_assoc()) $nomes[(int)$x['id']] = $x['nome'];
+  }
   foreach($tvs as &$t){
     $t['tocando_nome'] = ($t['tocando'] && isset($nomes[$t['tocando']])) ? $nomes[$t['tocando']] : null;
   }
@@ -2024,34 +2143,6 @@ if($acao === 'tv_token'){
   $token = 'tk_'.bin2hex(random_bytes(18));
   $db->query("UPDATE tvi_tvs SET token='$token' WHERE id=$id");
   out(array('ok'=>true,'token'=>$token));
-}
-
-/* Qualidade de sinal por hora, últimas 48h. tvi_sinal_hora já é
-   alimentada a cada heartbeat (função de dispositivo, mais acima) —
-   isso aqui só lê o que já existe e calcula um % em cima da batida
-   esperada (a cada 30s = 120 por hora), pra dar pra ver hora a hora
-   se o Wi-Fi de uma TV específica cai sempre no mesmo horário, por
-   exemplo, em vez de só saber que "às vezes falha". */
-if($acao === 'sinal_historico'){
-  $id = (int)$body['id'];
-  $r = $db->query("SELECT hora, batidas FROM tvi_sinal_hora
-                     WHERE tv_id=$id AND hora >= DATE_SUB(NOW(), INTERVAL 48 HOUR)");
-  $batidasPorHora = array();
-  while($r && $x = $r->fetch_assoc()) $batidasPorHora[$x['hora']] = (int)$x['batidas'];
-
-  $esperadoPorHora = 120; // heartbeat a cada 30s
-  $serie = array();
-  $agora = strtotime(date('Y-m-d H:00:00'));
-  for($i = 47; $i >= 0; $i--){
-    $h = date('Y-m-d H:00:00', $agora - $i*3600);
-    $b = isset($batidasPorHora[$h]) ? $batidasPorHora[$h] : 0;
-    $serie[] = array(
-      'hora'    => $h,
-      'batidas' => $b,
-      'pct'     => min(100, round($b / $esperadoPorHora * 100)),
-    );
-  }
-  out(array('ok'=>true,'serie'=>$serie));
 }
 
 if($acao === 'tv_excluir'){
@@ -2422,6 +2513,16 @@ if($acao === 'midia_excluir'){
   if($r && $m = $r->fetch_assoc()){
     if($m['arquivo'] && file_exists(PASTA_MIDIA.'/'.$m['arquivo'])) @unlink(PASTA_MIDIA.'/'.$m['arquivo']);
   }
+  /* PDF convertido deixa uma imagem por página em midias_tv. Elas não
+     eram apagadas junto: sumia a mídia, sumia a linha, e os arquivos das
+     páginas ficavam ocupando disco para sempre, sem nada apontando para
+     eles. Num PDF de trinta páginas isso é trinta arquivos por exclusão. */
+  $r = $db->query("SELECT arquivo FROM tvi_paginas WHERE midia_id=$id");
+  while($r && $p = $r->fetch_assoc()){
+    if($p['arquivo'] && file_exists(PASTA_MIDIA.'/'.$p['arquivo'])) @unlink(PASTA_MIDIA.'/'.$p['arquivo']);
+  }
+  $db->query("DELETE FROM tvi_paginas WHERE midia_id=$id");
+
   $r = $db->query("SELECT DISTINCT playlist_id FROM tvi_itens WHERE midia_id=$id");
   while($r && $x = $r->fetch_assoc()) toca_playlist($db, $x['playlist_id']);
   $db->query("DELETE FROM tvi_itens WHERE midia_id=$id");
@@ -2545,6 +2646,18 @@ function manutencao($db){
     $db->query("DELETE FROM tvi_exibicoes WHERE exibido_em < '$corte 00:00:00' LIMIT 5000");
     if($db->affected_rows < 5000) break;
   }
+
+  /* 2b. Comunicados urgentes já vencidos.
+     Cada disparo cria uma lista própria, e ela ficava ativa e atribuída às
+     TVs para sempre. Com o tempo cada televisão carregava uma pilha de
+     listas mortas: consulta a mais no manifesto, e uma delas podendo cair
+     em primeiro lugar e levar o layout da parede junto. Desligar a lista
+     quando não sobrou item válido resolve os dois.                       */
+  $db->query("UPDATE tvi_playlists p SET p.ativa=0
+              WHERE p.descricao='Comunicado urgente' AND p.ativa=1
+                AND NOT EXISTS (SELECT 1 FROM tvi_itens i
+                                WHERE i.playlist_id = p.id
+                                  AND (i.expira_em IS NULL OR i.expira_em > NOW()))");
 
   // 3. Erros antigos já resolvidos não interessam mais.
   $db->query("DELETE FROM tvi_erros WHERE ocorrido_em < DATE_SUB(NOW(), INTERVAL 60 DAY)");
@@ -2875,6 +2988,103 @@ if($acao === 'agenda_config'){
   }
   agenda_tocar($db);
   out(array('ok'=>true));
+}
+
+/* ── Lembretes da contabilidade ──────────────────────────────
+   Mesma permissão da agenda (pode_agenda): quem não é do setor vê, mas
+   não lança nem marca como feito. */
+function lembrete_quem($db){
+  $uid = (int)$_SESSION['uid'];
+  $r = $db->query("SELECT name, username FROM portal_usuarios WHERE id=$uid LIMIT 1");
+  $u = ($r && $r->num_rows) ? $r->fetch_assoc() : array();
+  return _cut((string)(!empty($u['name']) ? $u['name'] : (isset($u['username']) ? $u['username'] : '')), 0, 80);
+}
+
+if($acao === 'lembretes'){
+  $hoje = date('Y-m-d');
+  $pend = array();
+  foreach(lembretes_pendentes($db) as $x){
+    $x['situacao'] = lembrete_situacao($x['prazo'], $hoje);
+    $pend[] = $x;
+  }
+  // Os últimos feitos, para conferir e desfazer um clique errado.
+  $feitos = array();
+  $r = $db->query("SELECT id, titulo, descricao, prazo, feito_em, feito_por FROM tvi_lembretes
+                   WHERE setor='contabilidade' AND feito=1 ORDER BY feito_em DESC LIMIT 15");
+  while($r && $x = $r->fetch_assoc()) $feitos[] = $x;
+
+  out(array('ok'=>true, 'pendentes'=>$pend, 'feitos'=>$feitos,
+            'email_para'=>lembretes_cfg($db, 'lembretes_email_para', ''),
+            'email_ultimo'=>lembretes_cfg($db, 'lembretes_email_ultimo', ''),
+            'pode_editar'=>pode_agenda($db)));
+}
+
+if(in_array($acao, array('lembrete_salvar','lembrete_feito','lembrete_excluir',
+                         'lembretes_email_cfg','lembretes_email_teste'), true) && !pode_agenda($db)){
+  fail('Só a contabilidade pode alterar os lembretes. Peça a liberação a quem administra o portal.', 403);
+}
+
+if($acao === 'lembrete_salvar'){
+  $id     = isset($body['id']) ? (int)$body['id'] : 0;
+  $titulo = _cut(trim((string)(isset($body['titulo']) ? $body['titulo'] : '')), 0, 100);
+  $desc   = _cut(trim((string)(isset($body['descricao']) ? $body['descricao'] : '')), 0, 500);
+  $prazo  = isset($body['prazo']) ? trim((string)$body['prazo']) : '';
+
+  if($titulo === '') fail('Informe o título do lembrete.');
+  if(!preg_match('/^\d{4}-\d{2}-\d{2}$/', $prazo) || !strtotime($prazo)) fail('Informe o prazo.');
+
+  if($id){
+    $st = $db->prepare("UPDATE tvi_lembretes SET titulo=?, descricao=?, prazo=? WHERE id=?");
+    $st->bind_param('sssi', $titulo, $desc, $prazo, $id);
+  } else {
+    $quem = lembrete_quem($db);
+    $st = $db->prepare("INSERT INTO tvi_lembretes (titulo, descricao, prazo, criado_por) VALUES (?,?,?,?)");
+    $st->bind_param('ssss', $titulo, $desc, $prazo, $quem);
+  }
+  if(!$st || !$st->execute()) fail('Não consegui salvar o lembrete.');
+
+  lembretes_tocar($db);
+  out(array('ok'=>true, 'id'=>$id ?: $db->insert_id));
+}
+
+/* feito = 1 marca; feito = 0 desfaz (volta para a TV). */
+if($acao === 'lembrete_feito'){
+  $id = (int)(isset($body['id']) ? $body['id'] : 0);
+  $feito = !empty($body['feito']) ? 1 : 0;
+  if($feito){
+    $quem = lembrete_quem($db);
+    $st = $db->prepare("UPDATE tvi_lembretes SET feito=1, feito_em=NOW(), feito_por=? WHERE id=?");
+    $st->bind_param('si', $quem, $id);
+  } else {
+    $st = $db->prepare("UPDATE tvi_lembretes SET feito=0, feito_em=NULL, feito_por=NULL WHERE id=?");
+    $st->bind_param('i', $id);
+  }
+  if(!$st || !$st->execute()) fail('Não consegui atualizar o lembrete.');
+  lembretes_tocar($db);
+  out(array('ok'=>true));
+}
+
+if($acao === 'lembrete_excluir'){
+  $id = (int)(isset($body['id']) ? $body['id'] : 0);
+  $db->query("DELETE FROM tvi_lembretes WHERE id=$id");
+  lembretes_tocar($db);
+  out(array('ok'=>true));
+}
+
+if($acao === 'lembretes_email_cfg'){
+  $txt = trim((string)(isset($body['para']) ? $body['para'] : ''));
+  $lista = array_values(array_filter(preg_split('/[\s,;]+/', $txt)));
+  foreach($lista as $e) if(!filter_var($e, FILTER_VALIDATE_EMAIL)) fail('E-mail inválido: ' . $e);
+  $v = $db->real_escape_string(_cut(implode(', ', $lista), 0, 250));
+  $db->query("INSERT INTO tvi_config (chave,valor) VALUES ('lembretes_email_para','$v')
+              ON DUPLICATE KEY UPDATE valor='$v'");
+  out(array('ok'=>true));
+}
+
+/* Manda o aviso agora, sem esperar as 08:30 e sem gastar a trava do dia. */
+if($acao === 'lembretes_email_teste'){
+  $r = lembretes_enviar_email($db, true);
+  out(array('ok'=>$r['ok'], 'msg'=>$r['msg'], 'erro'=>$r['ok'] ? null : $r['msg']));
 }
 
 /* Lista os aparelhos esperando vínculo, para o painel mostrar. */
@@ -4141,6 +4351,8 @@ if($acao === 'widget_add'){
     /* 30s: é um calendário inteiro. Menos que isso e ninguém acha o
        próprio compromisso antes de a peça sair. */
     'agenda'       => array('Agenda da contabilidade', 30000, ''),
+    /* 20s: só título e atraso, lido de passagem. */
+    'lembretes'    => array('Lembretes da contabilidade', 20000, ''),
     /* 20s: convite pede menos tempo que a tela de redes, porque tem um QR
        só e a decisão é mais simples — entrar ou não. */
     'grupo'        => array('Grupo Redentor Informa', 20000, ''),

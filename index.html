@@ -325,7 +325,7 @@ body:not(.theme-dark) #menuScreen .nt-card h4{color:#111827;}
 .app-card:hover{transform:translateY(-5px);border-color:var(--cardborder);box-shadow:0 14px 34px #0000004d;}.app-card:hover::after{opacity:.18;}
 .app-card .ic{font-size:58px;display:block;margin-bottom:14px;}.app-card.no-ic{padding-top:64px;}.app-card.no-ic h3{margin-top:0;}.app-card h3{font-size:17px;font-weight:700;color:#fff;margin-bottom:8px;}.app-card p{font-size:12px;color:var(--muted);line-height:1.5;}
 .app-card .go{display:inline-block;margin-top:16px;font-size:12px;font-weight:600;color:var(--cardborder);border:1px solid var(--cardborder);border-radius:20px;padding:6px 18px;}
-.card-fuel{--cardglow:#D9A83F;--cardborder:#D9A83F;}.card-drive{--cardglow:#5B62B0;--cardborder:#5B62B0;}.card-biart{--cardglow:#B8862E;--cardborder:#B8862E;}.card-lnt{--cardglow:#06b6d4;--cardborder:#06b6d4;}.card-salas{--cardglow:#ec4899;--cardborder:#ec4899;}.card-agenda{--cardglow:#3B4192;--cardborder:#3B4192;}.card-plano{--cardglow:#6366f1;--cardborder:#6366f1;}.card-reunioes{--cardglow:#8b5cf6;--cardborder:#8b5cf6;}.card-chamados{--cardglow:#7B84E0;--cardborder:#7B84E0;}.card-tvindoor{--cardglow:#C08A28;--cardborder:#C08A28;}
+.card-fuel{--cardglow:#D9A83F;--cardborder:#D9A83F;}.card-drive{--cardglow:#5B62B0;--cardborder:#5B62B0;}.card-biart{--cardglow:#B8862E;--cardborder:#B8862E;}.card-lnt{--cardglow:#06b6d4;--cardborder:#06b6d4;}.card-salas{--cardglow:#ec4899;--cardborder:#ec4899;}.card-agenda{--cardglow:#3B4192;--cardborder:#3B4192;}.card-plano{--cardglow:#6366f1;--cardborder:#6366f1;}.card-reunioes{--cardglow:#8b5cf6;--cardborder:#8b5cf6;}.card-chamados{--cardglow:#7B84E0;--cardborder:#7B84E0;}.card-tvindoor{--cardglow:#C08A28;--cardborder:#C08A28;}.card-sgi{--cardglow:#3B4192;--cardborder:#3B4192;}#menuScreen .card-sgi .ic{background:#e8eaf7;}body.theme-dark #menuScreen .card-sgi .ic{background:#3B41921f;}
 
 #appView{display:none;position:fixed;inset:0;z-index:60;flex-direction:column;background:#fff;}
 .app-bar{display:flex;align-items:center;gap:14px;padding:10px 18px;background:linear-gradient(135deg,#0f1117,#1a233a);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -713,22 +713,17 @@ body.theme-dark .cb-sres:hover{background:#141b30;}
     <div class="login-extras">
       <label class="remember-label"><input type="checkbox" id="loginRemember"> Lembrar meus dados</label>
     </div>
-    <!-- Verificação humana.
-         O reCAPTCHA do Google foi removido daqui. Ele amarra a chave a
-         um domínio, então qualquer endereço que não seja o registrado
-         — a VPS, um ambiente de teste — abre a tela de login com
-         "domínio inválido para a chave do site" em vermelho. E a caixa
-         própria não assumia nesse caso, porque o script do Google
-         carregava bem; quem falhava era só a chave.
+    <!-- Verificação humana: Cloudflare Turnstile.
+         Se o script não carregar — rede da empresa bloqueando, serviço
+         fora do ar, chave não configurada — a caixa própria aparece no
+         lugar, para ninguém ficar trancado fora do portal por causa de
+         terceiro.
 
-         O que barra robô nunca foi o quadro do Google: é a armadilha
-         invisível, o tempo mínimo entre abrir e enviar, e o bloqueio
-         por tentativas — tudo conferido no servidor, em auth.php. Esta
-         caixa é o gesto consciente de quem entra; o resto é o que de
-         fato segura.
-
-         Para trazer o Google de volta, `git revert` neste commit. -->
-    <div class="humano-box" id="humanoBox" onclick="marcarHumano(event)" style="display:flex">
+         O widget é montado por JS, não escrito aqui: a site key vem do
+         servidor (auth.php?action=captcha_site), para não existir em dois
+         arquivos e alguém trocar num e esquecer o outro. -->
+    <div id="capBox" style="margin:4px 0 12px;display:flex;justify-content:center"></div>
+    <div class="humano-box" id="humanoBox" onclick="marcarHumano(event)" style="display:none">
       <label class="humano-check">
         <input type="checkbox" id="humanoOk" onclick="event.stopPropagation();marcarHumano(event)">
         <span>N&atilde;o sou um rob&ocirc;</span>
@@ -811,6 +806,7 @@ body.theme-dark .cb-sres:hover{background:#141b30;}
       <div class="app-card card-media-operacao" id="card-media-operacao" onclick="openApp('media-operacao')"><span class="ic">&#128200;</span><h3>M&eacute;dia da Opera&ccedil;&atilde;o</h3><p>Painel interativo da m&eacute;dia por linha &middot; meta 2,15.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-plano" id="card-plano" onclick="openApp('plano')"><span class="ic">&#127919;</span><h3>Plano de Ação</h3><p>Planejamento de projetos e IA.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-tvindoor" id="card-tvindoor" onclick="openApp('tvindoor')"><span class="ic">&#128250;</span><h3>TV Indoor</h3><p>Marketing indoor: conte&uacute;do e monitoramento das TVs.</p><span class="go">Abrir sistema &rarr;</span></div>
+      <div class="app-card card-sgi" id="card-sgi" onclick="openApp('sgi')"><span class="ic">&#128737;&#65039;</span><h3>SGI &middot; Gest&atilde;o Integrada</h3><p>N&atilde;o conformidades, reclama&ccedil;&otilde;es, documentos e indicadores.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-auxilio" id="card-auxilio" onclick="openApp('auxilio')"><span class="ic">&#127891;</span><h3>Aux&iacute;lio Gradua&ccedil;&atilde;o</h3><p>Envie o boleto do m&ecirc;s e acompanhe o reembolso de 70%.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-auxilio-contab" id="card-auxilio-contab" onclick="openApp('auxilio-contab')"><span class="ic">&#129518;</span><h3>Aux&iacute;lio &middot; Contabilidade</h3><p>Cadastro de alunos, confer&ecirc;ncia de boletos e repasses.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-chamados" id="card-chamados" onclick="openApp('chamados')" style="display:none"><span class="ic">&#128736;</span><h3>Chamados</h3><p>Chamados e novidades dos sistemas (admin).</p><span class="go">Abrir sistema &rarr;</span></div>
@@ -1276,7 +1272,7 @@ setTimeout(checaManutencao, 800);
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) checaManutencao(); });
 
 /* Chaves localStorage que cada sistema usa */
-var APP_VER='79.1';
+var APP_VER='79.2';
 /* ===== Versão automática: cabeçalho e login sempre refletem APP_VER (fonte única) ===== */
 (function(){
   try{ var h=document.getElementById('hubVerTag');   if(h) h.textContent='V'+APP_VER; }catch(e){}
@@ -1431,24 +1427,103 @@ var capPronto = false;
 function capMarcado(){
   var e = document.getElementById('loginErr');
   if(e && /rob/i.test(e.textContent)) e.textContent = '';
-  /* O desafio do Google vence sozinho em cerca de dois minutos. Quem marca
-     a caixa, atende o telefone e volta, encontrava o visto verde na tela e
-     um erro incompreensível ao entrar. Refaz antes disso acontecer. */
+  /* O token do Turnstile vale cinco minutos. O widget já se renova sozinho
+     quando vence (data-refresh-expired="auto"), mas quem marca, atende o
+     telefone e volta meia hora depois encontraria o visto verde na tela e
+     um erro incompreensível ao entrar. Este é o cinto de segurança. */
   clearTimeout(window._capValidade);
   window._capValidade = setTimeout(function(){
-    try{ if(window.grecaptcha) grecaptcha.reset(); }catch(e){}
-  }, 100000);
+    try{ if(window.turnstile) turnstile.reset(); }catch(e){}
+  }, 240000);
 }
-/* O script do Google não é mais carregado: a tela de entrada não deve
-   depender de um serviço de fora para abrir. As variáveis capPronto e
-   capToken continuam existindo e valendo vazio, e o auth.php já trata
-   token vazio como "desligado" — por isso nada mais precisou mudar no
-   caminho do login. */
-usarCaixaPropria();
+
+/* ── Cloudflare Turnstile ─────────────────────────────────────
+   Substituiu o reCAPTCHA. A site key vem do servidor para não ficar
+   repetida aqui e no auth_secrets.php.
+
+   Toda falha cai na caixa própria: sem chave configurada, sem rede,
+   script bloqueado pela rede da empresa. Ninguém fica trancado fora do
+   portal porque um serviço de terceiro não respondeu. */
+(function carregarCaptcha(){
+  function comChave(chave){
+    if(!chave){ usarCaixaPropria(); return; }
+    var cx = document.getElementById('capBox');
+    if(!cx){ usarCaixaPropria(); return; }
+    var d = document.createElement('div');
+    d.className = 'cf-turnstile';
+    d.setAttribute('data-sitekey', chave);
+    d.setAttribute('data-theme', 'light');
+    d.setAttribute('data-language', 'pt-br');
+    d.setAttribute('data-callback', 'capMarcado');
+    d.setAttribute('data-error-callback', 'capErro');
+    d.setAttribute('data-refresh-expired', 'auto');
+    cx.appendChild(d);
+
+    var sc = document.createElement('script');
+    sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    sc.async = true; sc.defer = true;
+    sc.onload  = function(){ capPronto = true; };
+    sc.onerror = usarCaixaPropria;
+    document.head.appendChild(sc);
+    /* Sem resposta em 6 segundos, não espera mais. */
+    setTimeout(function(){ if(!window.turnstile) usarCaixaPropria(); }, 6000);
+
+    /* Segunda rede: o script carregou, o erro não disparou, e mesmo assim
+       não veio token nenhum em vinte segundos. No modo Managed a
+       verificação resolve em segundos sem ninguém clicar — vinte segundos
+       calado é widget quebrado, não desafio demorado. Cai na caixa própria
+       em vez de deixar a pessoa presa no "aguarde". */
+    setTimeout(function(){
+      if(!capPronto) return;                 // já caiu na caixa própria
+      var t = '';
+      try{ t = (window.turnstile && turnstile.getResponse()) || ''; }catch(e){ t = ''; }
+      if(!t){ capUltimoErro = capUltimoErro || 'sem resposta'; usarCaixaPropria(); }
+    }, 20000);
+  }
+
+  fetch('auth.php?action=captcha_site', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ comChave(d && d.ativo ? d.site_key : ''); })
+    .catch(function(){ usarCaixaPropria(); });
+})();
+/* ── O WIDGET CARREGA E MESMO ASSIM FALHA ────────────────────
+   Este caso faltava, e apareceu na primeira subida.
+
+   O script da Cloudflare carregou (capPronto virou true), mas ela recusou
+   o widget e desenhou um "Troubleshoot" no lugar. O erro mais comum é o
+   110200: o domínio do portal não está na lista de hostnames do widget.
+
+   Sem este tratamento, a pessoa via "Aguarde a verificação de segurança
+   concluir" e ficava presa ali para sempre — o botão Entrar nunca ia
+   liberar, porque nunca viria token. Trocar terceiro por terceiro não
+   pode custar o acesso de ninguém: qualquer falha cai na caixa própria.
+
+   O código do erro fica registrado no console e numa linha discreta na
+   tela, porque quem for arrumar precisa saber QUAL erro é. */
+var capUltimoErro = '';
+function capErro(cod){
+  capUltimoErro = cod ? String(cod) : '';
+  try{ console.warn('Turnstile falhou (' + capUltimoErro + ') — usando a caixa própria. '
+       + '110200 = domínio fora da lista do widget.'); }catch(e){}
+  usarCaixaPropria();
+  return true;   // erro tratado: a Cloudflare não fica reinsistindo
+}
+
 function usarCaixaPropria(){
   capPronto = false;
-  var cb = document.getElementById('capBox'); if(cb) cb.style.display = 'none';
+  var cb = document.getElementById('capBox');
+  if(cb){ cb.style.display = 'none'; cb.innerHTML = ''; }
   var hb = document.getElementById('humanoBox'); if(hb) hb.style.display = 'flex';
+  if(capUltimoErro){
+    var d = document.getElementById('capAviso');
+    if(!d && hb && hb.parentNode){
+      d = document.createElement('div');
+      d.id = 'capAviso';
+      d.style.cssText = 'font-size:11px;color:#94a3b8;text-align:center;margin:-6px 0 8px';
+      hb.parentNode.insertBefore(d, hb.nextSibling);
+    }
+    if(d) d.textContent = 'Verificação da Cloudflare indisponível (código ' + capUltimoErro + ').';
+  }
 }
 function marcarHumano(ev){
   var cx=document.getElementById('humanoOk'), box=document.getElementById('humanoBox');
@@ -1480,10 +1555,14 @@ async function portalLogin(){
   if(!u){ loginError('Informe seu usuário.'); return; }
 
   var capToken = '';
-  if(capPronto && window.grecaptcha){
-    try{ capToken = grecaptcha.getResponse() || ''; }catch(e){ capToken = ''; }
+  if(capPronto && window.turnstile){
+    try{ capToken = turnstile.getResponse() || ''; }catch(e){ capToken = ''; }
     if(!capToken){
-      loginError('Marque "Não sou um robô" para continuar.');
+      /* O Turnstile costuma resolver sozinho, sem clique. Quando o token
+         ainda não veio, quase sempre é só questão de esperar um instante —
+         daí o texto pedir isso, e não mandar marcar uma caixa que na maior
+         parte das vezes nem aparece. */
+      loginError('Aguarde a verificação de segurança concluir.');
       var cb=document.getElementById('capBox');
       if(cb){ cb.classList.remove('shake'); void cb.offsetWidth; cb.classList.add('shake'); }
       return;
@@ -1535,9 +1614,9 @@ async function portalLogin(){
     else if(/Failed to fetch|NetworkError|Load failed|aborted/i.test(msg)) msg='\u26A0 Sem conex\u00e3o com o servidor \u2014 verifique a internet e o endere\u00e7o https.';
     else if(!/^[\u26D4\u26A0]/.test(msg)) msg='\u26D4 '+msg;
     loginError(msg);
-    /* O token do Google vale uma vez só: sem zerar, a segunda tentativa
-       falharia com "verificação inválida" e ninguém entenderia o motivo. */
-    try{ if(window.grecaptcha) grecaptcha.reset(); }catch(e){}
+    /* O token do Turnstile vale uma vez só: sem zerar, a segunda tentativa
+       falharia com "timeout-or-duplicate" e ninguém entenderia o motivo. */
+    try{ if(window.turnstile) turnstile.reset(); }catch(e){}
     document.getElementById('loginPass').value='';
     btn.innerHTML=btnHtml;
   }
@@ -1870,6 +1949,7 @@ function openApp(which){
   else if(which==='aderencia'){src='aderencia';title='\uD83D\uDCC8 Programado \u00d7 Realizado';}
   else if(which==='reunioes'){src='reunioes';title='\uD83E\uDD1D Reuni\u00f5es';}
   else if(which==='tvindoor'){src='tvindoor';title='\uD83D\uDCFA TV Indoor \u00B7 Marketing Indoor';}
+  else if(which==='sgi'){src='sgi';title='\uD83D\uDEE1\uFE0F SGI \u00B7 Sistema de Gest\u00e3o Integrada';}
   else if(which==='media-operacao'){src='media-operacao';title='\uD83D\uDCC8 M\u00e9dia da Opera\u00e7\u00e3o \u00B7 Meta 2,15';}
   else if(which==='auxilio'){src='auxilio';extra='&modo=aluno';title='\uD83C\uDF93 Aux\u00edlio Gradua\u00e7\u00e3o';}
   else if(which==='auxilio-contab'){src='auxilio';extra='&modo=contabilidade';title='\uD83E\uDDEE Aux\u00edlio \u00B7 Contabilidade';}
@@ -2570,7 +2650,7 @@ async function fdTestar(i){
 }
 /* ═══════ PERSONALIZAÇÃO DOS CARDS FIXOS ═══════ */
 window._cardsOverrides={}; window._cardsOriginais={};
-window.FIXOS=['fuel','combustivel','iak','acidentes','comparativo','aderencia','drive','biart','lnt','salas','agenda','media-operacao','plano','tvindoor','auxilio','auxilio-contab','chamados'];
+window.FIXOS=['fuel','combustivel','iak','acidentes','comparativo','aderencia','drive','biart','lnt','salas','agenda','media-operacao','plano','tvindoor','sgi','auxilio','auxilio-contab','chamados'];
 function applyCardOverrides(){
   FIXOS.forEach(function(w){
     var el=document.getElementById('card-'+w); if(!el)return;
@@ -3260,6 +3340,7 @@ function applyFavOrder(){
 }
 /* ═══════ DESIGN SYSTEM v2 — ícones SVG, transições, topbar ═══════ */
 var DS_ICONS={
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>',
   fuel:'<path d="M4 21V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v15"/><path d="M2 21h14"/><path d="M14 10h2a2 2 0 0 1 2 2v4a1.6 1.6 0 0 0 3.2 0V9.4a2 2 0 0 0-.6-1.4L18 5.4"/><path d="M6 8h6"/>',
   zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   tdown:'<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>',
@@ -3279,12 +3360,12 @@ var DS_ICONS={
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
 };
-var DS_MAP={fuel:'fuel',combustivel:'zap',iak:'tdown',acidentes:'alert',drive:'compass',biart:'bus',lnt:'grad',salas:'calendar',reunioes:'meet',agenda:'calcheck',plano:'target',chamados:'tool',comparativo:'bars',aderencia:'pulse','media-operacao':'pulse'};
+var DS_MAP={fuel:'fuel',combustivel:'zap',iak:'tdown',acidentes:'alert',drive:'compass',biart:'bus',lnt:'grad',salas:'calendar',reunioes:'meet',agenda:'calcheck',plano:'target',chamados:'tool',comparativo:'bars',aderencia:'pulse','media-operacao':'pulse',sgi:'shield'};
 function dsSvg(name,color){
   var d=DS_ICONS[name]; if(!d)return '';
   return '<svg viewBox="0 0 24 24" fill="none" stroke="'+(color||'currentColor')+'" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
 }
-var DS_COR={fuel:'#D9A83F',combustivel:'#7B84E0',iak:'#f43f5e',acidentes:'#ef4444',drive:'#8b5cf6',biart:'#0ea5e9',lnt:'#22c55e',salas:'#B8862E',reunioes:'#8b5cf6',agenda:'#818cf8',plano:'#ec4899',chamados:'#94a3b8',comparativo:'#5B62B0',aderencia:'#22d3ee','media-operacao':'#f2a93b'};
+var DS_COR={fuel:'#D9A83F',combustivel:'#7B84E0',iak:'#f43f5e',acidentes:'#ef4444',drive:'#8b5cf6',biart:'#0ea5e9',lnt:'#22c55e',salas:'#B8862E',reunioes:'#8b5cf6',agenda:'#818cf8',plano:'#ec4899',chamados:'#94a3b8',comparativo:'#5B62B0',aderencia:'#22d3ee','media-operacao':'#f2a93b',sgi:'#3B4192'};
 /* Reescrever o innerHTML do ícone a cada abertura do menu fazia o card
    "piscar". Agora só desenha quando o ícone ainda não é o certo. */
 function aplicarIconesSVG(){

@@ -2,24 +2,21 @@
 /* ============================================================
    PAINEL DE PORTA — Salas de Treinamento · Redentor Hub
    Monitor vertical na porta da sala (sem login, só leitura)
-   Uso: painel_sala.php?sala=joao&k=SUA_CHAVE
-        painel_sala.php?sala=angelo&k=SUA_CHAVE
-   (a chave real fica em cron_secrets.php, fora do controle de versão)
+   Uso: painel_sala.php?sala=joao&k=CHAVE_painel_sala
+        painel_sala.php?sala=angelo&k=CHAVE_painel_sala
    ============================================================ */
 $__cronsec = @include __DIR__.'/cron_secrets.php';
-$CHAVE = $__cronsec['painel_sala'] ?? '';
-/* Agendamento de Salas migrou pro piloto em Python (VPS/EasyPanel) — este
-   painel de porta agora busca os agendamentos de lá em vez do banco MySQL
-   antigo. A ligação crossed de IDs que existia antes (legado) não existe
-   mais: 'joao' é sempre a Sala João Gulin, sem inversão. */
-const SALAS_API = 'https://redentor-red.5o1fz1.easypanel.host/api/salas/agendamentos';
+$CHAVE = $__cronsec['painel_sala'] ?? '';   // a chave do link das telas das portas
+/* ATENÇÃO — legado do Agendamento de Salas: os IDs internos são CRUZADOS
+   (id 'angelo' = Sala João Gulin | id 'joao' = Sala Angelo Gulin).
+   O link usa o nome amigável; 'sid' abaixo é o id interno gravado nas reservas. */
 $SALAS = array(
   'joao'   => array('nome'=>'Sala João Gulin',   'cor'=>'#f97316', 'corSoft'=>'rgba(249,115,22,.14)'),
   'angelo' => array('nome'=>'Sala Angelo Gulin', 'cor'=>'#22c55e', 'corSoft'=>'rgba(34,197,94,.14)')
 );
 $k = isset($_GET['k']) ? $_GET['k'] : '';
 $sala = isset($_GET['sala']) ? strtolower(trim($_GET['sala'])) : '';
-if($CHAVE === '' || !hash_equals($CHAVE, $k) || !isset($SALAS[$sala])){ http_response_code(403); die('Acesso negado.'); }
+if(!hash_equals($CHAVE, $k) || !isset($SALAS[$sala])){ http_response_code(403); die('Acesso negado.'); }
 
 if(isset($_GET['json'])){
   header('Content-Type: application/json; charset=utf-8');

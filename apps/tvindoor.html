@@ -166,6 +166,32 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
 .agm__it b{display:block;font-size:13px;color:var(--txt)}
 .agm__it span{font-size:11.5px;color:var(--txt3)}
 
+/* ── Lembretes: tarefa com prazo, logo abaixo da agenda ───────
+   A caixinha de "feito" fica na frente de cada linha, onde o olho começa:
+   marcar é o gesto do dia a dia; editar e excluir ficam no fim. */
+.lbm{display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start;margin-top:28px;
+  padding-top:22px;border-top:1px solid var(--reg)}
+@media(max-width:1100px){.lbm{grid-template-columns:1fr}}
+.lbm__it{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;margin-bottom:8px;
+  border:1px solid var(--reg);border-left:4px solid var(--azul);border-radius:5px;background:var(--sup)}
+.lbm__it.atrasado{border-left-color:var(--neg)}
+.lbm__it.hoje{border-left-color:var(--ouro)}
+.lbm__ck{width:20px;height:20px;margin-top:2px;flex:0 0 auto;cursor:pointer}
+.lbm__tx{flex:1;min-width:0}
+.lbm__tx b{display:block;font-size:14px;color:var(--txt)}
+.lbm__tx p{margin:3px 0 0;font-size:12.5px;color:var(--txt2);white-space:pre-wrap;line-height:1.5}
+.lbm__pz{font-size:12px;color:var(--txt3);margin-top:5px}
+.lbm__st{font-weight:700;color:var(--azul)}
+.lbm__it.atrasado .lbm__st{color:var(--neg)}
+.lbm__it.hoje .lbm__st{color:var(--ouro)}
+.lbm__ac{display:flex;gap:6px;flex:0 0 auto}
+.lbm__feitos{margin-top:14px}
+.lbm__feitos summary{cursor:pointer;font-size:12px;color:var(--txt3);padding:6px 0}
+.lbm__f{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--reg);
+  font-size:12.5px;color:var(--txt3)}
+.lbm__f s{color:var(--txt2)}
+.lbm__f span{flex:1}
+
 /* ── Seções que abrem e fecham ────────────────────────────────
    Cadastro, grupos e diagnóstico se usam uma vez por instalação. Deixá-los
    sempre abertos empurrava a lista de TVs — que é o que se olha todo dia —
@@ -1056,6 +1082,68 @@ textarea{min-height:120px;resize:vertical;font-family:var(--sans);line-height:1.
           <button class="b sm" id="agmPrevAba">Abrir em outra aba</button>
           <button class="b sm" id="agmPrevFechar">Fechar</button></div>
         <iframe id="agmPrevFrame" title="Prévia da agenda"></iframe>
+      </div>
+    </div>
+
+    <!-- LEMBRETES DA CONTABILIDADE
+         Na TV aparece só o título e há quanto tempo está atrasado. Marcou a
+         caixinha, sai da TV e do e-mail das 08:30. -->
+    <div class="cab" style="margin-top:34px">
+      <div>
+        <h2>Lembretes</h2>
+        <p class="sub">Tarefas com prazo. Na TV aparece o título e o atraso; marque a caixinha quando fizer e ele some.</p>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+        <button class="b" id="lbVer">Ver como fica na TV</button>
+      </div>
+    </div>
+
+    <div class="lbm" style="margin-top:6px;border-top:0;padding-top:0">
+      <div>
+        <div id="lbLista"><p class="vazio">Carregando…</p></div>
+        <details class="lbm__feitos" id="lbFeitosBox" hidden>
+          <summary>Feitos recentemente</summary>
+          <div id="lbFeitos"></div>
+        </details>
+      </div>
+
+      <aside class="agm__lado">
+        <div id="lbForm">
+          <p class="rot" id="lbFormTit">Novo lembrete</p>
+          <label class="f" for="lbTitulo">Título</label>
+          <input id="lbTitulo" placeholder="Enviar DCTFWeb de setembro" maxlength="100">
+          <label class="f" for="lbDesc" style="margin-top:10px">Descrição <span style="color:var(--txt3)">(opcional)</span></label>
+          <textarea id="lbDesc" rows="3" style="min-height:76px" maxlength="500"
+            placeholder="O que precisa ser feito, com quem falar…"></textarea>
+          <label class="f" for="lbPrazo" style="margin-top:10px">Prazo</label>
+          <input type="date" id="lbPrazo">
+          <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
+            <button class="b p" id="lbSalvar">Adicionar</button>
+            <button class="b" id="lbCancelar" hidden>Cancelar</button>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--reg)">
+          <p class="rot">Aviso por e-mail · todo dia às 08:30</p>
+          <label class="f" for="lbEmail">Enviar para</label>
+          <input id="lbEmail" placeholder="contabilidade@redentorhub.com.br">
+          <p class="dica" style="margin-top:6px">Vários e-mails separados por vírgula. Em branco,
+            vai para o e-mail da contabilidade já cadastrado no portal.</p>
+          <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
+            <button class="b" id="lbEmailSalvar">Salvar e-mail</button>
+            <button class="b" id="lbEmailTeste">Enviar agora (teste)</button>
+          </div>
+          <p class="dica" id="lbEmailUlt"></p>
+        </div>
+      </aside>
+    </div>
+
+    <div id="lbPreview" hidden>
+      <div class="previa" style="margin-top:20px">
+        <div class="previa__barra"><b>Como vai aparecer na TV</b>
+          <button class="b sm" id="lbPrevAba">Abrir em outra aba</button>
+          <button class="b sm" id="lbPrevFechar">Fechar</button></div>
+        <iframe id="lbPrevFrame" title="Prévia dos lembretes"></iframe>
       </div>
     </div>
   </section>
@@ -1979,7 +2067,7 @@ document.querySelector('.rail__nav').addEventListener('click', function(e){
   if(b.getAttribute('data-p') === 'listas') carregarListas();
   if(b.getAttribute('data-p') === 'links') carregarLinks();
   if(b.getAttribute('data-p') === 'config'){ carregarExt(); montarAtalhos(); }
-  if(b.getAttribute('data-p') === 'agenda') agmCarregar();
+  if(b.getAttribute('data-p') === 'agenda'){ agmCarregar(); lbCarregar(); }
   if(b.getAttribute('data-p') === 'tvs'){ carregarAparelhos(); carregarApp(); vigiarAparelhos(true); }
   else vigiarAparelhos(false);
   if(b.getAttribute('data-p') === 'listas'){
@@ -2119,29 +2207,6 @@ function alertas(d){
              'title="Marcar como resolvido">ok</button></time></div>');
   });
 
-  /* Quando UMA tela concentra falhas de peças diferentes, o problema é a
-     tela — aparelho fraco, memória no limite ou rede ruim no local — e não
-     o conteúdo. Dizer isso aqui poupa horas trocando peça boa de lugar. */
-  var porTv = {};
-  ordem.forEach(function(k){ porTv[grupos[k].tv] = (porTv[grupos[k].tv] || 0) + 1; });
-  var nomes = Object.keys(porTv);
-  if(nomes.length === 1 && ordem.length >= 3){
-    var nomeTv = nomes[0];
-    var info = (d.tvs || []).filter(function(t){
-      return (t.name && nomeTv.indexOf(t.name) > -1) || (t.code && nomeTv.indexOf(t.code) > -1);
-    })[0];
-    var extra = '';
-    if(info){
-      if(info.mem)    extra += ' &middot; ' + info.mem + ' MB de mem&oacute;ria livre' +
-                               (info.mem < 250 ? ' <b style="color:var(--neg)">(pouco)</b>' : '');
-      if(info.modelo) extra += ' &middot; ' + esc(info.modelo);
-    }
-    out.unshift('<div class="lin" style="border-bottom:0;padding-bottom:2px">' +
-      '<span class="pt a"></span><span style="color:var(--txt2)">Todas as falhas s&atilde;o da mesma tela ' +
-      '(<b>' + esc(nomeTv) + '</b>), em pe&ccedil;as diferentes &mdash; o problema costuma ser o aparelho ' +
-      'ou a rede do local, n&atilde;o o conte&uacute;do' + extra + '.</span></div>');
-  }
-
   var totalGrupos = ordem.length;
   if(totalGrupos > 8){
     out.push('<div class="lin"><span class="pt" style="opacity:.3"></span>' +
@@ -2222,7 +2287,6 @@ function mural(alvo, tvs, comAcoes){
             '<button class="b sm" data-edtv="' + t.id + '">Editar</button>' +
             '<button class="b sm" data-link="' + t.token + '">Link</button>' +
             '<button class="b sm" data-shot="' + t.id + '">Ver tela</button>' +
-            '<button class="b sm" data-sinal="' + t.id + '" title="Sinal hora a hora, últimas 48h">Sinal</button>' +
             (t.sessao_viva ? '<button class="b sm" data-sess="' + t.id + '" ' +
               'title="Solta a vaga para outro navegador assumir">Liberar</button>' : '') +
             '<button class="b sm" data-cmd="reload" data-id="' + t.id + '">Recarregar</button>' +
@@ -2269,10 +2333,6 @@ el('mural').addEventListener('click', function(e){
       toast('Pedindo a imagem. A TV responde na próxima batida, em até 30s.');
       setTimeout(function(){ verCaptura(tvId); }, 32000);
     });
-    return;
-  }
-  if(b.getAttribute('data-sinal')){
-    verSinal(Number(b.getAttribute('data-sinal')));
     return;
   }
   /* Trocar o token da TV. Existe porque o link contém o token, e link
@@ -2360,43 +2420,6 @@ function verCaptura(tvId){
         (d.em || '') + '</p></body>');
     })
     .catch(function(){ toast('Falha ao buscar a imagem.'); });
-}
-
-/* Qualidade de sinal, hora a hora, últimas 48h — usa o mesmo dado que
-   já é coletado a cada batida (tvi_sinal_hora), só que agora dá pra
-   ver: uma TV com Wi-Fi ruim sempre no mesmo horário (ex: pico de uso
-   do refeitório) fica visível aqui em vez de só aparecer como erro
-   solto no painel de Alertas. */
-function verSinal(tvId){
-  api('sinal_historico', { id: tvId }, function(d){
-    if(!d || !d.ok || !d.serie){ toast('Não consegui buscar o histórico de sinal.'); return; }
-    var barras = d.serie.map(function(p){
-      var cor = p.pct >= 80 ? '#57C98B' : p.pct >= 40 ? '#D9A83F' : p.pct > 0 ? '#E0576E' : '#3A3F5C';
-      var hora = p.hora.slice(11,16);
-      var dia  = p.hora.slice(8,10) + '/' + p.hora.slice(5,7);
-      return '<div style="flex:1;min-width:4px;display:flex;flex-direction:column;align-items:center" ' +
-        'title="' + dia + ' ' + hora + ' — ' + p.pct + '% de sinal (' + p.batidas + ' de 120 batidas)">' +
-        '<div style="width:100%;height:70px;display:flex;align-items:flex-end">' +
-          '<div style="width:100%;height:' + Math.max(3, p.pct) + '%;background:' + cor + ';border-radius:2px 2px 0 0"></div>' +
-        '</div></div>';
-    }).join('');
-    var w = window.open('', '_blank');
-    if(!w){ toast('Libere as janelas pop-up para ver o histórico.'); return; }
-    w.document.write(
-      '<title>Qualidade de sinal</title>' +
-      '<body style="margin:0;background:#0C0E1C;color:#F1EFE7;' +
-      'font:13px "Segoe UI",system-ui,-apple-system,sans-serif;padding:26px 30px">' +
-      '<h2 style="font:400 21px "Iowan Old Style","Palatino Linotype",Georgia,serif;margin:0 0 4px">' +
-      'Qualidade de sinal — últimas 48 horas</h2>' +
-      '<p style="color:#9EA2C0;margin:0 0 22px;max-width:520px">Cada barra é uma hora. ' +
-      '<span style="color:#57C98B">Verde</span> é sinal bom, ' +
-      '<span style="color:#D9A83F">dourado</span> é sinal fraco, ' +
-      '<span style="color:#E0576E">vermelho</span> é quase sem sinal, cinza é nenhuma batida naquela hora.</p>' +
-      '<div style="display:flex;gap:2px;align-items:flex-end;height:80px;border-bottom:1px solid #262C4E;padding-bottom:2px;max-width:900px">' +
-      barras + '</div>' +
-      '<p style="color:#6A6F98;margin-top:10px;font-size:11px">Passe o mouse numa barra para ver o horário exato.</p>' +
-      '</body>');
-  });
 }
 
 /* ── Cadastro de TV e grupos ────────────────────────────────── */
@@ -3240,7 +3263,7 @@ el('biblio').addEventListener('click', function(e){
   var idMid = Number(b.getAttribute('data-delm'));
 
   /* ── O CLIQUE NÃO FAZIA NADA ──────────────────────────────────
-     A linha de baixo lia uma variável chamada linhaM que nunca foi
+     A linha abaixo lia uma variável chamada linhaM que nunca foi
      declarada em lugar nenhum deste arquivo. Ler variável inexistente
      lança ReferenceError na hora, o handler morre nesta linha, e o
      confirmarDuplo logo abaixo nunca chega a ser chamado. Da tela, o
@@ -3487,6 +3510,7 @@ function renderLib(){
       grupo('Institucional', 'texto vem de Configurações',
         linha('config', 'Política da Qualidade', 'política, missão, visão e valores', '', 'qualidade') +
         linha('calendario', 'Agenda da contabilidade', 'calendário do mês com os vencimentos', '', 'agenda') +
+        linha('calendario', 'Lembretes da contabilidade', 'tarefas em aberto e há quanto tempo estão atrasadas', '', 'lembretes') +
         linha('calendario', 'Aniversariantes do mês', 'lista fixa, vira de mês sozinha', '', 'aniversarios') +
         linha('calendario', 'Aniversariantes de hoje', 'vem do seu robô; some quando não há ninguém', '', 'aniversarios_hoje')
       ) +
@@ -5507,6 +5531,161 @@ el('agmPrevAba').addEventListener('click', function(){ window.open(agmUrl(), '_b
 el('agmPrevFechar').addEventListener('click', function(){
   el('agmPreview').hidden = true;
   el('agmPrevFrame').src = 'about:blank';
+});
+
+/* ── Lembretes da contabilidade ───────────────────────────────
+   Lista do que está em aberto, com a caixinha de "feito" na frente.
+   Mesma permissão da agenda: quem não é do setor só vê. */
+var LB = { itens: [], editId: 0, podeEditar: false };
+
+function lbCarregar(){
+  if(!el('lbLista')) return;
+  fetch(API + '?action=lembretes', { credentials:'same-origin', cache:'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok){ el('lbLista').innerHTML = '<p class="vazio">Não consegui carregar os lembretes.</p>'; return; }
+      LB.itens = d.pendentes || [];
+      LB.podeEditar = !!d.pode_editar;
+      lbDesenhar(d.feitos || []);
+      if(document.activeElement !== el('lbEmail')) el('lbEmail').value = d.email_para || '';
+      el('lbEmailUlt').textContent = d.email_ultimo
+        ? 'Último aviso automático: ' + dataBR(d.email_ultimo) + '.' : '';
+
+      el('lbForm').parentNode.hidden = !LB.podeEditar;
+    })
+    .catch(function(){ el('lbLista').innerHTML = '<p class="vazio">Não consegui carregar os lembretes.</p>'; });
+}
+
+function lbDesenhar(feitos){
+  el('lbLista').innerHTML = LB.itens.length
+    ? LB.itens.map(function(x){
+        var st = x.situacao || {};
+        return '<div class="lbm__it ' + esc(st.estado || '') + '">' +
+          (LB.podeEditar
+            ? '<input type="checkbox" class="lbm__ck" data-lbok="' + x.id + '" title="Marcar como feito">'
+            : '') +
+          '<div class="lbm__tx"><b>' + esc(x.titulo) + '</b>' +
+            (x.descricao ? '<p>' + esc(x.descricao) + '</p>' : '') +
+            '<div class="lbm__pz">Prazo ' + dataBR(x.prazo) + ' · <span class="lbm__st">' +
+              esc(st.texto || '') + '</span></div></div>' +
+          (LB.podeEditar
+            ? '<div class="lbm__ac"><button class="b sm" data-lbed="' + x.id + '">Editar</button>' +
+              '<button class="b sm d" data-lbex="' + x.id + '">Excluir</button></div>'
+            : '') +
+        '</div>';
+      }).join('')
+    : '<p class="vazio">Nenhum lembrete em aberto. Tudo em dia.</p>';
+
+  el('lbFeitosBox').hidden = !feitos.length;
+  el('lbFeitos').innerHTML = feitos.map(function(x){
+    return '<div class="lbm__f"><span><s>' + esc(x.titulo) + '</s> · feito em ' +
+      dataBR(x.feito_em) + (x.feito_por ? ' por ' + esc(x.feito_por) : '') + '</span>' +
+      (LB.podeEditar ? '<button class="b sm" data-lbdesfaz="' + x.id + '">Desfazer</button>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function lbLimparForm(){
+  LB.editId = 0;
+  el('lbTitulo').value = ''; el('lbDesc').value = ''; el('lbPrazo').value = '';
+  el('lbFormTit').textContent = 'Novo lembrete';
+  el('lbSalvar').textContent = 'Adicionar';
+  el('lbCancelar').hidden = true;
+}
+
+el('lbSalvar').addEventListener('click', function(){
+  var titulo = el('lbTitulo').value.trim();
+  var prazo = el('lbPrazo').value;
+  if(!titulo){ toast('Escreva o título do lembrete.'); el('lbTitulo').focus(); return; }
+  if(!prazo){ toast('Informe o prazo.'); el('lbPrazo').focus(); return; }
+  var b = this; b.disabled = true;
+  api('lembrete_salvar', { id: LB.editId, titulo: titulo,
+                           descricao: el('lbDesc').value.trim(), prazo: prazo }, function(d){
+    b.disabled = false;
+    if(!d || !d.ok) return;
+    toast(LB.editId ? 'Lembrete atualizado.' : 'Lembrete criado. As TVs pegam em até 30s.');
+    lbLimparForm(); lbCarregar();
+    if(!el('lbPreview').hidden) lbPrevia();
+  });
+});
+el('lbCancelar').addEventListener('click', lbLimparForm);
+
+el('lbLista').addEventListener('click', function(e){
+  var ck = e.target.closest('[data-lbok]');
+  if(ck){
+    var id = Number(ck.getAttribute('data-lbok'));
+    ck.disabled = true;
+    api('lembrete_feito', { id: id, feito: 1 }, function(d){
+      if(!d || !d.ok){ ck.checked = false; ck.disabled = false; return; }
+      toast('Feito! Saiu da TV.');
+      lbCarregar();
+      if(!el('lbPreview').hidden) lbPrevia();
+    });
+    return;
+  }
+  var ed = e.target.closest('[data-lbed]');
+  if(ed){
+    var x = LB.itens.filter(function(i){ return String(i.id) === ed.getAttribute('data-lbed'); })[0];
+    if(!x) return;
+    LB.editId = Number(x.id);
+    el('lbTitulo').value = x.titulo; el('lbDesc').value = x.descricao || ''; el('lbPrazo').value = x.prazo;
+    el('lbFormTit').textContent = 'Editar lembrete';
+    el('lbSalvar').textContent = 'Salvar';
+    el('lbCancelar').hidden = false;
+    el('lbTitulo').focus();
+    return;
+  }
+  var ex = e.target.closest('[data-lbex]');
+  if(ex){
+    var y = LB.itens.filter(function(i){ return String(i.id) === ex.getAttribute('data-lbex'); })[0];
+    confirmar({
+      titulo: 'Excluir o lembrete "' + (y ? y.titulo : '') + '"?',
+      texto: 'Some da TV e do e-mail. Para registrar que foi feito, use a caixinha em vez de excluir.',
+      rotulo: 'Excluir'
+    }, function(){
+      api('lembrete_excluir', { id: Number(ex.getAttribute('data-lbex')) }, function(){
+        toast('Lembrete excluído.');
+        if(LB.editId === Number(ex.getAttribute('data-lbex'))) lbLimparForm();
+        lbCarregar();
+      });
+    });
+  }
+});
+
+el('lbFeitos').addEventListener('click', function(e){
+  var b = e.target.closest('[data-lbdesfaz]'); if(!b) return;
+  api('lembrete_feito', { id: Number(b.getAttribute('data-lbdesfaz')), feito: 0 }, function(d){
+    if(!d || !d.ok) return;
+    toast('Voltou para a lista e para a TV.');
+    lbCarregar();
+  });
+});
+
+el('lbEmailSalvar').addEventListener('click', function(){
+  api('lembretes_email_cfg', { para: el('lbEmail').value.trim() }, function(d){
+    if(d && d.ok) toast('E-mail do aviso salvo.');
+  });
+});
+el('lbEmailTeste').addEventListener('click', function(){
+  var b = this; b.disabled = true; b.textContent = 'Enviando…';
+  api('lembretes_email_teste', {}, function(d){
+    b.disabled = false; b.textContent = 'Enviar agora (teste)';
+    if(d && d.ok) toast(d.msg);
+  });
+});
+
+function lbUrl(){
+  return API.replace('tvindoor.php','widget.php') + '?tipo=lembretes&t=' + Date.now();
+}
+function lbPrevia(){
+  el('lbPreview').hidden = false;
+  el('lbPrevFrame').src = lbUrl();
+}
+el('lbVer').addEventListener('click', lbPrevia);
+el('lbPrevAba').addEventListener('click', function(){ window.open(lbUrl(), '_blank'); });
+el('lbPrevFechar').addEventListener('click', function(){
+  el('lbPreview').hidden = true;
+  el('lbPrevFrame').src = 'about:blank';
 });
 
 /* ── Agenda da contabilidade ──────────────────────────────────

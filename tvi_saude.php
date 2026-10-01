@@ -23,19 +23,18 @@ date_default_timezone_set('America/Sao_Paulo');
 
    Se preferir configurar por URL (em vez de comando PHP direto),
    também funciona:
-     https://SEUDOMINIO/tvi_saude.php?k=SUA_CHAVE
-   (a chave real fica em cron_secrets.php, fora do controle de versão)
-   Usar por CLI (comando PHP direto) é mais seguro, porque aí nem
-   precisa de chave nenhuma: só quem tem acesso ao servidor roda.
+     https://SEUDOMINIO/tvi_saude.php?k=TvSaude2026Rdt7kQ
+   Troque a chave abaixo se for usar por URL — deixá-la só de olho
+   no CLI (comando PHP direto) é mais seguro, porque aí nem precisa
+   de chave nenhuma: só quem tem acesso ao servidor consegue rodar.
    ============================================================ */
 
-$__cronsec = @include __DIR__.'/cron_secrets.php';
-$CHAVE_CRON = $__cronsec['tvi_saude'] ?? '';
+$CHAVE_CRON = 'TvSaude2026Rdt7kQ';
 
 $viaCli = (php_sapi_name() === 'cli');
 if(!$viaCli){
   $k = isset($_GET['k']) ? $_GET['k'] : '';
-  if($CHAVE_CRON === '' || !hash_equals($CHAVE_CRON, $k)){
+  if(!hash_equals($CHAVE_CRON, $k)){
     http_response_code(403);
     header('Content-Type: text/plain; charset=utf-8');
     exit("Acesso negado.\n");

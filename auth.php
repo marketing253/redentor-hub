@@ -222,30 +222,43 @@ function fetchUserById($mysqli, $id){
 }
 
 /* ---------- LOGIN ---------- */
-/* ── reCAPTCHA v2 (Google) ────────────────────────────────────────────
+/* ── Cloudflare Turnstile ─────────────────────────────────────────────
+   Substituiu o reCAPTCHA do Google. Dois motivos, nesta ordem:
+
+     · privacidade — o reCAPTCHA manda o comportamento de quem entra para
+       o ecossistema de risco e publicidade do Google. Este é um portal
+       corporativo com dado de funcionário; sob LGPD, mandar isso para um
+       terceiro que lucra com o dado é uma escolha que precisa de defesa,
+       e não tínhamos nenhuma. A Cloudflare declara não usar para anúncio.
+
+     · atrito — o reCAPTCHA de caixinha escala para "selecione as faixas
+       de pedestre" quando desconfia, numa tela que a mesma pessoa abre
+       toda manhã. O Turnstile normalmente não pede nada.
+
    A chave secreta fica SÓ aqui, no servidor. A do site aparece no HTML —
    é assim mesmo, ela não serve para nada sozinha.
 
-   RECAPTCHA_ATIVO em false desliga a checagem sem mexer em mais nada:
+   CAPTCHA_ATIVO em false desliga a checagem sem mexer em mais nada:
    a verificação própria (armadilha + tempo mínimo) continua valendo e
    ninguém fica trancado fora enquanto o problema é resolvido. */
-define('RECAPTCHA_ATIVO', true);
+define('CAPTCHA_ATIVO', true);
 $__authsec = @include __DIR__.'/auth_secrets.php';
-define('RECAPTCHA_SITE',   $__authsec['recaptcha_site'] ?? '');
-define('RECAPTCHA_SECRET', $__authsec['recaptcha_secret'] ?? '');
+define('TURNSTILE_SITE',   $__authsec['turnstile_site'] ?? '');
+define('TURNSTILE_SECRET', $__authsec['turnstile_secret'] ?? '');
+const TURNSTILE_VERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 /** @return array{0:bool,1:string} [passou, motivo] */
 function captcha_valido($token){
-  if(!RECAPTCHA_ATIVO || RECAPTCHA_SECRET === '') return array(true, 'desligado');
+  if(!CAPTCHA_ATIVO || TURNSTILE_SECRET === '') return array(true, 'desligado');
   if($token === '') return array(false, 'sem token');
   $post = http_build_query(array(
-    'secret'   => RECAPTCHA_SECRET,
+    'secret'   => TURNSTILE_SECRET,
     'response' => $token,
     'remoteip' => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : ''
   ));
   $resp = false;
   if(function_exists('curl_init')){
-    $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
+    $ch = curl_init(TURNSTILE_VERIFY);
     curl_setopt_array($ch, array(
       CURLOPT_POST => true, CURLOPT_POSTFIELDS => $post,
       CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 5
@@ -253,64 +266,82 @@ function captcha_valido($token){
     $resp = curl_exec($ch);
     curl_close($ch);
   }
-  /* Google fora do ar ou bloqueado na saída do servidor: deixa passar e
-     registra. Trancar o portal inteiro porque um serviço de terceiro caiu
-     seria trocar um problema raro por outro pior — e a armadilha, o tempo
-     mínimo e o bloqueio por tentativas continuam valendo. */
-  if($resp === false) { error_log('recaptcha: sem resposta do Google'); return array(true, 'sem resposta'); }
+  /* Cloudflare fora do ar ou bloqueada na saída do servidor: deixa passar
+     e registra. Trancar o portal inteiro porque um serviço de terceiro
+     caiu seria trocar um problema raro por outro pior — e a armadilha, o
+     tempo mínimo e o bloqueio por tentativas continuam valendo. */
+  if($resp === false) { error_log('turnstile: sem resposta da Cloudflare'); return array(true, 'sem resposta'); }
   $j = json_decode($resp, true);
   if(!is_array($j)) return array(true, 'resposta ilegivel');
   if(!empty($j['success'])) return array(true, 'ok');
 
   $erros = isset($j['error-codes']) ? implode(',', (array)$j['error-codes']) : '';
   $host  = isset($j['hostname']) ? (string)$j['hostname'] : '';
-  error_log('recaptcha recusou: ' . $erros . ' hostname=' . $host);
+  error_log('turnstile recusou: ' . $erros . ' hostname=' . $host);
 
   /* Erro de CONFIGURAÇÃO não é ataque: é chave trocada ou domínio fora da
      lista. Trancar todo mundo fora por isso seria pior que o problema —
      a armadilha, o tempo mínimo e o bloqueio por tentativas continuam
-     valendo. Passa, e o motivo fica no log e no diagnóstico. */
-  /* invalid-input-response entrou nesta lista por experiência dura: ele
-     aparece tanto para token forjado quanto para PAR DE CHAVES trocado
-     ou chave do tipo Enterprise, que o siteverify clássico não aceita.
-     Como o segundo caso tranca o portal inteiro e o primeiro já é coberto
-     pela armadilha, pelo tempo mínimo e pelo bloqueio por tentativas,
-     aqui o certo é deixar entrar e registrar. */
-  if(strpos($erros, 'invalid-input-secret') !== false
-     || strpos($erros, 'invalid-keys') !== false
+     valendo. Passa, e o motivo fica no log e no diagnóstico.
+
+     invalid-input-response está nesta lista pelo mesmo motivo de sempre:
+     ele aparece tanto para token forjado quanto para PAR DE CHAVES
+     trocado. Como o segundo caso tranca o portal inteiro e o primeiro já
+     é coberto pelas outras camadas, aqui o certo é deixar entrar e
+     registrar.
+
+     timeout-or-duplicate é o token vencido ou reaproveitado — situação
+     comum de quem deixa a tela aberta e volta depois. Também não é
+     ataque, e o widget se renova sozinho na tentativa seguinte. */
+  if(strpos($erros, 'invalid-input-secret')  !== false
      || strpos($erros, 'missing-input-secret') !== false
-     || strpos($erros, 'invalid-input-response') !== false){
-    error_log('recaptcha: liberando apesar de "' . $erros . '" — confira o par de chaves no painel');
+     || strpos($erros, 'invalid-input-response') !== false
+     || strpos($erros, 'timeout-or-duplicate') !== false
+     || strpos($erros, 'internal-error') !== false){
+    error_log('turnstile: liberando apesar de "' . $erros . '" — confira o par de chaves no painel');
     return array(true, 'config:' . $erros);
   }
   return array(false, $erros !== '' ? $erros : ('recusado' . ($host ? " (dominio $host)" : '')));
 }
 
-/* Diagnóstico do reCAPTCHA: diz se a chave secreta conversa com o Google
-   e o que ele responde. Não exige estar logado — de propósito, porque o
-   problema aparece justamente em quem não consegue entrar — e não revela
-   a chave, só o veredito. */
+/* A tela de entrada é HTML puro e não consegue ler o auth_secrets.php.
+   Em vez de repetir a site key em dois arquivos — e descobrir a duplicata
+   no dia em que a chave for trocada —, ela pergunta aqui. A site key é
+   pública por definição: aparece no HTML de qualquer jeito. */
+if($action === 'captcha_site'){
+  out(array('ok' => true,
+            'ativo' => CAPTCHA_ATIVO && TURNSTILE_SECRET !== '',
+            'site_key' => TURNSTILE_SITE));
+}
+
+/* Diagnóstico do Turnstile: diz se a chave secreta conversa com a
+   Cloudflare e o que ela responde. Não exige estar logado — de propósito,
+   porque o problema aparece justamente em quem não consegue entrar — e
+   não revela a chave, só o veredito.
+   Abra em: /auth.php?action=captcha_diag                               */
 if($action === 'captcha_diag'){
-  $r = array('site_key' => substr(RECAPTCHA_SITE, 0, 12) . '…',
-             'secret_definida' => RECAPTCHA_SECRET !== '',
+  $r = array('provedor' => 'Cloudflare Turnstile',
+             'site_key' => TURNSTILE_SITE !== '' ? substr(TURNSTILE_SITE, 0, 12) . '…' : '(vazia)',
+             'secret_definida' => TURNSTILE_SECRET !== '',
              'curl' => function_exists('curl_init'));
-  if(RECAPTCHA_SECRET !== '' && function_exists('curl_init')){
-    $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
+  if(TURNSTILE_SECRET !== '' && function_exists('curl_init')){
+    $ch = curl_init(TURNSTILE_VERIFY);
     curl_setopt_array($ch, array(CURLOPT_POST=>true,
-      CURLOPT_POSTFIELDS=>http_build_query(array('secret'=>RECAPTCHA_SECRET,'response'=>'teste')),
+      CURLOPT_POSTFIELDS=>http_build_query(array('secret'=>TURNSTILE_SECRET,'response'=>'teste')),
       CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>8));
     $resp = curl_exec($ch);
     $r['erro_curl'] = curl_error($ch);
     curl_close($ch);
     $j = json_decode((string)$resp, true);
     $r['resposta'] = is_array($j) ? $j : substr((string)$resp, 0, 200);
-    /* Com um token falso, a resposta certa é invalid-input-response.
-       Se vier invalid-input-secret, a chave secreta está errada. */
+    /* Com um token inventado, a resposta CERTA é invalid-input-response:
+       significa que a Cloudflare aceitou a chave secreta e recusou só o
+       token. Se vier invalid-input-secret, a secreta é que está errada. */
     $codes = isset($j['error-codes']) ? (array)$j['error-codes'] : array();
     $r['veredito'] = in_array('invalid-input-response', $codes, true)
-        ? 'chave secreta OK — o problema é outro (veja o domínio cadastrado)'
+        ? 'chave secreta OK — o problema é outro (confira o domínio cadastrado no widget)'
         : (in_array('invalid-input-secret', $codes, true)
-            ? 'CHAVE SECRETA ERRADA — confira no painel do reCAPTCHA'
+            ? 'CHAVE SECRETA ERRADA — confira em dash.cloudflare.com → Turnstile'
             : 'resposta inesperada, veja o campo resposta');
   }
   out($r);

@@ -1,4 +1,4 @@
-const CACHE='redentor-hub-v79-1';
+const CACHE='redentor-hub-v79-2';
 const ASSETS=['/','/index.html','/manifest.json'];
 
 self.addEventListener('install',e=>{

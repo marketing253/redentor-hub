@@ -6,4 +6,5 @@ return array(
   'lembrete_backup' => 'AJUSTE_uma_chave_dificil',
   'painel_sala'     => 'AJUSTE_outra_chave_dificil',
   'tvi_saude'       => 'AJUSTE_mais_uma_chave_dificil',
+  'lembretes_email' => 'AJUSTE_chave_do_aviso_das_0830',
 );
