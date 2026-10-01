@@ -41,6 +41,16 @@ Require all denied
 </IfModule>
 EOF
 
+# Documentos internos e evidências do SGI: só saem por sgi.php?action=baixar,
+# que confere quem pediu.
+escreve_se_faltar "$RAIZ/uploads/sgi/.htaccess" <<'EOF'
+Require all denied
+<IfModule !mod_authz_core.c>
+  Order deny,allow
+  Deny from all
+</IfModule>
+EOF
+
 escreve_se_faltar "$RAIZ/midias_tv/.htaccess" <<'EOF'
 Options -Indexes
 <FilesMatch "\.(php|phtml|phar|cgi|pl|py|sh)$">
@@ -165,19 +175,23 @@ case "${DB_HOST:-}" in
         ;;
 esac
 
-if [ -n "$RECAPTCHA_SITE" ] && deve_gerar "$RAIZ/auth_secrets.php"; then
-    export SEC_recaptcha_site="$RECAPTCHA_SITE"
-    export SEC_recaptcha_secret="$RECAPTCHA_SECRET"
-    escreve_segredos "$RAIZ/auth_secrets.php" recaptcha_site recaptcha_secret
-    unset SEC_recaptcha_site SEC_recaptcha_secret
+# O login usa o Cloudflare Turnstile (substituiu o reCAPTCHA em produção).
+# Sem as variáveis, o auth.php trata como "desligado" e a tela de entrada
+# usa a caixa própria — não tranca ninguém.
+if [ -n "$TURNSTILE_SITE" ] && deve_gerar "$RAIZ/auth_secrets.php"; then
+    export SEC_turnstile_site="$TURNSTILE_SITE"
+    export SEC_turnstile_secret="$TURNSTILE_SECRET"
+    escreve_segredos "$RAIZ/auth_secrets.php" turnstile_site turnstile_secret
+    unset SEC_turnstile_site SEC_turnstile_secret
 fi
 
 if [ -n "$CRON_LEMBRETE" ] && deve_gerar "$RAIZ/cron_secrets.php"; then
     export SEC_lembrete_backup="$CRON_LEMBRETE"
     export SEC_painel_sala="${CRON_PAINEL_SALA:-$CRON_LEMBRETE}"
     export SEC_tvi_saude="${CRON_TVI_SAUDE:-$CRON_LEMBRETE}"
-    escreve_segredos "$RAIZ/cron_secrets.php" lembrete_backup painel_sala tvi_saude
-    unset SEC_lembrete_backup SEC_painel_sala SEC_tvi_saude
+    export SEC_lembretes_email="${CRON_LEMBRETES_EMAIL:-$CRON_LEMBRETE}"
+    escreve_segredos "$RAIZ/cron_secrets.php" lembrete_backup painel_sala tvi_saude lembretes_email
+    unset SEC_lembrete_backup SEC_painel_sala SEC_tvi_saude SEC_lembretes_email
 fi
 
 if [ -n "$VAPID_PUBLIC" ] && deve_gerar "$RAIZ/push_secrets.php"; then

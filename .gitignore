@@ -15,7 +15,8 @@ auxilio/uploads_auxilio/
 #    código-fonte. Cresce sem parar e não faz sentido versionar. ───
 uploads/
 midias_tv/
-apps/vendor/
+# apps/vendor/ NÃO entra aqui: são as bibliotecas de PDF e PowerPoint das
+# TVs, e o deploy por Git na VPS precisa delas dentro do repositório.
 
 # ── Backups e snapshots — histórico próprio do sistema, não do git.
 auxilio/backups/
