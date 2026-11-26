@@ -1273,9 +1273,10 @@ document.addEventListener('visibilitychange', function(){ if(!document.hidden) c
 
 /* Chaves localStorage que cada sistema usa */
 var APP_VER='79.3';
-/* Endereço próprio do SGI (sgi.redentorhub.com.br): mesmo Hub, mesmo login,
+/* Serviço próprio do SGI no EasyPanel (projeto "sgi": sgi.redentorhub.com.br e
+   o provisório sgi-*.easypanel.host). Mesmo código, mesmo login e banco do Hub,
    mas a pessoa cai direto no SGI Redentor depois de entrar. */
-if(/^sgi\./i.test(location.hostname)){
+if(/^sgi[.-]/i.test(location.hostname)){
   try{ document.title='SGI Redentor'; if(!location.hash) history.replaceState(null,'','#sgi'); }catch(e){}
 }
 /* ===== Versão automática: cabeçalho e login sempre refletem APP_VER (fonte única) ===== */
