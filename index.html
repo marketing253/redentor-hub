@@ -806,7 +806,7 @@ body.theme-dark .cb-sres:hover{background:#141b30;}
       <div class="app-card card-media-operacao" id="card-media-operacao" onclick="openApp('media-operacao')"><span class="ic">&#128200;</span><h3>M&eacute;dia da Opera&ccedil;&atilde;o</h3><p>Painel interativo da m&eacute;dia por linha &middot; meta 2,15.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-plano" id="card-plano" onclick="openApp('plano')"><span class="ic">&#127919;</span><h3>Plano de Ação</h3><p>Planejamento de projetos e IA.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-tvindoor" id="card-tvindoor" onclick="openApp('tvindoor')"><span class="ic">&#128250;</span><h3>TV Indoor</h3><p>Marketing indoor: conte&uacute;do e monitoramento das TVs.</p><span class="go">Abrir sistema &rarr;</span></div>
-      <div class="app-card card-sgi" id="card-sgi" onclick="openApp('sgi')"><span class="ic">&#128737;&#65039;</span><h3>SGI &middot; Gest&atilde;o Integrada</h3><p>N&atilde;o conformidades, reclama&ccedil;&otilde;es, documentos e indicadores.</p><span class="go">Abrir sistema &rarr;</span></div>
+      <div class="app-card card-sgi" id="card-sgi" onclick="openApp('sgi')"><span class="ic">&#128737;&#65039;</span><h3>SGI Redentor</h3><p>N&atilde;o conformidades, reclama&ccedil;&otilde;es, documentos e indicadores.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-auxilio" id="card-auxilio" onclick="openApp('auxilio')"><span class="ic">&#127891;</span><h3>Aux&iacute;lio Gradua&ccedil;&atilde;o</h3><p>Envie o boleto do m&ecirc;s e acompanhe o reembolso de 70%.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-auxilio-contab" id="card-auxilio-contab" onclick="openApp('auxilio-contab')"><span class="ic">&#129518;</span><h3>Aux&iacute;lio &middot; Contabilidade</h3><p>Cadastro de alunos, confer&ecirc;ncia de boletos e repasses.</p><span class="go">Abrir sistema &rarr;</span></div>
       <div class="app-card card-chamados" id="card-chamados" onclick="openApp('chamados')" style="display:none"><span class="ic">&#128736;</span><h3>Chamados</h3><p>Chamados e novidades dos sistemas (admin).</p><span class="go">Abrir sistema &rarr;</span></div>
@@ -1272,7 +1272,12 @@ setTimeout(checaManutencao, 800);
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) checaManutencao(); });
 
 /* Chaves localStorage que cada sistema usa */
-var APP_VER='79.2';
+var APP_VER='79.3';
+/* Endereço próprio do SGI (sgi.redentorhub.com.br): mesmo Hub, mesmo login,
+   mas a pessoa cai direto no SGI Redentor depois de entrar. */
+if(/^sgi\./i.test(location.hostname)){
+  try{ document.title='SGI Redentor'; if(!location.hash) history.replaceState(null,'','#sgi'); }catch(e){}
+}
 /* ===== Versão automática: cabeçalho e login sempre refletem APP_VER (fonte única) ===== */
 (function(){
   try{ var h=document.getElementById('hubVerTag');   if(h) h.textContent='V'+APP_VER; }catch(e){}
@@ -1949,7 +1954,7 @@ function openApp(which){
   else if(which==='aderencia'){src='aderencia';title='\uD83D\uDCC8 Programado \u00d7 Realizado';}
   else if(which==='reunioes'){src='reunioes';title='\uD83E\uDD1D Reuni\u00f5es';}
   else if(which==='tvindoor'){src='tvindoor';title='\uD83D\uDCFA TV Indoor \u00B7 Marketing Indoor';}
-  else if(which==='sgi'){src='sgi';title='\uD83D\uDEE1\uFE0F SGI \u00B7 Sistema de Gest\u00e3o Integrada';}
+  else if(which==='sgi'){src='sgi';title='\uD83D\uDEE1\uFE0F SGI Redentor';}
   else if(which==='media-operacao'){src='media-operacao';title='\uD83D\uDCC8 M\u00e9dia da Opera\u00e7\u00e3o \u00B7 Meta 2,15';}
   else if(which==='auxilio'){src='auxilio';extra='&modo=aluno';title='\uD83C\uDF93 Aux\u00edlio Gradua\u00e7\u00e3o';}
   else if(which==='auxilio-contab'){src='auxilio';extra='&modo=contabilidade';title='\uD83E\uDDEE Aux\u00edlio \u00B7 Contabilidade';}
