@@ -171,6 +171,18 @@ td b{font-weight:500}
 .graf .g-val{fill:var(--txt2);font-size:11px}
 html[data-tema="escuro"] .g-linha{stroke:var(--info)} html[data-tema="escuro"] .g-pt{stroke:var(--info)}
 .graf-vazio{height:96px;display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:12.5px;border-top:1px dashed var(--borda2);margin-top:8px}
+/* Importação */
+.imp-chamada{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.imp-chamada h3{margin-bottom:4px}
+.imp-ordem{display:flex;gap:8px;flex-wrap:wrap}
+.imp-ordem span{display:inline-flex;align-items:center;gap:8px;background:var(--sup2);border-radius:8px;padding:6px 12px 6px 6px;font-size:13px}
+.imp-ordem b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--placa);color:var(--placa-txt);font:500 12px var(--mono)}
+.imp-mapa{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0 16px}
+.imp-res{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--borda);border:1px solid var(--borda);border-radius:10px;overflow:hidden;margin-top:16px}
+.imp-res>div{background:var(--sup);padding:12px 16px;font-size:12.5px;color:var(--txt3)}
+.imp-res b{display:block;font:500 24px/1.2 var(--mono);color:var(--txt);margin-bottom:4px}
+.imp-res .com-erro b{color:var(--ruim)}
+@media(max-width:700px){.imp-res{grid-template-columns:1fr 1fr}}
 /* Trajeto das NC: as fases como paradas de uma linha; a parada com mais
    NC acumuladas (o gargalo) é a única em azul. */
 .trajeto{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:relative;padding:8px 0 4px}
@@ -1290,7 +1302,9 @@ function lancarMes(){
 /* ═════════ CONFIGURAÇÕES (gestor) ═════════ */
 function telaConfig(){
   var c = $('conteudo');
-  c.innerHTML = '<div class="cartao"><h3>Empresas <small>cada registro do SGI pertence a uma delas</small></h3><div id="cfEmp"></div><button class="btn sm pri" id="cfNovaEmp" style="margin-top:10px">+ Empresa</button></div>'+
+  c.innerHTML = '<div class="cartao imp-chamada"><div><h3>Importar do Qualyteam</h3><p class="mudo peq" style="margin:0">Traga documentos, indicadores com os valores mensais e não conformidades pelas planilhas que o Qualyteam exporta.</p></div>'+
+      '<button class="btn pri" id="cfImportar">Importar planilhas</button></div>'+
+    '<div class="cartao"><h3>Empresas <small>cada registro do SGI pertence a uma delas</small></h3><div id="cfEmp"></div><button class="btn sm pri" id="cfNovaEmp" style="margin-top:10px">+ Empresa</button></div>'+
     '<div class="cartao"><h3>Acessos <small>quem entra no SGI e em quais empresas</small></h3>'+
     '<div class="mudo peq" style="margin-bottom:10px"><b>Gestor</b>: todas as empresas, aprova documentos, verifica eficácia e configura. <b>Membro</b>: registra, analisa, monta plano e lança indicadores nas empresas marcadas. <b>Leitor</b>: lê documentos, acompanha e registra ocorrências. Administradores do Hub são sempre gestores.</div>'+
     '<input type="search" id="cfBusca" placeholder="Buscar pessoa…" style="max-width:320px;margin-bottom:10px"><div id="cfAcessos" class="vazio">Carregando…</div></div>'+
@@ -1298,6 +1312,7 @@ function telaConfig(){
     '<div class="cartao"><h3>Avisos automáticos (n8n)</h3><div class="peq texto">O endereço abaixo devolve, por pessoa, as ações vencidas e as que vencem em 3 dias, com o telefone cadastrado no Hub. Crie um fluxo no n8n que chame este endereço todo dia às 7h e envie a mensagem pelo WhatsApp.\n\n'+
     '<code>'+esc(location.origin)+'/sgi.php?action=alertas&amp;chave=SUA_CHAVE</code>\n\nA chave é a variável <b>SGI_CRON_CHAVE</b> do EasyPanel (ou <b>sgi_alertas</b> em cron_secrets.php).</div></div>';
   $('cfNovaEmp').onclick = function(){ editarEmpresa(null, telaConfig); };
+  $('cfImportar').onclick = telaImportar;
   $('cfNovoInd').onclick = function(){ editarIndicador({sentido:'maior', casas:1, ativo:1}); };
   desenharEmpresasCfg();
   api('acessos_lista').then(function(r){ desenharAcessos(r.usuarios); $('cfBusca').oninput = function(){ desenharAcessos(r.usuarios, this.value); }; })
@@ -1378,6 +1393,219 @@ function editarIndicador(i){
         meta:val('iMeta'), casas:val('iCasas'), norma:val('iNorma'), processo:val('iProc'), ativo:$('iAtivo').checked ? 1 : 0}),
         function(){ fecharModal(); avisar('Indicador salvo.'); telaConfig(); });
     }}]);
+}
+
+/* ═════════ IMPORTAR (planilhas exportadas do Qualyteam) ═════════
+   A planilha é lida aqui no navegador (SheetJS, só quando esta tela abre).
+   A pessoa confere qual coluna vai para cada campo, vê uma prévia, simula
+   e só então grava. O servidor não duplica nada numa segunda importação. */
+var IMP = { tipo:'documentos', linhas:null, cab:[], mapa:{}, abas:[], wb:null, aba:'', largo:false, ano:new Date().getFullYear(), externo:false };
+var IMP_CAMPOS = {
+  documentos: [
+    {k:'codigo', t:'Código', obr:1, s:['codigo','cod','identificacao','sigla']},
+    {k:'titulo', t:'Título', obr:1, s:['titulo','nome do documento','documento','nome','assunto']},
+    {k:'tipo', t:'Tipo', s:['tipo','categoria','classificacao','especie']},
+    {k:'processo', t:'Processo ou área', s:['processo','area','setor','departamento']},
+    {k:'revisao', t:'Revisão atual', s:['revisao','versao','rev','edicao']},
+    {k:'revisar_em', t:'Validade ou próxima revisão', s:['validade','vencimento','proxima revisao','revisar','expira']},
+    {k:'status', t:'Situação', s:['status','situacao','estado']}
+  ],
+  indicadores: [
+    {k:'nome', t:'Nome do indicador', obr:1, s:['indicador','titulo','nome']},
+    {k:'descricao', t:'Como se calcula', s:['formula','calculo','descricao','como calcular','objetivo']},
+    {k:'unidade', t:'Unidade', s:['unidade','medida']},
+    {k:'meta', t:'Meta', s:['meta','alvo','objetivo numerico']},
+    {k:'sentido', t:'Melhor quando (maior ou menor)', s:['polaridade','sentido','melhor','tendencia','direcao']},
+    {k:'casas', t:'Casas decimais', s:['casas','decimais','precisao']},
+    {k:'processo', t:'Processo', s:['processo','area','setor']}
+  ],
+  valores: [
+    {k:'indicador', t:'Indicador', obr:1, s:['indicador','titulo','nome']},
+    {k:'competencia', t:'Mês', obr:1, s:['competencia','periodo','mes','data','referencia']},
+    {k:'valor', t:'Valor', obr:1, s:['valor','resultado','realizado','medicao','apurado']},
+    {k:'obs', t:'Observação ou análise', s:['analise','observacao','obs','comentario','justificativa']}
+  ],
+  ocorrencias: [
+    {k:'numero', t:'Número', s:['numero','codigo','id','n.','nº','protocolo']},
+    {k:'titulo', t:'Título', obr:1, s:['titulo','assunto','resumo','nao conformidade','nome']},
+    {k:'descricao', t:'Descrição', s:['descricao','detalhe','relato','ocorrencia']},
+    {k:'tipo', t:'Tipo (NC, reclamação, melhoria)', s:['tipo','classificacao','natureza']},
+    {k:'origem', t:'Origem', s:['origem','fonte']},
+    {k:'processo', t:'Processo', s:['processo','area','setor']},
+    {k:'local', t:'Local ou unidade', s:['local','unidade','garagem','filial']},
+    {k:'data_fato', t:'Data da ocorrência', s:['data da ocorrencia','data de abertura','abertura','data','emissao','criado']},
+    {k:'status', t:'Situação', s:['status','situacao','etapa','fase']},
+    {k:'gravidade', t:'Gravidade', s:['gravidade','criticidade','severidade','prioridade','classificacao de risco']},
+    {k:'prazo', t:'Prazo', s:['prazo','vencimento','data limite','previsao']},
+    {k:'responsavel', t:'Responsável', s:['responsavel','dono','encarregado']},
+    {k:'acao_imediata', t:'Ação imediata', s:['acao imediata','disposicao','contencao','correcao']},
+    {k:'causa_raiz', t:'Causa raiz', s:['causa raiz','causa']}
+  ]
+};
+var IMP_TIPOS = [['documentos','Documentos'],['indicadores','Indicadores (cadastro)'],['valores','Valores dos indicadores'],['ocorrencias','Não conformidades']];
+var IMP_MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+function impNorm(s){ return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
+/* Cabeçalho que é um mês ("jan", "jan/26", "01/2026", "Janeiro") → número do mês e, se houver, o ano */
+function impMesDoCab(h){
+  var s = impNorm(h), m;
+  if((m = s.match(/^(\d{1,2})[\/.-](\d{2,4})$/)) && +m[1] >= 1 && +m[1] <= 12) return {m:+m[1], a:+m[2] < 100 ? 2000 + +m[2] : +m[2]};
+  if((m = s.match(/^([a-z]{3})[a-z]*\.?(?:\s*(?:de\s*)?[\/ -]?\s*(\d{2,4}))?$/)) && IMP_MESES.indexOf(m[1]) >= 0)
+    return {m:IMP_MESES.indexOf(m[1]) + 1, a:m[2] ? (+m[2] < 100 ? 2000 + +m[2] : +m[2]) : null};
+  return null;
+}
+function impCarregarLeitor(){
+  if(window.XLSX) return Promise.resolve();
+  return new Promise(function(ok, falhou){
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = ok; s.onerror = function(){ falhou(new Error('Não consegui carregar o leitor de planilhas. Confira a internet.')); };
+    document.head.appendChild(s);
+  });
+}
+
+function telaImportar(){
+  var c = $('conteudo');
+  if($('cabTit')){ $('cabTit').textContent = 'Importar planilhas'; $('cabSub').textContent = 'Trazer os dados exportados do Qualyteam para o SGI'; }
+  var emps = minhasEmpresas().map(function(e){ return [e.id, e.nome]; });
+  c.innerHTML =
+    '<div class="barra"><button class="btn sm" id="impVoltar">Voltar para Configurações</button></div>'+
+    '<div class="cartao"><h3>Ordem recomendada <small>cada passo usa o anterior</small></h3>'+
+      '<div class="imp-ordem"><span><b>1</b>Indicadores</span><span><b>2</b>Valores dos indicadores</span><span><b>3</b>Documentos</span><span><b>4</b>Não conformidades</span></div>'+
+      '<p class="mudo peq" style="margin:12px 0 0">No Qualyteam, use o botão de exportar de cada lista (Excel ou CSV). Valores dos indicadores precisam dos indicadores já cadastrados, com o mesmo nome. Importar a mesma planilha de novo atualiza o que existe e não duplica.</p></div>'+
+    '<div class="cartao"><h3>O que importar</h3>'+
+      '<div class="chips" id="impTipos">'+IMP_TIPOS.map(function(x){ return '<button class="chip'+(IMP.tipo === x[0] ? ' on' : '')+'" data-v="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>'+
+      '<div class="grade" style="margin-top:16px">'+
+        '<label class="campo"><span>Empresa</span><select id="impEmp">'+opcoes(emps, S.empresa || (emps.length === 1 ? emps[0][0] : ''), IMP.tipo === 'documentos' ? 'Corporativo (todas)' : 'Escolha…')+'</select></label>'+
+        '<label class="campo"><span>Planilha (.xlsx, .xls ou .csv)</span><input type="file" id="impArq" accept=".xlsx,.xls,.csv,.ods"></label></div>'+
+      (IMP.tipo === 'documentos' ? '<label class="peq" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="impExt"'+(IMP.externo ? ' checked' : '')+'> Esta planilha é de documentos externos (normas, leis, contratos)</label>' : '')+
+    '</div><div id="impCorpo"></div>';
+  $('impVoltar').onclick = function(){ irPara('config'); };
+  Array.prototype.forEach.call(c.querySelectorAll('#impTipos .chip'), function(b){ b.onclick = function(){
+    IMP.tipo = b.getAttribute('data-v'); IMP.mapa = {}; telaImportar(); if(IMP.linhas) impMapear(); }; });
+  if($('impExt')) $('impExt').onchange = function(){ IMP.externo = this.checked; };
+  $('impArq').onchange = function(){
+    var f = this.files[0]; if(!f) return;
+    $('impCorpo').innerHTML = '<div class="cartao vazio">Lendo a planilha…</div>';
+    impCarregarLeitor().then(function(){
+      return f.arrayBuffer();
+    }).then(function(buf){
+      IMP.wb = XLSX.read(buf, {type:'array'});
+      IMP.abas = IMP.wb.SheetNames; IMP.aba = IMP.abas[0]; IMP.mapa = {};
+      impLerAba(); impMapear();
+    }).catch(function(e){ $('impCorpo').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
+  };
+  if(IMP.linhas) impMapear();
+}
+function impLerAba(){
+  var rows = XLSX.utils.sheet_to_json(IMP.wb.Sheets[IMP.aba], {header:1, raw:true, defval:''});
+  /* O cabeçalho é a primeira linha com pelo menos duas células de texto:
+     exportações costumam trazer título e filtros nas primeiras linhas. */
+  var ic = 0;
+  for(var k = 0; k < Math.min(rows.length, 15); k++){
+    if(rows[k].filter(function(v){ return typeof v === 'string' && v.trim(); }).length >= 2){ ic = k; break; }
+  }
+  IMP.cab = (rows[ic] || []).map(function(h, j){ return String(h).trim() || 'Coluna '+(j + 1); });
+  IMP.linhas = rows.slice(ic + 1).filter(function(r){ return r.some(function(v){ return String(v).trim() !== ''; }); });
+  IMP.largo = IMP.tipo === 'valores' && IMP.cab.filter(impMesDoCab).length >= 3;
+}
+function impAdivinhar(){
+  var usados = {}, campos = IMP_CAMPOS[IMP.tipo], cabN = IMP.cab.map(impNorm);
+  campos.forEach(function(cp){
+    if(IMP.mapa[cp.k] !== undefined) { usados[IMP.mapa[cp.k]] = 1; return; }
+    var achou = -1;
+    cp.s.some(function(sin){ /* primeiro igual, depois "contém" */
+      cabN.forEach(function(h, j){ if(achou < 0 && !usados[j] && h === sin) achou = j; }); return achou >= 0; });
+    if(achou < 0) cp.s.some(function(sin){
+      cabN.forEach(function(h, j){ if(achou < 0 && !usados[j] && h.indexOf(sin) >= 0) achou = j; }); return achou >= 0; });
+    IMP.mapa[cp.k] = achou >= 0 ? achou : '';
+    if(achou >= 0) usados[achou] = 1;
+  });
+}
+/* Linhas já com os nomes de campo do SGI (e, no formato "uma coluna por mês", uma linha por mês) */
+function impMontar(){
+  var campos = IMP_CAMPOS[IMP.tipo], out = [];
+  IMP.linhas.forEach(function(r){
+    if(IMP.tipo === 'valores' && IMP.largo){
+      var nome = IMP.mapa.indicador !== '' ? r[IMP.mapa.indicador] : '';
+      IMP.cab.forEach(function(h, j){
+        var mc = impMesDoCab(h); if(!mc) return;
+        var v = r[j]; if(String(v).trim() === '') return;
+        var a = mc.a || IMP.ano;
+        out.push({indicador:nome, competencia:a+'-'+(mc.m < 10 ? '0' : '')+mc.m, valor:v});
+      });
+      return;
+    }
+    var o = {};
+    campos.forEach(function(cp){ if(IMP.mapa[cp.k] !== '' && IMP.mapa[cp.k] !== undefined) o[cp.k] = r[IMP.mapa[cp.k]]; });
+    if(IMP.tipo === 'documentos' && IMP.externo){ o.externo = 1; if(o.tipo === undefined || o.tipo === '') o.tipo = 'Documento externo'; }
+    out.push(o);
+  });
+  return out;
+}
+function impMapear(){
+  if(IMP.tipo !== 'valores') IMP.largo = false;
+  impAdivinhar();
+  var campos = IMP_CAMPOS[IMP.tipo];
+  var opcCol = [['','(não importar)']].concat(IMP.cab.map(function(h, j){ return [j, h]; }));
+  var h = '<div class="cartao"><h3>Colunas <small>'+IMP.linhas.length+' linha(s) na aba '+esc(IMP.aba)+'</small></h3>'+
+    (IMP.abas.length > 1 ? '<label class="campo" style="max-width:320px"><span>Aba da planilha</span><select id="impAba">'+opcoes(IMP.abas, IMP.aba)+'</select></label>' : '')+
+    (IMP.tipo === 'valores' ? '<div class="chips" id="impFormato" style="margin-bottom:16px">'+
+      '<button class="chip'+(!IMP.largo ? ' on' : '')+'" data-v="0">Uma linha por mês</button>'+
+      '<button class="chip'+(IMP.largo ? ' on' : '')+'" data-v="1">Uma coluna por mês (jan, fev…)</button></div>' : '')+
+    '<div class="imp-mapa">'+campos.filter(function(cp){ return !(IMP.largo && (cp.k === 'competencia' || cp.k === 'valor' || cp.k === 'obs')); }).map(function(cp){
+      return '<label class="campo"><span>'+esc(cp.t)+(cp.obr ? ' *' : '')+'</span><select data-campo="'+cp.k+'">'+opcoes(opcCol, IMP.mapa[cp.k])+'</select></label>';
+    }).join('')+
+    (IMP.largo ? '<label class="campo"><span>Ano dos meses sem ano no cabeçalho</span><input type="number" id="impAno" min="2000" max="2100" value="'+IMP.ano+'"></label>' : '')+'</div>'+
+    (IMP.largo ? '<p class="mudo peq" style="margin:0">Colunas de mês reconhecidas: '+esc(IMP.cab.filter(impMesDoCab).join(', '))+'</p>' : '')+
+    '</div><div id="impPrevia"></div>';
+  $('impCorpo').innerHTML = h;
+  if($('impAba')) $('impAba').onchange = function(){ IMP.aba = this.value; IMP.mapa = {}; impLerAba(); impMapear(); };
+  if($('impFormato')) Array.prototype.forEach.call($('impFormato').querySelectorAll('.chip'), function(b){ b.onclick = function(){ IMP.largo = b.getAttribute('data-v') === '1'; impMapear(); }; });
+  if($('impAno')) $('impAno').onchange = function(){ IMP.ano = +this.value || IMP.ano; impPrevia(); };
+  Array.prototype.forEach.call($('impCorpo').querySelectorAll('select[data-campo]'), function(s){
+    s.onchange = function(){ IMP.mapa[s.getAttribute('data-campo')] = s.value === '' ? '' : +s.value; impPrevia(); };
+  });
+  impPrevia();
+}
+function impPrevia(){
+  var linhas = impMontar(), campos = IMP_CAMPOS[IMP.tipo];
+  var cols = IMP.largo ? [{k:'indicador', t:'Indicador'}, {k:'competencia', t:'Mês'}, {k:'valor', t:'Valor'}]
+    : campos.filter(function(cp){ return IMP.mapa[cp.k] !== ''; });
+  var falta = campos.filter(function(cp){ return cp.obr && !(IMP.largo && cp.k !== 'indicador') && IMP.mapa[cp.k] === ''; });
+  var fmt = function(v){ return v === undefined || v === null ? '' : String(v).slice(0, 80); };
+  $('impPrevia').innerHTML = '<div class="cartao"><h3>Prévia <small>'+linhas.length+' registro(s) · primeiros 5</small></h3>'+
+    (falta.length ? '<div class="erro-caixa">Escolha a coluna de: '+esc(falta.map(function(x){ return x.t; }).join(', '))+'</div>' : '')+
+    '<div class="tab-wrap" style="box-shadow:none"><table><thead><tr>'+cols.map(function(cp){ return '<th>'+esc(cp.t)+'</th>'; }).join('')+'</tr></thead><tbody>'+
+      linhas.slice(0, 5).map(function(l){ return '<tr>'+cols.map(function(cp){ return '<td>'+esc(fmt(l[cp.k]))+'</td>'; }).join('')+'</tr>'; }).join('')+
+    '</tbody></table></div>'+
+    '<div class="botoes" style="margin-top:16px"><button class="btn" id="impSimular"'+(falta.length ? ' disabled' : '')+'>Conferir sem gravar</button>'+
+    '<button class="btn pri" id="impGravar"'+(falta.length ? ' disabled' : '')+'>Importar '+linhas.length+' registro(s)</button></div><div id="impRes"></div></div>';
+  $('impSimular').onclick = function(){ impEnviar(true, this); };
+  $('impGravar').onclick = function(){ impEnviar(false, this); };
+}
+function impEnviar(simular, botao){
+  var emp = val('impEmp');
+  if(!emp && IMP.tipo !== 'documentos'){ avisar('Escolha a empresa.', true); return; }
+  var linhas = impMontar(), lotes = [], tam = 200;
+  for(var k = 0; k < linhas.length; k += tam) lotes.push({inicio:k, linhas:linhas.slice(k, k + tam)});
+  var tot = {criados:0, atualizados:0, ignorados:0, erros:[]};
+  var bts = [$('impSimular'), $('impGravar')]; bts.forEach(function(b){ b.disabled = true; });
+  $('impRes').innerHTML = '<p class="mudo peq">'+(simular ? 'Conferindo' : 'Importando')+'… 0 de '+linhas.length+'</p>';
+  var p = Promise.resolve();
+  lotes.forEach(function(l){ p = p.then(function(){
+    return api('importar', {tipo:IMP.tipo, empresa_id:emp, simular:simular ? 1 : 0, inicio:l.inicio, linhas:l.linhas}).then(function(r){
+      tot.criados += r.criados; tot.atualizados += r.atualizados; tot.ignorados += r.ignorados; tot.erros = tot.erros.concat(r.erros);
+      $('impRes').innerHTML = '<p class="mudo peq">'+(simular ? 'Conferindo' : 'Importando')+'… '+Math.min(linhas.length, l.inicio + l.linhas.length)+' de '+linhas.length+'</p>';
+    }); }); });
+  p.then(function(){
+    $('impRes').innerHTML = '<div class="imp-res"><div><b>'+tot.criados+'</b>'+(simular ? 'seriam criados' : 'criados')+'</div><div><b>'+tot.atualizados+'</b>'+(simular ? 'seriam atualizados' : 'atualizados')+'</div>'+
+      '<div><b>'+tot.ignorados+'</b>ignorados (vazios ou já existentes)</div><div class="'+(tot.erros.length ? 'com-erro' : '')+'"><b>'+tot.erros.length+'</b>com problema</div></div>'+
+      (tot.erros.length ? '<div class="tab-wrap" style="box-shadow:none;margin-top:12px"><table><thead><tr><th>Linha</th><th>Problema</th></tr></thead><tbody>'+
+        tot.erros.slice(0, 100).map(function(e){ return '<tr><td class="num">'+e.linha+'</td><td>'+esc(e.erro)+'</td></tr>'; }).join('')+'</tbody></table></div>' : '')+
+      (simular ? '<p class="mudo peq" style="margin:12px 0 0">Nada foi gravado. Se estiver certo, clique em Importar.</p>' : '<p class="peq" style="margin:12px 0 0">Importação concluída.</p>');
+    if(!simular) avisar('Importação concluída.');
+  }).catch(falha).then(function(){ bts.forEach(function(b){ b.disabled = false; }); });
 }
 
 /* ═════════ Modo separado: entrada própria ═════════

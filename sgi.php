@@ -573,6 +573,177 @@ function sgi_pode_editar_oc($me, $o){
 
 /* ══════════════ AÇÕES DA API ══════════════ */
 
+/* ══════════════ IMPORTAÇÃO ══════════════
+   Conversões tolerantes: a planilha vem do Excel, do CSV do Qualyteam
+   ou digitada à mão, e cada uma escreve data e número de um jeito. */
+
+function imp_txt($l, $k, $max){
+  $v = isset($l[$k]) ? trim(preg_replace('/\s+/u', ' ', (string)$l[$k])) : '';
+  return $v === '' ? null : mb_substr($v, 0, $max, 'UTF-8');
+}
+function imp_txt_longo($l, $k){
+  $v = isset($l[$k]) ? trim((string)$l[$k]) : '';
+  return $v === '' ? null : mb_substr($v, 0, 20000, 'UTF-8');
+}
+/* "1.234,56", "1234.56", "98,5%", 0.985 → número; vazio → null */
+function imp_num($v){
+  if($v === null) return null;
+  if(is_int($v) || is_float($v)) return (float)$v;
+  $s = trim(str_replace(array('%', ' ', "\xc2\xa0", 'R$'), '', (string)$v));
+  if($s === '' || $s === '-' || $s === '—') return null;
+  if(strpos($s, ',') !== false){ $s = str_replace('.', '', $s); $s = str_replace(',', '.', $s); }
+  elseif(substr_count($s, '.') > 1){ $s = str_replace('.', '', $s); }
+  return is_numeric($s) ? (float)$s : false;
+}
+/* 31/12/2026, 2026-12-31, 31-12-26, número de série do Excel → AAAA-MM-DD */
+function imp_data($v){
+  if($v === null || $v === '') return null;
+  if(is_numeric($v) && (float)$v > 20000 && (float)$v < 80000){
+    return gmdate('Y-m-d', (int)round(((float)$v - 25569) * 86400));
+  }
+  $s = trim((string)$v);
+  if(preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})/', $s, $m)){ $a = (int)$m[1]; $mm = (int)$m[2]; $d = (int)$m[3]; }
+  elseif(preg_match('#^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})#', $s, $m)){ $d = (int)$m[1]; $mm = (int)$m[2]; $a = (int)$m[3]; if($a < 100) $a += 2000; }
+  else return false;
+  if(!checkdate($mm, $d, $a)) return false;
+  return sprintf('%04d-%02d-%02d', $a, $mm, $d);
+}
+/* "2026-03", "03/2026", "mar/2026", "março de 2026", "01/03/2026", série do Excel → AAAA-MM */
+function imp_competencia($v){
+  if($v === null || $v === '') return null;
+  if(is_numeric($v) && (float)$v > 20000) return substr(imp_data($v), 0, 7);
+  $s = mb_strtolower(trim((string)$v), 'UTF-8');
+  if(preg_match('/^(\d{4})-(\d{1,2})(?:-\d{1,2})?/', $s, $m)) return sprintf('%04d-%02d', $m[1], $m[2]);
+  if(preg_match('#^\d{1,2}[/.-](\d{1,2})[/.-](\d{4})#', $s, $m)) return sprintf('%04d-%02d', $m[2], $m[1]);
+  if(preg_match('#^(\d{1,2})[/.-](\d{4})$#', $s, $m)) return sprintf('%04d-%02d', $m[2], $m[1]);
+  $meses = array('jan'=>1,'fev'=>2,'mar'=>3,'abr'=>4,'mai'=>5,'jun'=>6,'jul'=>7,'ago'=>8,'set'=>9,'out'=>10,'nov'=>11,'dez'=>12);
+  if(preg_match('/^([a-zç]{3})[a-zç]*\.?\s*(?:de\s*)?[\/ -]?\s*(\d{2,4})$/u', $s, $m) && isset($meses[$m[1]])){
+    $a = (int)$m[2]; if($a < 100) $a += 2000;
+    return sprintf('%04d-%02d', $a, $meses[$m[1]]);
+  }
+  return false;
+}
+function imp_sem_acento($s){
+  $s = mb_strtolower(trim((string)$s), 'UTF-8');
+  return strtr($s, array('á'=>'a','à'=>'a','â'=>'a','ã'=>'a','é'=>'e','ê'=>'e','í'=>'i','ó'=>'o','ô'=>'o','õ'=>'o','ú'=>'u','ç'=>'c'));
+}
+/* Situação escrita de qualquer jeito → status do SGI */
+function imp_status_oc($v){
+  $s = imp_sem_acento($v);
+  if($s === '') return 'aberta';
+  foreach(array('cancel'=>'cancelada', 'encerr'=>'encerrada', 'conclu'=>'encerrada', 'fechad'=>'encerrada', 'finaliz'=>'encerrada',
+                'eficac'=>'verificacao', 'verific'=>'verificacao', 'execu'=>'acao', 'plano'=>'acao', 'acao'=>'acao', 'tratament'=>'acao',
+                'analis'=>'analise', 'causa'=>'analise') as $chave => $st){
+    if(strpos($s, $chave) !== false) return $st;
+  }
+  return 'aberta';
+}
+function imp_tipo_oc($v){
+  $s = imp_sem_acento($v);
+  if(strpos($s, 'reclama') !== false) return 'reclamacao';
+  if(strpos($s, 'melhori') !== false || strpos($s, 'oportunidade') !== false || strpos($s, 'sugest') !== false) return 'melhoria';
+  return 'nc';
+}
+function imp_gravidade($v){
+  $s = imp_sem_acento($v);
+  if($s === '') return 'media';
+  if(strpos($s, 'crit') !== false || strpos($s, 'gravis') !== false) return 'critica';
+  if(strpos($s, 'alt') !== false || strpos($s, 'grave') !== false || strpos($s, 'maior') !== false) return 'alta';
+  if(strpos($s, 'baix') !== false || strpos($s, 'leve') !== false || strpos($s, 'menor') !== false) return 'baixa';
+  return 'media';
+}
+
+/* Grava uma linha e diz o que aconteceu: criados, atualizados ou ignorados. */
+function sgi_importar_linha(SgiDb $db, $me, $tipo, $emp, $l){
+  $agora = sgi_agora();
+
+  if($tipo === 'documentos'){
+    $cod = imp_txt($l, 'codigo', 40); $tit = imp_txt($l, 'titulo', 200);
+    if(!$cod && !$tit) return 'ignorados';
+    if(!$cod) sgi_erro('Sem código.');
+    if(!$tit) sgi_erro('Sem título ('.$cod.').');
+    $val = imp_data($l['revisar_em'] ?? null);
+    if($val === false) sgi_erro('Data de validade inválida em '.$cod.'.');
+    $rev = imp_num($l['revisao'] ?? null);
+    $sit = imp_sem_acento($l['status'] ?? '');
+    $status = (strpos($sit, 'obsol') !== false || strpos($sit, 'inativ') !== false || strpos($sit, 'cancel') !== false) ? 'obsoleto' : 'vigente';
+    $tipoDoc = imp_txt($l, 'tipo', 40) ?: (!empty($l['externo']) ? 'Documento externo' : 'Procedimento (POP)');
+    $c = array('titulo'=>$tit, 'tipo'=>$tipoDoc, 'processo'=>imp_txt($l, 'processo', 80), 'status'=>$status,
+               'versao_vigente'=>$rev !== null && $rev !== false ? (int)$rev : null, 'revisar_em'=>$val, 'atualizado_em'=>$agora);
+    $id = (int)$db->valor("SELECT id FROM sgi_documentos WHERE codigo=?", array($cod));
+    if($id){ $db->atualizar('sgi_documentos', $c, $id); return 'atualizados'; }
+    $novo = $db->inserir('sgi_documentos', $c + array('codigo'=>$cod, 'empresa_id'=>$emp ?: null,
+      'revisao_meses'=>12, 'exige_ciencia'=>0, 'criado_por'=>$me['id'], 'criado_em'=>$agora));
+    sgi_hist($db, 'documento', $novo, $me, 'Importado da planilha do Qualyteam.');
+    return 'criados';
+  }
+
+  if($tipo === 'indicadores'){
+    $nome = imp_txt($l, 'nome', 150);
+    if(!$nome) return 'ignorados';
+    $meta = imp_num($l['meta'] ?? null);
+    if($meta === false) sgi_erro('Meta inválida em "'.$nome.'".');
+    $casas = imp_num($l['casas'] ?? null);
+    $sent = imp_sem_acento($l['sentido'] ?? '');
+    $c = array('nome'=>$nome, 'descricao'=>imp_txt_longo($l, 'descricao'), 'unidade'=>imp_txt($l, 'unidade', 20),
+               'sentido'=>(strpos($sent, 'menor') !== false || strpos($sent, 'diminu') !== false || strpos($sent, 'reduz') !== false || strpos($sent, 'baixo') !== false) ? 'menor' : 'maior',
+               'meta'=>$meta, 'processo'=>imp_txt($l, 'processo', 80), 'ativo'=>1);
+    if($casas !== null && $casas !== false) $c['casas'] = max(0, min(4, (int)$casas));
+    $id = (int)$db->valor("SELECT id FROM sgi_indicadores WHERE LOWER(nome)=LOWER(?)", array($nome));
+    if($id){ $db->atualizar('sgi_indicadores', $c, $id); return 'atualizados'; }
+    $db->inserir('sgi_indicadores', $c + array('casas'=>1, 'ordem'=>0));
+    return 'criados';
+  }
+
+  if($tipo === 'valores'){
+    $nome = imp_txt($l, 'indicador', 150);
+    $comp = imp_competencia($l['competencia'] ?? null);
+    $val = imp_num($l['valor'] ?? null);
+    if(!$nome && $comp === null && $val === null) return 'ignorados';
+    if(!$nome) sgi_erro('Sem o nome do indicador.');
+    if(!$comp) sgi_erro('Mês inválido em "'.$nome.'".');
+    if($val === null) return 'ignorados';
+    if($val === false) sgi_erro('Valor inválido em "'.$nome.'" ('.$comp.').');
+    $iid = (int)$db->valor("SELECT id FROM sgi_indicadores WHERE LOWER(nome)=LOWER(?)", array($nome));
+    if(!$iid) sgi_erro('Indicador "'.$nome.'" não está cadastrado. Importe os indicadores antes.');
+    $atual = $db->linha("SELECT id FROM sgi_ind_valores WHERE indicador_id=? AND empresa_id=? AND competencia=?", array($iid, $emp, $comp));
+    $c = array('valor'=>$val, 'obs'=>imp_txt($l, 'obs', 2000), 'lancado_por'=>$me['id'], 'lancado_em'=>$agora);
+    if($atual){ $db->atualizar('sgi_ind_valores', $c, $atual['id']); return 'atualizados'; }
+    $db->inserir('sgi_ind_valores', $c + array('indicador_id'=>$iid, 'empresa_id'=>$emp, 'competencia'=>$comp));
+    return 'criados';
+  }
+
+  /* ocorrências */
+  $tit = imp_txt($l, 'titulo', 200);
+  $desc = imp_txt_longo($l, 'descricao');
+  if(!$tit && $desc) $tit = mb_substr($desc, 0, 120, 'UTF-8');
+  if(!$tit) return 'ignorados';
+  $orig = imp_txt($l, 'numero', 20);
+  if($orig && $db->valor("SELECT id FROM sgi_ocorrencias WHERE numero=?", array($orig))) return 'ignorados';
+  $fato = imp_data($l['data_fato'] ?? null); if($fato === false) $fato = null;
+  $prazo = imp_data($l['prazo'] ?? null); if($prazo === false) $prazo = null;
+  $tipoOc = imp_tipo_oc($l['tipo'] ?? '');
+  $status = imp_status_oc($l['status'] ?? '');
+  $resp = imp_txt($l, 'responsavel', 120);
+  $c = array('titulo'=>$tit, 'descricao'=>trim(($desc ?: '').($resp ? "\n\nResponsável no Qualyteam: ".$resp : '')) ?: null,
+             'origem'=>imp_txt($l, 'origem', 60), 'processo'=>imp_txt($l, 'processo', 80), 'local'=>imp_txt($l, 'local', 120),
+             'data_fato'=>$fato, 'prazo'=>$prazo, 'gravidade'=>imp_gravidade($l['gravidade'] ?? ''),
+             'acao_imediata'=>imp_txt_longo($l, 'acao_imediata'), 'causa_raiz'=>imp_txt_longo($l, 'causa_raiz'));
+  if($orig){
+    $ano = $fato ? (int)substr($fato, 0, 4) : (int)date('Y');
+    /* Mantém o número que a equipe já conhece. seq=0 tira o registro da
+       sequência automática, que continua de onde estava. */
+    $id = $db->inserir('sgi_ocorrencias', $c + array('empresa_id'=>$emp, 'tipo'=>$tipoOc, 'numero'=>$orig, 'ano'=>$ano, 'seq'=>0,
+      'status'=>$status, 'aberta_por'=>$me['id'], 'criado_em'=>($fato ? $fato.' 00:00:00' : $agora), 'atualizado_em'=>$agora));
+  } else {
+    list($id, ) = sgi_oc_criar($db, $me, $emp, $tipoOc, $c);
+    if($status !== 'aberta') $db->atualizar('sgi_ocorrencias', array('status'=>$status), $id);
+  }
+  if($status === 'encerrada') $db->atualizar('sgi_ocorrencias', array('encerrada_em'=>$agora), $id);
+  sgi_hist($db, 'ocorrencia', $id, $me, 'Importada da planilha do Qualyteam'.($orig ? ' (número '.$orig.')' : '').'.');
+  return 'criados';
+}
+
 function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   $me = sgi_eu($db, $uid);
   $L = sgi_listas();
@@ -1114,6 +1285,44 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   /* ─────────────── INDICADORES ─────────────── */
+  /* ── Importação de planilhas (dados que vieram do Qualyteam) ──
+     A tela já leu a planilha e casou as colunas: aqui chegam linhas com
+     os nomes de campo do SGI. Reimportar a mesma planilha não duplica:
+     documento casa pelo código, indicador pelo nome, valor pelo trio
+     indicador+empresa+mês e ocorrência pelo número original.
+     simular=1 confere tudo e desfaz no fim. */
+  case 'importar': {
+    sgi_exige($me, 'gestor');
+    $tipo = (string)($b['tipo'] ?? '');
+    if(!in_array($tipo, array('documentos','indicadores','valores','ocorrencias'), true)) sgi_erro('Tipo de importação inválido.');
+    $linhas = $b['linhas'] ?? array();
+    if(!is_array($linhas) || !$linhas) sgi_erro('Nenhuma linha para importar.');
+    if(count($linhas) > 500) sgi_erro('Mande no máximo 500 linhas por vez.');
+    $emp = (int)($b['empresa_id'] ?? 0);
+    if($emp) sgi_empresa_ok($me, $emp);
+    elseif($tipo !== 'documentos') sgi_erro('Escolha a empresa.');
+    $simular = !empty($b['simular']);
+    $base = (int)($b['inicio'] ?? 0);
+
+    $r = array('criados'=>0, 'atualizados'=>0, 'ignorados'=>0, 'erros'=>array());
+    $db->inicio();
+    try {
+      foreach($linhas as $n => $l){
+        $num = $base + $n + 1;
+        if(!is_array($l)){ $r['ignorados']++; continue; }
+        try {
+          $res = sgi_importar_linha($db, $me, $tipo, $emp, $l);
+          $r[$res]++;
+        } catch(SgiErro $e){
+          $r['erros'][] = array('linha'=>$num, 'erro'=>$e->getMessage());
+        }
+      }
+    } catch(Throwable $e){ $db->desfaz(); throw $e; }
+    if($simular) $db->desfaz(); else $db->fim();
+    $r['erros'] = array_slice($r['erros'], 0, 50);
+    return $r;
+  }
+
   case 'ind_lista': {
     $ano = (int)($b['ano'] ?? date('Y'));
     if($ano < 2000 || $ano > 2100) sgi_erro('Ano inválido.');

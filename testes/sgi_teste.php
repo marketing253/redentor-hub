@@ -247,6 +247,58 @@ confere('alerta para a responsável com telefone', count($al['pessoas']) === 1 &
   && count($al['pessoas'][0]['vencidas']) === 1);
 confere('ação desconhecida', erro(2, 'xpto') !== null);
 
+echo "Importação\n";
+confere('conversão de número BR', imp_num('1.234,56') === 1234.56 && imp_num('98,5%') === 98.5 && imp_num('2.41') === 2.41 && imp_num('') === null && imp_num('abc') === false);
+confere('conversão de data', imp_data('31/12/2026') === '2026-12-31' && imp_data('2026-03-05') === '2026-03-05' && imp_data(46000) === '2025-12-09' && imp_data('31/02/2026') === false);
+confere('conversão de mês', imp_competencia('03/2026') === '2026-03' && imp_competencia('mar/2026') === '2026-03'
+  && imp_competencia('Março de 2026') === '2026-03' && imp_competencia('01/03/2026') === '2026-03' && imp_competencia('2026-03') === '2026-03');
+confere('membro não importa', erro(3, 'importar', array('tipo'=>'indicadores', 'empresa_id'=>$A, 'linhas'=>array(array('nome'=>'X')))) !== null);
+$r = api(2, 'importar', array('tipo'=>'indicadores', 'empresa_id'=>$A, 'simular'=>1, 'linhas'=>array(
+  array('nome'=>'Km por litro', 'unidade'=>'km/L', 'meta'=>'2,5', 'sentido'=>'Quanto maior melhor', 'casas'=>'2'),
+  array('nome'=>'Acidentes com afastamento', 'meta'=>'0', 'sentido'=>'Quanto menor melhor'))));
+confere('simulação conta e não grava', $r['criados'] === 2 && !$db->valor("SELECT id FROM sgi_indicadores WHERE nome='Km por litro'"));
+api(2, 'importar', array('tipo'=>'indicadores', 'empresa_id'=>$A, 'linhas'=>array(
+  array('nome'=>'Km por litro', 'unidade'=>'km/L', 'meta'=>'2,5', 'sentido'=>'Quanto maior melhor', 'casas'=>'2'),
+  array('nome'=>'Acidentes com afastamento', 'meta'=>'0', 'sentido'=>'Quanto menor melhor'))));
+$km = $db->linha("SELECT * FROM sgi_indicadores WHERE nome='Km por litro'");
+confere('indicador importado', $km && (float)$km['meta'] === 2.5 && $km['sentido'] === 'maior' && (int)$km['casas'] === 2);
+confere('sentido menor reconhecido', $db->valor("SELECT sentido FROM sgi_indicadores WHERE nome='Acidentes com afastamento'") === 'menor');
+$r = api(2, 'importar', array('tipo'=>'indicadores', 'empresa_id'=>$A, 'linhas'=>array(array('nome'=>'KM POR LITRO', 'meta'=>'2,6'))));
+confere('reimportar atualiza pelo nome', $r['atualizados'] === 1 && (float)$db->valor("SELECT meta FROM sgi_indicadores WHERE id=?", array($km['id'])) === 2.6);
+$r = api(2, 'importar', array('tipo'=>'valores', 'empresa_id'=>$A, 'linhas'=>array(
+  array('indicador'=>'Km por litro', 'competencia'=>'jan/2026', 'valor'=>'2,48'),
+  array('indicador'=>'Km por litro', 'competencia'=>'02/2026', 'valor'=>'2,61'),
+  array('indicador'=>'Km por litro', 'competencia'=>'03/2026', 'valor'=>''),
+  array('indicador'=>'Inexistente', 'competencia'=>'03/2026', 'valor'=>'1'))));
+confere('valores importados', $r['criados'] === 2 && $r['ignorados'] === 1 && count($r['erros']) === 1 && $r['erros'][0]['linha'] === 4);
+$r = api(2, 'importar', array('tipo'=>'valores', 'empresa_id'=>$A, 'linhas'=>array(array('indicador'=>'Km por litro', 'competencia'=>'2026-01', 'valor'=>'2,50'))));
+confere('valor reimportado atualiza', $r['atualizados'] === 1);
+confere('valores exigem empresa', erro(2, 'importar', array('tipo'=>'valores', 'linhas'=>array(array('indicador'=>'Km por litro')))) !== null);
+$r = api(2, 'importar', array('tipo'=>'documentos', 'linhas'=>array(
+  array('codigo'=>'PO-MAN-001', 'titulo'=>'Manutenção preventiva', 'revisao'=>'3', 'revisar_em'=>'10/06/2027', 'status'=>'Publicado'),
+  array('codigo'=>'NBR-15570', 'titulo'=>'Ônibus urbano', 'externo'=>1, 'status'=>'Inativo'),
+  array('codigo'=>'', 'titulo'=>'Sem código'))));
+confere('documentos importados', $r['criados'] === 2 && count($r['erros']) === 1);
+$d = $db->linha("SELECT * FROM sgi_documentos WHERE codigo='PO-MAN-001'");
+confere('documento com revisão e validade', (int)$d['versao_vigente'] === 3 && $d['revisar_em'] === '2027-06-10' && $d['status'] === 'vigente');
+confere('externo inativo vira obsoleto', $db->valor("SELECT status FROM sgi_documentos WHERE codigo='NBR-15570'") === 'obsoleto'
+  && $db->valor("SELECT tipo FROM sgi_documentos WHERE codigo='NBR-15570'") === 'Documento externo');
+confere('documento importado abre', api(2, 'doc_detalhe', array('id'=>$d['id']))['documento']['codigo'] === 'PO-MAN-001');
+$r = api(2, 'importar', array('tipo'=>'ocorrencias', 'empresa_id'=>$A, 'linhas'=>array(
+  array('numero'=>'NC 0457', 'titulo'=>'Ônibus saiu sem extintor', 'status'=>'Concluída', 'data_fato'=>'12/03/2025', 'responsavel'=>'Fulano'),
+  array('numero'=>'', 'titulo'=>'Falta de limpeza', 'status'=>'Em análise de causa', 'tipo'=>'Não conformidade'),
+  array('numero'=>'REC 12', 'titulo'=>'Motorista não parou', 'tipo'=>'Reclamação de cliente'))));
+confere('ocorrências importadas', $r['criados'] === 3);
+$o = $db->linha("SELECT * FROM sgi_ocorrencias WHERE numero='NC 0457'");
+confere('mantém número e situação', $o && $o['status'] === 'encerrada' && (int)$o['seq'] === 0 && (int)$o['ano'] === 2025 && strpos($o['descricao'], 'Fulano') !== false);
+confere('sem número ganha numeração do SGI', $db->valor("SELECT status FROM sgi_ocorrencias WHERE titulo='Falta de limpeza'") === 'analise'
+  && strpos($db->valor("SELECT numero FROM sgi_ocorrencias WHERE titulo='Falta de limpeza'"), 'RNC-') === 0);
+confere('reclamação reconhecida', $db->valor("SELECT tipo FROM sgi_ocorrencias WHERE numero='REC 12'") === 'reclamacao');
+$r = api(2, 'importar', array('tipo'=>'ocorrencias', 'empresa_id'=>$A, 'linhas'=>array(array('numero'=>'NC 0457', 'titulo'=>'Ônibus saiu sem extintor'))));
+confere('ocorrência repetida é ignorada', $r['ignorados'] === 1 && $r['criados'] === 0);
+$n = api(2, 'oc_salvar', array('tipo'=>'nc', 'empresa_id'=>$A, 'titulo'=>'Depois da importação', 'descricao'=>'Teste', 'gravidade'=>'media'));
+confere('numeração segue depois da importação', strpos($n['numero'], 'RNC-'.date('Y').'-') === 0);
+
 echo "\n$ok ok, ".count($falhas)." falha(s)\n";
 array_map('unlink', glob(SGI_PASTA.'/*') ?: array()); @unlink(SGI_PASTA.'/.htaccess'); @rmdir(SGI_PASTA);
 exit($falhas ? 1 : 0);
