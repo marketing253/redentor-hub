@@ -129,13 +129,48 @@ td b{font-weight:500}
 .pend:hover .pt{color:var(--azul)}
 .pend .pt{font-weight:500;transition:color .15s var(--ease)}
 .pend .pd{margin-left:auto;white-space:nowrap;font:12px var(--mono);padding-top:2px}
-.pend .pd .btn{font-family:inherit}
+.pend .pd .btn{font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif}
 .fases{display:flex;flex-direction:column;gap:12px}
 .fase-l{display:grid;grid-template-columns:150px 1fr 32px;align-items:center;gap:12px;font-size:13px}
 .fase-l .nm{color:var(--txt2)}
 .fase-l .bar{height:8px;background:var(--sup2);border-radius:4px;overflow:hidden}
 .fase-l .bar i{display:block;height:100%;background:var(--azul);border-radius:4px}
 .fase-l .q{text-align:right;font:500 13px var(--mono)}
+/* Painel: faixa única de números (como o painel de bordo), o trajeto
+   das NC como gráfico principal e a lista "Com você" mais estreita. */
+.kpis.faixa{gap:1px;background:var(--borda);border:1px solid var(--borda);border-radius:12px;overflow:hidden;box-shadow:var(--sombra)}
+.kpis.faixa .kpi{border:none;border-radius:0;box-shadow:none;padding:16px 20px;transition:background-color .15s var(--ease)}
+.kpis.faixa .kpi:hover{background:var(--bg)}
+.linha-p{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1000px){.linha-p{grid-template-columns:1fr}}
+.destaque{padding:24px}
+.dest-t{display:flex;align-items:flex-start;gap:16px;margin-bottom:24px}
+.dest-t h3{margin:0 0 4px}
+.dest-t p{margin:0}
+.dest-t p b{color:var(--azul);font-weight:500}
+.dest-n{margin-left:auto;font:500 40px/1 var(--mono);color:var(--txt)}
+.destaque .trajeto::before{top:66px}
+.destaque .parada b{font-size:36px;line-height:44px}
+/* Indicadores em gráfico */
+.ind-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ind-card{background:var(--sup);border:1px solid var(--borda);border-radius:12px;padding:16px 16px 8px;box-shadow:var(--sombra);cursor:pointer;transition:border-color .15s var(--ease)}
+.ind-card:hover{border-color:var(--borda2)}
+.ind-cab{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.ind-nome{font-weight:500;line-height:1.3}
+.ind-num{font:500 28px/1 var(--mono);margin:16px 0 4px;font-variant-numeric:tabular-nums}
+.ind-num small{display:block;font:400 12px/16px "IBM Plex Sans",system-ui,sans-serif;color:var(--txt3);margin-top:6px}
+.graf{display:block;width:100%;height:auto;overflow:visible}
+.graf text{font-family:var(--mono);font-size:10px;fill:var(--txt3)}
+.g-grade{stroke:var(--borda);stroke-width:1}
+.g-meta{stroke:var(--txt2);stroke-width:1;stroke-dasharray:4 4}
+.graf .g-meta-t{fill:var(--txt2)}
+.g-linha{fill:none;stroke:var(--azul);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.g-pt{fill:var(--sup);stroke:var(--azul);stroke-width:2}
+.g-pt.fora{stroke:var(--ruim);fill:var(--ruim)}
+.graf .g-mes.on{fill:var(--txt);font-weight:500}
+.graf .g-val{fill:var(--txt2);font-size:11px}
+html[data-tema="escuro"] .g-linha{stroke:var(--info)} html[data-tema="escuro"] .g-pt{stroke:var(--info)}
+.graf-vazio{height:96px;display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:12.5px;border-top:1px dashed var(--borda2);margin-top:8px}
 /* Trajeto das NC: as fases como paradas de uma linha; a parada com mais
    NC acumuladas (o gargalo) é a única em azul. */
 .trajeto{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:relative;padding:8px 0 4px}
@@ -278,6 +313,17 @@ body.fora .entrada{display:flex}
 .ent-lado li{display:flex;gap:12px;align-items:flex-start;font-size:13.5px}
 .ent-lado li svg{width:18px;height:18px;flex:none;stroke:var(--ouro-cl);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-top:1px}
 .ent-lado li b{color:#fff;display:block;font-weight:500}
+.rota{margin:40px 0 8px;max-width:440px}
+.rota-t{font-size:12px;color:#8A90C2;margin-bottom:16px}
+.rota-l{display:grid;grid-template-columns:repeat(4,1fr);position:relative}
+.rota-l::before{content:'';position:absolute;left:12.5%;right:12.5%;top:7px;height:2px;background:#3A4070}
+.rota-l::after{content:'';position:absolute;left:12.5%;width:50%;top:7px;height:2px;background:var(--ouro-cl)}
+.rota-l span{position:relative;text-align:center;font-size:12.5px;color:#C9CDEE}
+.rota-l i{display:block;width:16px;height:16px;margin:0 auto 8px;border-radius:50%;background:#12152B;border:2px solid var(--ouro-cl);box-sizing:border-box}
+.rota-l span:nth-child(3) i{background:var(--ouro-cl);box-shadow:0 0 0 4px rgba(217,168,63,.18)}
+.rota-l span.fim i{border-color:#3A4070}
+.rota-l span.fim{color:#8A90C2}
+.ent-lado ul{margin-top:32px!important}
 .ent-lado .rod{position:absolute;left:64px;bottom:32px;font-size:12px;color:#8A90C2}
 .ent-form{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
 .ent-caixa{width:100%;max-width:400px;background:var(--sup);border:1px solid var(--borda);border-radius:16px;padding:32px 30px 26px;box-shadow:0 12px 40px #1b1f4b14}
@@ -294,7 +340,7 @@ body.fora .entrada{display:flex}
   .entrada{flex-direction:column}
   .ent-lado{flex:none;padding:28px 22px}
   .ent-lado h1{font-size:23px;margin-top:16px}
-  .ent-lado ul,.ent-lado .rod{display:none}
+  .ent-lado ul,.ent-lado .rod,.rota{display:none}
   .ent-lado img{width:64px}
 }
 </style>
@@ -307,6 +353,10 @@ body.fora .entrada{display:flex}
     <img src="../img/redentor.png" alt="Redentor">
     <h1>SGI <span>Redentor</span></h1>
     <p>Sistema de Gestão Integrada das empresas do grupo: qualidade, segurança e meio ambiente no mesmo lugar.</p>
+    <div class="rota" aria-hidden="true">
+      <div class="rota-t">Caminho de uma não conformidade</div>
+      <div class="rota-l"><span><i></i>Registro</span><span><i></i>Causa</span><span><i></i>Plano de ação</span><span class="fim"><i></i>Eficácia</span></div>
+    </div>
     <ul>
       <li><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><div><b>Documentos</b>Lista mestra, revisões, aprovação e ciência de leitura.</div></li>
       <li><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg><div><b>Indicadores</b>Metas por empresa, lançamento mensal e o que está fora.</div></li>
@@ -375,7 +425,7 @@ body.fora .entrada{display:flex}
 var API = '../sgi.php';
 var S = { eu:null, empresas:[], usuarios:[], L:null, hoje:'', aba:'painel', empresa:'',
           filtros:{ oc:{tipo:'', status:'ativas', texto:'', meu:false}, ac:{status:'pendente', meu:false},
-                    doc:{status:'ativos', texto:''}, ind:{ano:new Date().getFullYear()} } };
+                    doc:{status:'ativos', texto:''}, ind:{ano:new Date().getFullYear(), vista:'graf', fora:false} } };
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return s == null ? '' : String(s).replace(/[&<>"']/g, function(c){
@@ -555,7 +605,7 @@ function telaPainel(){
     var ab = p.abertas, rm = p.reclamacoes_mes, ra = p.reclamacoes_mes_anterior;
     var dif = rm - ra, difTxt = ra || rm ? (dif === 0 ? 'igual ao mês anterior' : (dif > 0 ? '+' : '') + dif + ' em relação ao mês anterior') : 'nenhuma no mês anterior';
     var ind = p.indicadores;
-    var h = '<div class="kpis">'+
+    var h = '<div class="kpis faixa">'+
       kpi(ab.nc, 'Não conformidades abertas', (p.nc_por_status.verificacao || 0)+' em verificação de eficácia', ab.nc ? 'alerta' : 'ok', "irOc('nc')")+
       kpi(p.acoes_vencidas, 'Ações vencidas', p.acoes_semana+' vencem nos próximos 7 dias', p.acoes_vencidas ? 'ruim' : 'ok', "irAcoes('vencidas')")+
       kpi(rm, 'Reclamações no mês', difTxt, dif > 0 ? 'alerta' : '', "irOc('reclamacao')")+
@@ -583,9 +633,13 @@ function telaPainel(){
         (nivel() >= 2 ? '<span class="pd"><button class="btn sm" onclick=\'rncDeIndicador('+JSON.stringify({n:r.nome, e:r.empresa_id, v:numBR(r.valor,+r.casas), m:numBR(r.meta,+r.casas), c:ind.competencia, u:r.unidade||''}).replace(/'/g,'&#39;')+')\'>Abrir RNC</button></span>' : '')+'</div>';
     }).join('');
 
-    h += '<div class="duas"><div class="cartao"><h3>Com você <small>o que depende da sua ação</small></h3>'+(itens || '<div class="vazio">Nada pendente com você</div>')+'</div>'+
-      '<div><div class="cartao"><h3>Não conformidades por fase'+(gargalo ? ' <small>gargalo: '+esc(S.L.status[gargalo].toLowerCase())+'</small>' : '')+'</h3><div class="trajeto">'+fh+'</div></div>'+
-      (fora ? '<div class="cartao"><h3>Fora da meta <small>'+mesNome(ind.competencia)+'</small></h3>'+fora+'</div>' : '')+'</div></div>';
+    var totF = 0; fases.forEach(function(f){ totF += +(p.nc_por_status[f] || 0); });
+    h += '<div class="linha-p"><div class="cartao destaque"><div class="dest-t"><div><h3>Não conformidades em andamento</h3>'+
+        '<p class="mudo peq">'+(totF ? (gargalo ? 'A maior parte está parada em <b>'+esc(S.L.status[gargalo].toLowerCase())+'</b>' : 'Distribuídas por fase') : 'Nenhuma NC em andamento')+'</p></div>'+
+        '<div class="dest-n">'+totF+'</div></div><div class="trajeto">'+fh+'</div>'+
+        '<button class="btn sm" style="margin-top:16px" onclick="irOc(\'nc\')">Ver não conformidades</button></div>'+
+      '<div class="cartao"><h3>Com você <small>o que depende da sua ação</small></h3>'+(itens || '<div class="vazio">Nada pendente com você</div>')+'</div></div>'+
+      (fora ? '<div class="cartao"><h3>Fora da meta <small>'+mesNome(ind.competencia)+'</small></h3>'+fora+'</div>' : '');
 
     if(p.por_empresa.length){
       h += '<div class="cartao"><h3>Por empresa</h3><div class="tab-wrap" style="box-shadow:none"><table><thead><tr><th>Empresa</th><th>RNC abertas</th><th>Ações vencidas</th><th>Reclamações no mês</th></tr></thead><tbody>'+
@@ -1085,10 +1139,16 @@ function telaIndicadores(){
   var f = S.filtros.ind, c = $('conteudo'), anoAt = new Date().getFullYear();
   var anos = []; for(var a = anoAt; a >= anoAt - 4; a--) anos.push(a);
   var emps = minhasEmpresas();
-  c.innerHTML = '<div class="barra"><select id="indAno">'+opcoes(anos, f.ano)+'</select>'+
+  c.innerHTML = '<div class="barra"><div class="chips" id="indVista">'+
+      '<button class="chip'+(f.vista === 'graf' ? ' on' : '')+'" data-v="graf">Gráficos</button>'+
+      '<button class="chip'+(f.vista === 'tab' ? ' on' : '')+'" data-v="tab">Tabela do ano</button></div>'+
+    '<select id="indAno">'+opcoes(anos, f.ano)+'</select>'+
+    '<label class="peq" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="indFora"'+(f.fora ? ' checked' : '')+'> Só fora da meta</label>'+
     (emps.length > 1 && !S.empresa ? '<span class="mudo peq">Mostrando a média das empresas. Escolha uma empresa no topo para ver e lançar os valores dela.</span>' : '')+
     '<span style="flex:1"></span>'+(nivel() >= 2 ? '<button class="btn pri" id="indLancar">Lançar mês</button>' : '')+'</div><div id="indTab"><div class="vazio">Carregando…</div></div>';
   $('indAno').onchange = function(){ f.ano = +this.value; telaIndicadores(); };
+  $('indFora').onchange = function(){ f.fora = this.checked; telaIndicadores(); };
+  Array.prototype.forEach.call(c.querySelectorAll('#indVista .chip'), function(b){ b.onclick = function(){ f.vista = b.getAttribute('data-v'); telaIndicadores(); }; });
   if($('indLancar')) $('indLancar').onclick = function(){ lancarMes(); };
   api('ind_lista', {ano:f.ano, empresa:S.empresa}).then(function(r){
     if(!r.indicadores.length){ $('indTab').innerHTML = '<div class="cartao vazio">Nenhum indicador ativo. O gestor cadastra em Configurações.</div>'; return; }
@@ -1096,6 +1156,16 @@ function telaIndicadores(){
     var mapa = {};
     r.valores.forEach(function(v){ var k = v.indicador_id+'|'+v.competencia; (mapa[k] = mapa[k] || []).push(+v.valor); });
     var meses = []; for(var m = 1; m <= 12; m++) meses.push(f.ano+'-'+(m < 10 ? '0'+m : m));
+    /* Série do ano por indicador (média das empresas quando o filtro é "todas"). */
+    IND = { ano:f.ano, meses:meses, porId:{} };
+    r.indicadores.forEach(function(i){
+      IND.porId[i.id] = { i:i, serie: meses.map(function(mm){ var l = mapa[i.id+'|'+mm]; return l ? l.reduce(function(a,b){ return a+b; }, 0) / l.length : null; }),
+        n: meses.map(function(mm){ return (mapa[i.id+'|'+mm] || []).length; }) };
+    });
+    var lista = r.indicadores.filter(function(i){ if(!f.fora) return true; var u = ultimoValor(IND.porId[i.id].serie); return u && classeMeta(i, u.v) === 'fora'; });
+    if(!lista.length){ $('indTab').innerHTML = '<div class="cartao vazio">Nenhum indicador fora da meta no último mês lançado.</div>'; return; }
+    if(f.vista === 'graf'){ $('indTab').innerHTML = '<div class="ind-grade">'+lista.map(cartaoInd).join('')+'</div>'; return; }
+    r.indicadores = lista;
     $('indTab').innerHTML = '<div class="tab-wrap"><table class="ind"><thead><tr><th>Indicador</th><th>Meta</th>'+
       meses.map(function(x){ return '<th>'+mesNome(x).split('/')[0]+'</th>'; }).join('')+'<th>Ano</th></tr></thead><tbody>'+
       r.indicadores.map(function(i){
@@ -1112,6 +1182,80 @@ function telaIndicadores(){
           '<td>'+(media !== null ? '<span class="cel '+classeMeta(i, media)+'">'+numBR(media, cas)+'</span>' : '')+'</td></tr>';
       }).join('')+'</tbody></table></div><div class="mudo peq" style="margin-top:8px">Verde: dentro da meta · vermelho: fora da meta. A coluna Ano é a média dos meses lançados.</div>';
   }).catch(function(e){ $('indTab').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
+}
+/* ═════════ Gráficos dos indicadores ═════════
+   Linha do ano com a meta tracejada. Um ponto por mês lançado; os pontos
+   fora da meta ficam em vermelho, o resto no azul Redentor. Desenhado em
+   SVG aqui mesmo, sem biblioteca. */
+var IND = null;
+var MES1 = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+function ultimoValor(serie){ for(var k = serie.length - 1; k >= 0; k--) if(serie[k] !== null) return {v:serie[k], k:k}; return null; }
+function metaTxt(i){ return i.meta !== null && i.meta !== undefined ? 'meta ' + (i.sentido === 'menor' ? '≤ ' : '≥ ') + numBR(i.meta, +i.casas) : 'sem meta'; }
+function grafInd(i, serie, W, H, grande){
+  var pl = grande ? 48 : 8, pr = grande ? 16 : 8, pt = grande ? 20 : 12, pb = 24;
+  var vs = serie.filter(function(v){ return v !== null; }), meta = i.meta !== null && i.meta !== undefined ? +i.meta : null;
+  var todos = vs.concat(meta !== null ? [meta] : []);
+  if(!vs.length) return '<div class="graf-vazio">Nenhum valor lançado em ' + IND.ano + '</div>';
+  var mn = Math.min.apply(null, todos), mx = Math.max.apply(null, todos);
+  var folga = (mx - mn) * 0.18 || Math.abs(mx) * 0.1 || 1; mn -= folga; mx += folga;
+  if(mn < 0 && Math.min.apply(null, todos) >= 0) mn = 0;
+  var x = function(k){ return pl + (W - pl - pr) * (k + 0.5) / 12; };
+  var y = function(v){ return pt + (H - pt - pb) * (1 - (v - mn) / (mx - mn)); };
+  var s = '<svg class="graf" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(i.nome) + ' em ' + IND.ano + '">';
+  var linhasG = grande ? 4 : 2;
+  for(var g = 0; g <= linhasG; g++){
+    var gv = mn + (mx - mn) * g / linhasG, gy = y(gv);
+    s += '<line class="g-grade" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + gy + '" y2="' + gy + '"/>';
+    if(grande) s += '<text x="' + (pl - 8) + '" y="' + (gy + 4) + '" text-anchor="end">' + numBR(gv, +i.casas) + '</text>';
+  }
+  if(meta !== null){
+    var my = y(meta);
+    s += '<line class="g-meta" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + my + '" y2="' + my + '"/>';
+    s += '<text class="g-meta-t" x="' + (W - pr) + '" y="' + (my - 6) + '" text-anchor="end">meta ' + numBR(meta, +i.casas) + '</text>';
+  }
+  var d = '', antes = false;
+  serie.forEach(function(v, k){ if(v === null){ antes = false; return; } d += (antes ? 'L' : 'M') + x(k).toFixed(1) + ' ' + y(v).toFixed(1) + ' '; antes = true; });
+  s += '<path class="g-linha" d="' + d + '"/>';
+  var ult = ultimoValor(serie);
+  serie.forEach(function(v, k){
+    if(v === null) return;
+    var cls = classeMeta(i, v) === 'fora' ? 'g-pt fora' : 'g-pt';
+    s += '<circle class="' + cls + '" cx="' + x(k) + '" cy="' + y(v) + '" r="' + (ult && ult.k === k ? (grande ? 5 : 4) : (grande ? 4 : 3)) + '"><title>' + mesNome(IND.meses[k]) + ': ' + numBR(v, +i.casas) + ' ' + esc(i.unidade || '') + '</title></circle>';
+    if(grande) s += '<text class="g-val" x="' + x(k) + '" y="' + (y(v) - 10) + '" text-anchor="middle">' + numBR(v, +i.casas) + '</text>';
+  });
+  MES1.forEach(function(m, k){ s += '<text class="g-mes' + (ult && ult.k === k ? ' on' : '') + '" x="' + x(k) + '" y="' + (H - 6) + '" text-anchor="middle">' + (grande ? mesNome(IND.meses[k]).split('/')[0] : m) + '</text>'; });
+  return s + '</svg>';
+}
+function seloMeta(st){ return st ? '<span class="selo s-' + (st === 'fora' ? 'vencida' : 'concluida') + '">' + (st === 'fora' ? 'Fora da meta' : 'Na meta') + '</span>' : ''; }
+function cartaoInd(i){
+  var d = IND.porId[i.id], u = ultimoValor(d.serie), st = u ? classeMeta(i, u.v) : '';
+  return '<div class="ind-card" onclick="abrirInd(' + i.id + ')" tabindex="0">' +
+    '<div class="ind-cab"><div style="min-width:0"><div class="ind-nome">' + esc(i.nome) + '</div><div class="mudo peq">' + (i.unidade ? esc(i.unidade) + ' · ' : '') + metaTxt(i) + '</div></div>' + seloMeta(st) + '</div>' +
+    '<div class="ind-num">' + (u ? numBR(u.v, +i.casas) : '—') + '<small>' + (u ? esc(i.unidade || '') + ' em ' + mesNome(IND.meses[u.k]) : 'sem lançamento') + '</small></div>' +
+    grafInd(i, d.serie, 320, 112, false) + '</div>';
+}
+function abrirInd(id){
+  var d = IND.porId[id], i = d.i, u = ultimoValor(d.serie);
+  var dentro = 0, lanc = 0, soma = 0;
+  d.serie.forEach(function(v){ if(v !== null){ lanc++; soma += v; if(classeMeta(i, v) !== 'fora') dentro++; } });
+  var media = lanc ? soma / lanc : null;
+  $('gavTopo').innerHTML = '<div class="mudo peq">Indicador · ' + IND.ano + (S.empresa ? ' · ' + esc(empNome(S.empresa)) : (minhasEmpresas().length > 1 ? ' · média das empresas' : '')) + '</div><h2>' + esc(i.nome) + '</h2>';
+  $('gavCorpo').innerHTML =
+    '<div class="kpis faixa" style="grid-template-columns:repeat(3,minmax(0,1fr))">' +
+      '<div class="kpi" style="cursor:default"><div class="r">Último valor</div><div class="v">' + (u ? numBR(u.v, +i.casas) : '—') + '</div><div class="d">' + (u ? mesNome(IND.meses[u.k]) : 'sem lançamento') + '</div></div>' +
+      '<div class="kpi" style="cursor:default"><div class="r">Média do ano</div><div class="v">' + (media !== null ? numBR(media, +i.casas) : '—') + '</div><div class="d">' + lanc + ' mês(es) lançado(s)</div></div>' +
+      '<div class="kpi" style="cursor:default"><div class="r">Meses na meta</div><div class="v">' + dentro + '<span class="mudo" style="font-size:18px"> / ' + lanc + '</span></div><div class="d">' + metaTxt(i) + ' ' + esc(i.unidade || '') + '</div></div></div>' +
+    '<div class="cartao" style="padding:16px 12px 8px">' + grafInd(i, d.serie, 680, 260, true) + '</div>' +
+    (i.descricao ? '<div class="cartao"><h3>Como se calcula</h3><div class="texto">' + esc(i.descricao) + '</div></div>' : '') +
+    (lanc ? '<div class="tab-wrap"><table><thead><tr><th>Mês</th><th>Valor</th><th>Situação</th></tr></thead><tbody>' +
+      IND.meses.map(function(mm, k){ var v = d.serie[k]; if(v === null) return '';
+        return '<tr><td class="num">' + mesNome(mm) + '</td><td class="num"><b>' + numBR(v, +i.casas) + '</b> <span class="mudo">' + esc(i.unidade || '') + '</span>' + (d.n[k] > 1 ? ' <span class="mudo peq">média de ' + d.n[k] + '</span>' : '') + '</td>' +
+          '<td>' + (seloMeta(classeMeta(i, v)) || '<span class="mudo">—</span>') + '</td></tr>'; }).join('') +
+    '</tbody></table></div>' : '') +
+    (nivel() >= 2 && u && classeMeta(i, u.v) === 'fora' ? '<div class="botoes" style="margin-top:16px"><button class="btn pri" id="indRnc">Abrir RNC deste resultado</button></div>' : '');
+  if($('indRnc')) $('indRnc').onclick = function(){ fecharGaveta(); rncDeIndicador({n:i.nome, e:S.empresa || (minhasEmpresas()[0] || {}).id, v:numBR(u.v, +i.casas), m:numBR(i.meta, +i.casas), c:IND.meses[u.k], u:i.unidade || ''}); };
+  gavAtual = {tipo:'ind', id:id};
+  abrirGaveta();
 }
 function classeMeta(i, v){ if(i.meta === null) return ''; return (i.sentido === 'menor' ? v <= +i.meta : v >= +i.meta) ? 'dentro' : 'fora'; }
 
