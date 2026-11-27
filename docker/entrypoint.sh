@@ -102,12 +102,23 @@ done
 # uploads inteira) e já nega acesso pela web (.htaccess acima). Se a
 # pasta não der para criar, o PHP segue no /tmp como antes.
 # ------------------------------------------------------------
+#
+# Só troca se o Apache (www-data) conseguir mesmo gravar ali: a primeira
+# versão trocava sem conferir, a pasta ficou sem permissão de escrita e o
+# login "abria e voltava" — a sessão não era salva. 1733 é o mesmo modo
+# do /tmp: qualquer um cria arquivo, ninguém lista nem apaga o dos outros.
 SESSOES="$RAIZ/uploads/sgi/.sessoes"
+rm -f /usr/local/etc/php/conf.d/zz-sessoes.ini
 if mkdir -p "$SESSOES" 2>/dev/null; then
     chown www-data:www-data "$SESSOES" 2>/dev/null || true
-    chmod 700 "$SESSOES"
-    printf 'session.save_path = "%s"\n' "$SESSOES" > /usr/local/etc/php/conf.d/zz-sessoes.ini
-    echo "  sessões em ${SESSOES#$RAIZ/} (sobrevivem ao deploy)"
+    chmod 1733 "$SESSOES" 2>/dev/null || true
+    TESTE="$SESSOES/.teste-escrita"
+    if su -s /bin/sh www-data -c "touch '$TESTE' && rm -f '$TESTE'" 2>/dev/null; then
+        printf 'session.save_path = "%s"\n' "$SESSOES" > /usr/local/etc/php/conf.d/zz-sessoes.ini
+        echo "  sessões em ${SESSOES#$RAIZ/} (sobrevivem ao deploy)"
+    else
+        echo "  AVISO: www-data não grava em ${SESSOES#$RAIZ/} — sessões seguem no /tmp"
+    fi
 fi
 
 # ------------------------------------------------------------
