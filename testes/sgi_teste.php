@@ -351,6 +351,22 @@ $cf = api(2, 'config_salvar', array('cfg'=>array('nc_validar_plano'=>'1', 'nc_di
 confere('configuração gravada', $cf['nc_validar_plano'] === '1' && strpos($cf['ishikawa'], 'Medida') !== false && !isset($cf['xpto']));
 confere('ishikawa precisa de 6', erro(2, 'config_salvar', array('cfg'=>array('ishikawa'=>'A|B'))) !== null);
 
+echo "Convites\n";
+confere('gestor que não é admin do Hub não convida', erro(2, 'convite_criar', array('nome'=>'X')) !== null);
+$cv1 = api(1, 'convite_criar', array('nome'=>'Chefe Novo', 'nivel_id'=>$nid['Diretoria'], 'empresas'=>array($A)));
+$cv2 = api(1, 'convite_criar', array('nome'=>'Subordinado Novo', 'nivel_id'=>$nid['Usuário'], 'empresas'=>array($A), 'superior_nome'=>'Chefe Novo'));
+confere('convite gera token', strlen($cv1['token']) === 32 && count(api(1, 'convites_lista')['convites']) === 2);
+/* o Hub cria a conta quando a pessoa aceita o convite (simulado aqui) */
+$pdo->exec("INSERT INTO portal_usuarios VALUES (20,'sub','Subordinado Novo','user','')");
+$db->q("UPDATE portal_convites SET usado_por=20 WHERE token=?", array($cv2['token']));
+$e20 = api(20, 'eu')['eu'];
+confere('convite aplica nível e empresa', $e20['nivel'] === 'Usuário' && $e20['empresas'] === array($A));
+confere('superior ainda sem conta fica pendente', $db->valor("SELECT superior_id FROM sgi_acessos WHERE usuario_id=20") === null);
+$pdo->exec("INSERT INTO portal_usuarios VALUES (21,'chefe','Chefe Novo','user','')");
+$db->q("UPDATE portal_convites SET usado_por=21 WHERE token=?", array($cv1['token']));
+confere('chefe entra com o nível dele', api(21, 'eu')['eu']['nivel'] === 'Diretoria');
+confere('subordinado passa a apontar para o chefe', (int)$db->valor("SELECT superior_id FROM sgi_acessos WHERE usuario_id=20") === 21);
+
 echo "\n$ok ok, ".count($falhas)." falha(s)\n";
 array_map('unlink', glob(SGI_PASTA.'/*') ?: array()); @unlink(SGI_PASTA.'/.htaccess'); @rmdir(SGI_PASTA);
 exit($falhas ? 1 : 0);

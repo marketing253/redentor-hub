@@ -36,7 +36,7 @@ date_default_timezone_set('America/Sao_Paulo');
    (testes/sgi_teste.php).
    ============================================================ */
 
-define('SGI_SCHEMA', 3);
+define('SGI_SCHEMA', 4);
 define('SGI_MAX_BYTES', 25 * 1024 * 1024);
 
 class SgiErro extends Exception {}
@@ -327,7 +327,27 @@ function sgi_estrutura(SgiDb $db){
     ativo TINYINT(1) NOT NULL DEFAULT 1,
     ordem INT NOT NULL DEFAULT 0
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  foreach(array('nivel_id INT NULL', 'superior_id INT NULL') as $col){
+  /* Esquema 4: convite do Hub que já leva o acesso ao SGI. Quando a pessoa
+     aceita o convite e cria a conta, o primeiro pedido dela ao SGI aplica
+     nível, empresas e superior guardados aqui. */
+  $db->ddl("CREATE TABLE IF NOT EXISTS sgi_convites (
+    token VARCHAR(64) NOT NULL PRIMARY KEY,
+    nome VARCHAR(120) NOT NULL,
+    nivel_id INT NULL,
+    empresas TEXT NULL,
+    superior_nome VARCHAR(120) NULL,
+    criado_em DATETIME NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  /* A tabela de convites é do Hub (auth.php); aqui só garante que existe. */
+  $db->ddl("CREATE TABLE IF NOT EXISTS portal_convites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(64) UNIQUE NOT NULL,
+    nome_sugerido VARCHAR(120) DEFAULT '',
+    role VARCHAR(20) NOT NULL DEFAULT 'user',
+    criado_por VARCHAR(60), usado_por INT DEFAULT NULL,
+    expira DATETIME, criado_em DATETIME
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  foreach(array('nivel_id INT NULL', 'superior_id INT NULL', 'superior_nome VARCHAR(120) NULL') as $col){
     /* ADD COLUMN não tem IF NOT EXISTS no MySQL 5.7: se já existe, segue. */
     try { $db->ddl("ALTER TABLE sgi_acessos ADD COLUMN $col"); } catch(Throwable $e){}
   }
@@ -404,6 +424,8 @@ function sgi_eu(SgiDb $db, $uid){
   $u = $db->linha("SELECT id, name, username, role FROM portal_usuarios WHERE id=?", array((int)$uid));
   if(!$u) sgi_erro('Usuário não encontrado. Entre novamente no Hub.');
   $a = $db->linha("SELECT papel, empresas, nivel_id FROM sgi_acessos WHERE usuario_id=?", array((int)$uid));
+  if(!$a && sgi_aplicar_convite($db, (int)$uid, $u['name'] ?: $u['username']))
+    $a = $db->linha("SELECT papel, empresas, nivel_id FROM sgi_acessos WHERE usuario_id=?", array((int)$uid));
 
   $papel = $a ? $a['papel'] : null;
   $nivel = null; $perms = null;
@@ -511,6 +533,23 @@ function sgi_cfg(SgiDb $db){
     'doc_restricao_obrigatoria'=>'0', 'ind_dias_pendencia'=>'0', 'ind_bsc'=>'0');
 }
 
+/* Pessoa que entrou por convite com acesso ao SGI guardado: cria o acesso
+   dela e liga o superior pelo nome (ele pode ter entrado antes ou depois). */
+function sgi_aplicar_convite(SgiDb $db, $uid, $nome){
+  $c = $db->linha("SELECT s.* FROM portal_convites p JOIN sgi_convites s ON s.token=p.token WHERE p.usado_por=? LIMIT 1", array($uid));
+  if(!$c) return false;
+  $papel = 'leitor';
+  if($c['nivel_id']){
+    $nv = $db->linha("SELECT permissoes FROM sgi_niveis WHERE id=?", array((int)$c['nivel_id']));
+    if($nv) $papel = sgi_papel_de_perms(sgi_limpar_perms(json_decode($nv['permissoes'] ?: '[]', true))) ?: 'leitor';
+  }
+  $sup = $c['superior_nome'] ? (int)$db->valor("SELECT id FROM portal_usuarios WHERE LOWER(name)=LOWER(?) AND id<>? LIMIT 1", array($c['superior_nome'], $uid)) : 0;
+  $db->inserir('sgi_acessos', array('usuario_id'=>$uid, 'papel'=>$papel, 'empresas'=>$c['empresas'] ?: '[]',
+    'nivel_id'=>$c['nivel_id'] ?: null, 'superior_id'=>$sup ?: null, 'superior_nome'=>$c['superior_nome'], 'atualizado_em'=>sgi_agora()));
+  /* Quem esperava por esta pessoa como superior passa a apontar para ela. */
+  $db->q("UPDATE sgi_acessos SET superior_id=? WHERE superior_id IS NULL AND LOWER(superior_nome)=LOWER(?) AND usuario_id<>?", array($uid, $nome, $uid));
+  return true;
+}
 function sgi_nivel($papel){ return array('leitor'=>1, 'membro'=>2, 'gestor'=>3)[$papel] ?? 0; }
 function sgi_exige($me, $papel){
   if(sgi_nivel($me['papel']) < sgi_nivel($papel)){
@@ -1594,6 +1633,32 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       else $db->q("INSERT INTO sgi_config (chave, valor) VALUES (?, ?)", array($chave, $v));
     }
     return array('cfg'=>sgi_cfg($db));
+  }
+
+  /* Convite do Hub com acesso ao SGI já definido. Quem aceita escolhe o
+     próprio usuário e senha no Hub; o SGI nunca vê nem define senha. */
+  case 'convite_criar': {
+    sgi_exige_perm($me, 'geral.usuarios', 'gestor');
+    if(empty($me['admin_hub'])) sgi_erro('Só administradores do Hub podem convidar pessoas.');
+    $nome = sgi_txt($b, 'nome', 120, true, 'nome');
+    $nivel_id = (int)($b['nivel_id'] ?? 0);
+    if($nivel_id && !$db->valor("SELECT id FROM sgi_niveis WHERE id=?", array($nivel_id))) sgi_erro('Nível não encontrado.');
+    $emp = array_values(array_unique(array_map('intval', (array)($b['empresas'] ?? array()))));
+    foreach($emp as $e) if(!$db->valor("SELECT id FROM sgi_empresas WHERE id=?", array($e))) sgi_erro('Empresa não encontrada.');
+    $dias = max(1, min(60, (int)($b['dias'] ?? 30)));
+    $token = bin2hex(random_bytes(16));
+    $criador = $db->valor("SELECT username FROM portal_usuarios WHERE id=?", array($me['id']));
+    $db->inserir('portal_convites', array('token'=>$token, 'nome_sugerido'=>$nome, 'role'=>'user', 'criado_por'=>$criador,
+      'expira'=>date('Y-m-d H:i:s', time() + $dias * 86400), 'criado_em'=>sgi_agora()));
+    $db->inserir('sgi_convites', array('token'=>$token, 'nome'=>$nome, 'nivel_id'=>$nivel_id ?: null, 'empresas'=>json_encode($emp),
+      'superior_nome'=>sgi_txt($b, 'superior_nome', 120), 'criado_em'=>sgi_agora()));
+    return array('token'=>$token, 'expira'=>date('Y-m-d', time() + $dias * 86400));
+  }
+
+  case 'convites_lista': {
+    sgi_exige_perm($me, 'geral.usuarios', 'gestor');
+    return array('convites'=>$db->q("SELECT s.token, s.nome, s.superior_nome, n.nome nivel, p.usado_por, p.expira
+      FROM sgi_convites s JOIN portal_convites p ON p.token=s.token LEFT JOIN sgi_niveis n ON n.id=s.nivel_id ORDER BY s.nome"));
   }
 
   case 'acessos_lista': {
