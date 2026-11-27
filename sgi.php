@@ -36,7 +36,7 @@ date_default_timezone_set('America/Sao_Paulo');
    (testes/sgi_teste.php).
    ============================================================ */
 
-define('SGI_SCHEMA', 4);
+define('SGI_SCHEMA', 5);
 define('SGI_MAX_BYTES', 25 * 1024 * 1024);
 
 class SgiErro extends Exception {}
@@ -347,6 +347,14 @@ function sgi_estrutura(SgiDb $db){
     criado_por VARCHAR(60), usado_por INT DEFAULT NULL,
     expira DATETIME, criado_em DATETIME
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  /* Esquema 5: sgi_convites nasceu com a collation padrão do MySQL 8
+     (utf8mb4_0900_ai_ci) e portal_convites é utf8mb4_unicode_ci; o JOIN
+     entre as duas pelo token dava "Illegal mix of collations". */
+  if($db->drv !== 'sqlite'){
+    $coll = $db->valor("SELECT COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='portal_convites' AND COLUMN_NAME='token'");
+    if($coll && preg_match('/^[a-z0-9_]+$/', $coll))
+      $db->ddl("ALTER TABLE sgi_convites CONVERT TO CHARACTER SET utf8mb4 COLLATE $coll");
+  }
   foreach(array('nivel_id INT NULL', 'superior_id INT NULL', 'superior_nome VARCHAR(120) NULL') as $col){
     /* ADD COLUMN não tem IF NOT EXISTS no MySQL 5.7: se já existe, segue. */
     try { $db->ddl("ALTER TABLE sgi_acessos ADD COLUMN $col"); } catch(Throwable $e){}
