@@ -1669,6 +1669,49 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       FROM sgi_convites s JOIN portal_convites p ON p.token=s.token LEFT JOIN sgi_niveis n ON n.id=s.nivel_id ORDER BY s.nome"));
   }
 
+  case 'convite_cancelar': {
+    sgi_exige_perm($me, 'geral.usuarios', 'gestor');
+    if(empty($me['admin_hub'])) sgi_erro('Só administradores do Hub podem cancelar convites.');
+    $tk = (string)($b['token'] ?? '');
+    if(!preg_match('/^[a-f0-9]{32}$/', $tk)) sgi_erro('Convite inválido.');
+    if($db->valor("SELECT usado_por FROM portal_convites WHERE token=?", array($tk))) sgi_erro('Este convite já foi usado: a pessoa já tem conta.');
+    $db->q("DELETE FROM sgi_convites WHERE token=?", array($tk));
+    $db->q("DELETE FROM portal_convites WHERE token=? AND usado_por IS NULL", array($tk));
+    return array();
+  }
+
+  /* Tira a pessoa do SGI. A conta no Hub continua. */
+  case 'pessoa_remover': {
+    sgi_exige_perm($me, 'geral.usuarios', 'gestor');
+    $id = (int)($b['usuario_id'] ?? 0);
+    if($id === (int)$me['id']) sgi_erro('Você não pode remover o próprio acesso.');
+    if($db->valor("SELECT role FROM portal_usuarios WHERE id=?", array($id)) === 'admin') sgi_erro('Administrador do Hub sempre tem acesso ao SGI.');
+    $db->q("DELETE FROM sgi_acessos WHERE usuario_id=?", array($id));
+    $db->q("UPDATE sgi_acessos SET superior_id=NULL WHERE superior_id=?", array($id));
+    return array();
+  }
+
+  /* Apaga a conta da pessoa no Hub (e com ela o acesso ao SGI). Definitivo.
+     Só administrador do Hub, nunca a própria conta nem a de outro admin.
+     Ocorrências, ações e documentos que ela registrou continuam no SGI;
+     onde aparecia o nome dela passa a aparecer só o número do usuário.
+     Por isso a tela sugere "Remover do SGI" para o dia a dia. */
+  case 'pessoa_excluir': {
+    if(empty($me['admin_hub'])) sgi_erro('Só administradores do Hub podem excluir contas.');
+    $id = (int)($b['usuario_id'] ?? 0);
+    $u = $db->linha("SELECT id, username, name, role FROM portal_usuarios WHERE id=?", array($id));
+    if(!$u) sgi_erro('Pessoa não encontrada.');
+    if($id === (int)$me['id']) sgi_erro('Você não pode excluir a própria conta.');
+    if($u['role'] === 'admin') sgi_erro('Não é possível excluir outro administrador por aqui.');
+    if(trim((string)($b['confirmar'] ?? '')) !== $u['username']) sgi_erro('Para confirmar, digite o usuário da pessoa ('.$u['username'].').');
+    $db->q("DELETE FROM sgi_acessos WHERE usuario_id=?", array($id));
+    $db->q("UPDATE sgi_acessos SET superior_id=NULL WHERE superior_id=?", array($id));
+    try { $db->q("DELETE FROM portal_tokens WHERE username=?", array($u['username'])); } catch(Throwable $e){}
+    $db->q("DELETE FROM portal_usuarios WHERE id=?", array($id));
+    error_log('[sgi] conta excluída: '.$u['username'].' por usuário '.$me['id']);
+    return array();
+  }
+
   case 'acessos_lista': {
     sgi_exige_perm($me, 'geral.usuarios', 'gestor');
     $r = array();

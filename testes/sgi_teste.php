@@ -367,6 +367,22 @@ $db->q("UPDATE portal_convites SET usado_por=21 WHERE token=?", array($cv1['toke
 confere('chefe entra com o nível dele', api(21, 'eu')['eu']['nivel'] === 'Diretoria');
 confere('subordinado passa a apontar para o chefe', (int)$db->valor("SELECT superior_id FROM sgi_acessos WHERE usuario_id=20") === 21);
 
+echo "Pessoas\n";
+$cv3 = api(1, 'convite_criar', array('nome'=>'Desistente', 'nivel_id'=>$nid['Usuário'], 'empresas'=>array($A)));
+confere('gestor não-admin não cancela convite', erro(2, 'convite_cancelar', array('token'=>$cv3['token'])) !== null);
+api(1, 'convite_cancelar', array('token'=>$cv3['token']));
+confere('convite cancelado some', !$db->valor("SELECT token FROM portal_convites WHERE token=?", array($cv3['token'])));
+confere('convite usado não é cancelado', erro(1, 'convite_cancelar', array('token'=>$cv2['token'])) !== null);
+api(2, 'pessoa_remover', array('usuario_id'=>21));
+confere('remover tira o acesso e desliga o superior', !$db->valor("SELECT usuario_id FROM sgi_acessos WHERE usuario_id=21")
+  && $db->valor("SELECT superior_id FROM sgi_acessos WHERE usuario_id=20") === null && $db->valor("SELECT id FROM portal_usuarios WHERE id=21"));
+confere('não remove admin', erro(2, 'pessoa_remover', array('usuario_id'=>1)) !== null);
+confere('gestor não-admin não exclui conta', erro(2, 'pessoa_excluir', array('usuario_id'=>20, 'confirmar'=>'sub')) !== null);
+confere('exclusão exige digitar o usuário', erro(1, 'pessoa_excluir', array('usuario_id'=>20, 'confirmar'=>'x')) !== null);
+confere('admin não se exclui', erro(1, 'pessoa_excluir', array('usuario_id'=>1, 'confirmar'=>'admin')) !== null);
+api(1, 'pessoa_excluir', array('usuario_id'=>20, 'confirmar'=>'sub'));
+confere('conta excluída', !$db->valor("SELECT id FROM portal_usuarios WHERE id=20") && !$db->valor("SELECT usuario_id FROM sgi_acessos WHERE usuario_id=20"));
+
 echo "\n$ok ok, ".count($falhas)." falha(s)\n";
 array_map('unlink', glob(SGI_PASTA.'/*') ?: array()); @unlink(SGI_PASTA.'/.htaccess'); @rmdir(SGI_PASTA);
 exit($falhas ? 1 : 0);

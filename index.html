@@ -6,7 +6,7 @@
 /* Serviço próprio do SGI no EasyPanel (redentor/sgi: sgi.redentorhub.com.br e
    o provisório redentor-sgi.*.easypanel.host). Mesmo código, banco e login do
    Hub, mas abre o SGI Redentor sozinho, com entrada e menu próprios. */
-if(/(^|-)sgi\./i.test(location.hostname)) location.replace('/apps/sgi.html');
+if(/(^|-)sgi\./i.test(location.hostname) && !/[?&]convite=/.test(location.search)) location.replace('/apps/sgi.html');
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes">
 <meta name="theme-color" content="#0C0E1C">

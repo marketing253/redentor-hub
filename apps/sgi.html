@@ -1353,7 +1353,10 @@ function telaConfig(){
       '<button class="btn sm pri" id="cfNovoNivel" style="margin-top:12px">+ Nível</button></div>'+
     '<div class="cartao"><h3>Acessos <small>nível, superior imediato e empresas de cada pessoa</small></h3>'+
     '<div class="mudo peq" style="margin-bottom:10px">Administradores do Hub têm acesso total. Quem não tem nível usa o papel simples (Gestor, Membro, Leitor).</div>'+
-    '<input type="search" id="cfBusca" placeholder="Buscar pessoa…" style="max-width:320px;margin-bottom:10px"><div id="cfAcessos" class="vazio">Carregando…</div></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><input type="search" id="cfBusca" placeholder="Buscar pessoa…" style="max-width:320px">'+
+      (S.eu.admin_hub ? '<button class="btn sm pri" id="cfConvidar">+ Adicionar pessoa</button>' : '')+'</div>'+
+    '<div id="cfAcessos" class="vazio">Carregando…</div>'+
+    (S.eu.admin_hub ? '<h4 class="cf-sub" style="margin-top:24px">Convites</h4><div id="cfConvites" class="mudo peq">Carregando…</div>' : '')+'</div>'+
     '<div class="cartao"><h3>Processos <small>clique em um processo para desativar ou reativar</small></h3><div id="cfProc"></div>'+
       '<div style="display:flex;gap:8px;margin-top:12px;max-width:420px"><input type="text" id="cfProcNome" maxlength="80" placeholder="Novo processo"><button class="btn sm pri" id="cfProcAdd">Adicionar</button></div></div>'+
     '<div class="cartao"><h3>Configuração dos módulos</h3><div id="cfMod"></div></div>'+
@@ -1362,6 +1365,8 @@ function telaConfig(){
     '<code>'+esc(location.origin)+'/sgi.php?action=alertas&amp;chave=SUA_CHAVE</code>\n\nA chave é a variável <b>SGI_CRON_CHAVE</b> do EasyPanel (ou <b>sgi_alertas</b> em cron_secrets.php).</div></div>';
   $('cfNovaEmp').onclick = function(){ editarEmpresa(null, telaConfig); };
   $('cfNovoNivel').onclick = function(){ editarNivel(null); };
+  if($('cfConvidar')) $('cfConvidar').onclick = convidarPessoa;
+  if($('cfConvites')) desenharConvites();
   $('cfProcAdd').onclick = function(){ var nm = val('cfProcNome'); if(!nm) return;
     executar(this, api('processo_salvar', {nome:nm}), function(r){ S.processos.push({id:r.id, nome:nm, ativo:1}); $('cfProcNome').value = ''; desenharProcessos(); }); };
   desenharProcessos(); formConfigModulos();
@@ -1423,12 +1428,27 @@ function desenharAcessos(lista, filtro){
         '<td><select class="aNivel" style="min-width:150px">'+opcoes(opNivel, atual)+'</select></td>'+
         '<td><select class="aSup" style="min-width:150px">'+opcoes(opSup.filter(function(o){ return +o[0] !== u.id; }), u.superior_id || '')+'</select></td>'+
         '<td class="aEmp">'+emps.map(function(e){ return '<label class="peq" style="display:inline-flex;gap:4px;margin:0 10px 4px 0"><input type="checkbox" value="'+e.id+'"'+(u.empresas.indexOf(+e.id) >= 0 ? ' checked' : '')+'> '+esc(e.sigla || e.nome)+'</label>'; }).join('')+'</td>'+
-        '<td><button class="btn sm aSalvar">Salvar</button></td></tr>';
+        '<td style="white-space:nowrap"><button class="btn sm aSalvar">Salvar</button> '+
+          (u.papel ? '<button class="btn sm aRemover" title="Tira o acesso ao SGI; a conta no Hub continua">Remover</button> ' : '')+
+          (S.eu.admin_hub && u.id !== S.eu.id ? '<button class="btn sm perigo aExcluir" title="Apaga a conta da pessoa no Hub">Excluir conta</button>' : '')+'</td></tr>';
     }).join('')+'</tbody></table></div>';
   Array.prototype.forEach.call($('cfAcessos').querySelectorAll('tr[data-u]'), function(tr){
     var sel = tr.querySelector('.aNivel'), sup = tr.querySelector('.aSup'), cx = tr.querySelector('.aEmp');
     var ajusta = function(){ cx.style.opacity = sel.value === 'gestor' || !sel.value ? .35 : 1; };
     sel.onchange = ajusta; ajusta();
+    var u0 = lista.filter(function(x){ return x.id === +tr.getAttribute('data-u'); })[0];
+    if(tr.querySelector('.aRemover')) tr.querySelector('.aRemover').onclick = function(){
+      modal('Remover do SGI', '<p style="margin:0">'+esc(u0.nome)+' deixa de entrar no SGI Redentor. A conta no Redentor Hub continua, e dá para dar acesso de novo depois.</p>',
+        [{t:'Cancelar', fn:fecharModal}, {t:'Remover do SGI', cls:'perigo', fn:function(b){
+          executar(b, api('pessoa_remover', {usuario_id:u0.id}), function(){ fecharModal(); avisar('Acesso removido.'); telaConfig(); }); }}]);
+    };
+    if(tr.querySelector('.aExcluir')) tr.querySelector('.aExcluir').onclick = function(){
+      modal('Excluir conta', '<p style="margin-top:0"><b>Isto apaga a conta de '+esc(u0.nome)+' no Redentor Hub</b>: ela deixa de entrar no Hub e no SGI, e não dá para desfazer. '+
+        'O que ela registrou no SGI continua, mas sem o nome dela.</p><p>Se a ideia é só tirar do SGI, use <b>Remover</b>.</p>'+
+        '<label class="campo"><span>Para confirmar, digite o usuário: '+esc(u0.usuario)+'</span><input type="text" id="exConf" autocomplete="off"></label>',
+        [{t:'Cancelar', fn:fecharModal}, {t:'Excluir conta', cls:'perigo', fn:function(b){
+          executar(b, api('pessoa_excluir', {usuario_id:u0.id, confirmar:val('exConf')}), function(){ fecharModal(); avisar('Conta excluída.'); telaConfig(); }); }}]);
+    };
     tr.querySelector('.aSalvar').onclick = function(){
       var id = +tr.getAttribute('data-u'), emp = Array.prototype.filter.call(cx.querySelectorAll('input'), function(x){ return x.checked; }).map(function(x){ return +x.value; });
       var v = sel.value, corpo = {usuario_id:id, empresas:emp, superior_id:+sup.value || 0};
@@ -1441,6 +1461,54 @@ function desenharAcessos(lista, filtro){
       });
     };
   });
+}
+
+/* ═════════ Adicionar pessoa (convite) ═════════
+   A pessoa recebe um link, escolhe usuário e senha no Hub e entra no SGI
+   com o nível, as empresas e o superior escolhidos aqui. */
+function linkConvite(token){ return location.origin + '/?convite=' + token; }
+function convidarPessoa(){
+  var emps = S.empresas.filter(function(e){ return +e.ativo; });
+  modal('Adicionar pessoa',
+    '<label class="campo"><span>Nome completo</span><input type="text" id="cvNome" maxlength="120"></label>'+
+    '<div class="grade"><label class="campo"><span>Nível de acesso</span><select id="cvNivel">'+opcoes((S.niveis || []).map(function(n){ return [n.id, n.nome]; }), '', 'Escolha…')+'</select></label>'+
+    '<label class="campo"><span>Superior imediato</span><input type="text" id="cvSup" list="cvSupLista" maxlength="120" placeholder="Nome, opcional">'+
+      '<datalist id="cvSupLista">'+(S.usuarios || []).map(function(u){ return '<option value="'+esc(u.nome)+'">'; }).join('')+'</datalist></label></div>'+
+    '<div class="campo"><span style="display:block;font-size:12.5px;font-weight:500;color:var(--txt2);margin-bottom:4px">Empresas</span>'+
+      emps.map(function(e){ return '<label class="peq" style="display:inline-flex;gap:6px;margin:0 12px 4px 0"><input type="checkbox" class="cvEmp" value="'+e.id+'"'+(emps.length === 1 ? ' checked' : '')+'> '+esc(e.nome)+'</label>'; }).join('')+'</div>'+
+    '<p class="mudo peq" style="margin:0">O link vale por 30 dias e funciona uma vez. A pessoa cria o próprio usuário e senha; ninguém mais vê a senha.</p>',
+    [{t:'Cancelar', fn:fecharModal}, {t:'Gerar convite', cls:'pri', fn:function(b){
+      var emp = Array.prototype.filter.call(document.querySelectorAll('.cvEmp'), function(x){ return x.checked; }).map(function(x){ return +x.value; });
+      if(!val('cvNivel')){ avisar('Escolha o nível de acesso.', true); return; }
+      executar(b, api('convite_criar', {nome:val('cvNome'), nivel_id:+val('cvNivel'), empresas:emp, superior_nome:val('cvSup'), dias:30}), function(r){
+        var link = linkConvite(r.token);
+        modal('Convite criado', '<p style="margin-top:0">Envie este link para <b>'+esc(val('cvNome') || 'a pessoa')+'</b>. Vale até '+dt(r.expira)+'.</p>'+
+          '<div style="display:flex;gap:8px"><input type="text" id="cvLink" readonly value="'+esc(link)+'"><button class="btn" id="cvCopiar">Copiar</button></div>',
+          [{t:'Fechar', cls:'pri', fn:function(){ fecharModal(); telaConfig(); }}]);
+        $('cvCopiar').onclick = function(){ $('cvLink').select(); try { navigator.clipboard.writeText(link); } catch(e){ document.execCommand('copy'); } avisar('Link copiado.'); };
+      });
+    }}]);
+}
+function desenharConvites(){
+  api('convites_lista').then(function(r){
+    var pend = r.convites.filter(function(c){ return !+c.usado_por; });
+    var usados = r.convites.length - pend.length;
+    if(!r.convites.length){ $('cfConvites').innerHTML = 'Nenhum convite criado.'; return; }
+    $('cfConvites').className = '';
+    $('cfConvites').innerHTML = '<p class="mudo peq" style="margin:0 0 8px">'+pend.length+' aguardando · '+usados+' já aceito(s)</p>'+
+      (pend.length ? '<div class="tab-wrap" style="box-shadow:none"><table><thead><tr><th>Pessoa</th><th>Nível</th><th>Superior</th><th>Vale até</th><th></th></tr></thead><tbody>'+
+        pend.map(function(c){
+          var venc = c.expira && c.expira.slice(0,10) < S.hoje;
+          return '<tr data-tk="'+esc(c.token)+'"><td><b>'+esc(c.nome)+'</b></td><td>'+esc(c.nivel || '—')+'</td><td>'+esc(c.superior_nome || '—')+'</td>'+
+            '<td class="num'+(venc ? ' venc' : '')+'">'+dt(c.expira)+(venc ? ' (vencido)' : '')+'</td>'+
+            '<td style="white-space:nowrap"><button class="btn sm cvCop">Copiar link</button> <button class="btn sm perigo cvCanc">Cancelar</button></td></tr>';
+        }).join('')+'</tbody></table></div>' : '');
+    Array.prototype.forEach.call($('cfConvites').querySelectorAll('tr[data-tk]'), function(tr){
+      var tk = tr.getAttribute('data-tk');
+      tr.querySelector('.cvCop').onclick = function(){ try { navigator.clipboard.writeText(linkConvite(tk)); avisar('Link copiado.'); } catch(e){ prompt('Link do convite:', linkConvite(tk)); } };
+      tr.querySelector('.cvCanc').onclick = function(){ executar(this, api('convite_cancelar', {token:tk}), function(){ avisar('Convite cancelado.'); desenharConvites(); }); };
+    });
+  }).catch(function(e){ $('cfConvites').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
 }
 
 /* ═════════ Níveis de acesso ═════════ */
