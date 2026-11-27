@@ -196,12 +196,22 @@ html[data-tema="escuro"] .g-linha{stroke:var(--info)} html[data-tema="escuro"] .
 html[data-tema="escuro"] .parada.gargalo b{color:var(--info)}
 
 /* Gaveta de detalhe */
-.veu{position:fixed;inset:0;background:rgba(17,24,39,.4);z-index:40;display:none}
+/* Detalhe (NC, documento, indicador) numa janela no centro da tela,
+   com o fundo escurecido; no celular ocupa a tela inteira. */
+.veu{position:fixed;inset:0;background:rgba(17,24,39,.5);z-index:40;display:none}
 .veu.on{display:block}
-.gaveta{position:fixed;top:0;right:0;bottom:0;width:min(760px,100%);background:var(--bg);z-index:41;
-  transform:translateX(100%);transition:transform .3s var(--ease);display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(17,24,39,.12)}
-.gaveta.on{transform:none}
-.gaveta:not(.on){box-shadow:none}
+.gaveta{position:fixed;top:50%;left:50%;width:min(1040px,calc(100vw - 48px));height:min(880px,calc(100vh - 48px));
+  background:var(--bg);z-index:41;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 24px 64px rgba(17,24,39,.28);opacity:0;visibility:hidden;transform:translate(-50%,-48%) scale(.98);
+  transition:opacity .2s var(--ease),transform .25s var(--ease),visibility .2s}
+.gaveta.on{opacity:1;visibility:visible;transform:translate(-50%,-50%)}
+.gaveta .gav-topo{padding:20px 24px}
+.gaveta .gav-corpo{padding:24px 24px 40px}
+@media(max-width:700px){
+  .gaveta{width:100vw;height:100vh;border-radius:0}
+  .gaveta .gav-topo{padding:16px}
+  .gaveta .gav-corpo{padding:16px 16px 32px}
+}
 .gav-topo{background:var(--sup);border-bottom:1px solid var(--borda);padding:16px 20px;display:flex;gap:12px;align-items:flex-start}
 .gav-topo h2{margin:4px 0 0;font-size:18px;font-weight:500;line-height:1.3}
 .gav-topo .x{margin-left:auto;border:none;background:none;font-size:24px;cursor:pointer;color:var(--txt3);line-height:1;border-radius:6px;width:32px;height:32px}
