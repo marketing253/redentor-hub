@@ -2,6 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script>
+/* Serviço próprio do SGI no EasyPanel (redentor/sgi: sgi.redentorhub.com.br e
+   o provisório redentor-sgi.*.easypanel.host). Mesmo código, banco e login do
+   Hub, mas abre o SGI Redentor sozinho, com entrada e menu próprios. */
+if(/(^|-)sgi\./i.test(location.hostname)) location.replace('/apps/sgi.html');
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes">
 <meta name="theme-color" content="#0C0E1C">
 <meta name="referrer" content="no-referrer">
@@ -1273,12 +1279,6 @@ document.addEventListener('visibilitychange', function(){ if(!document.hidden) c
 
 /* Chaves localStorage que cada sistema usa */
 var APP_VER='79.3';
-/* Serviço próprio do SGI no EasyPanel (redentor/sgi: sgi.redentorhub.com.br e
-   o provisório redentor-sgi.*.easypanel.host). Mesmo código, mesmo login e banco
-   do Hub, mas a pessoa cai direto no SGI Redentor depois de entrar. */
-if(/(^|-)sgi\./i.test(location.hostname)){
-  try{ document.title='SGI Redentor'; if(!location.hash) history.replaceState(null,'','#sgi'); }catch(e){}
-}
 /* ===== Versão automática: cabeçalho e login sempre refletem APP_VER (fonte única) ===== */
 (function(){
   try{ var h=document.getElementById('hubVerTag');   if(h) h.textContent='V'+APP_VER; }catch(e){}

@@ -122,6 +122,7 @@ tbody tr.cl{cursor:pointer} tbody tr.cl:hover td{background:var(--sup2)}
 .gaveta{position:fixed;top:0;right:0;bottom:0;width:min(760px,100%);background:var(--bg);z-index:41;
   transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-10px 0 40px #0f172a33}
 .gaveta.on{transform:none}
+.gaveta:not(.on){box-shadow:none}
 .gav-topo{background:var(--sup);border-bottom:1px solid var(--borda);padding:14px 18px;display:flex;gap:12px;align-items:flex-start}
 .gav-topo h2{margin:2px 0 0;font-size:17px;line-height:1.3}
 .gav-topo .x{margin-left:auto;border:none;background:none;font-size:24px;cursor:pointer;color:var(--txt3);line-height:1}
@@ -178,9 +179,140 @@ html[data-tema="escuro"] .passo.agora::before{background:var(--info)}
 .boas{max-width:640px;margin:40px auto;text-align:center}
 .boas h2{margin:10px 0 6px}
 @media print{.topo,.gaveta,.veu,.btn{display:none!important}}
+
+/* ═════════ Modo separado (sgi.redentorhub.com.br) ═════════
+   Aberto fora do Hub, o SGI ganha entrada própria e menu lateral.
+   Dentro do Hub (iframe) nada disto aparece. */
+.lateral,.cab,.entrada{display:none}
+body.solo{--lat:#171B44;--lat2:#20255A;--lat-txt:#AEB3DA;--lat-on:#fff;background:var(--bg)}
+body.solo .topo{display:none!important}
+body.solo .lateral{display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;width:236px;background:var(--lat);color:var(--lat-txt);z-index:30}
+.marca{display:flex;align-items:center;gap:11px;padding:20px 20px 18px;border-bottom:1px solid #ffffff12}
+.marca img{width:42px;height:auto}
+.marca b{display:block;color:#fff;font-size:15.5px;letter-spacing:.2px}
+.marca small{display:block;font-size:11px;color:var(--lat-txt);margin-top:1px}
+body.solo .abas{flex-direction:column;flex-wrap:nowrap;gap:2px;padding:14px 10px;flex:1;overflow-y:auto}
+body.solo .aba{display:flex;align-items:center;gap:11px;width:100%;text-align:left;color:var(--lat-txt);padding:10px 12px;border-radius:8px;font-weight:600;font-size:13.5px;position:relative}
+body.solo .aba svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body.solo .aba:hover{background:#ffffff0d;color:#fff}
+body.solo .aba.on{background:var(--lat2);color:var(--lat-on)}
+body.solo .aba.on::before{content:'';position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--ouro-cl)}
+body.solo .aba .n{margin-left:auto}
+.grupo-lat{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#7C82B5;padding:14px 12px 6px}
+.quem{display:flex;align-items:center;gap:10px;padding:14px 16px;border-top:1px solid #ffffff12}
+.quem .av{width:34px;height:34px;border-radius:50%;background:var(--ouro);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none;overflow:hidden}
+.quem .av img{width:100%;height:100%;object-fit:cover}
+.quem .nm{color:#fff;font-weight:600;font-size:12.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quem .pp{font-size:11px}
+.quem button{margin-left:auto;border:1px solid #ffffff26;background:transparent;color:var(--lat-txt);border-radius:7px;padding:5px 9px;cursor:pointer;font-size:11.5px;font-weight:600}
+.quem button:hover{color:#fff;border-color:#ffffff55}
+body.solo .cab{display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20;background:var(--sup);border-bottom:1px solid var(--borda);padding:14px 28px;margin-left:236px}
+.cab h1{margin:0;font-size:19px;line-height:1.2;color:var(--txt)}
+.cab p{margin:2px 0 0;font-size:12.5px;color:var(--txt3)}
+.cab .tit{flex:1;min-width:180px}
+.cab select{width:auto;max-width:230px}
+.menu-btn{display:none;border:1px solid var(--borda2);background:var(--sup);border-radius:8px;width:38px;height:38px;cursor:pointer;align-items:center;justify-content:center}
+.menu-btn svg{width:20px;height:20px;stroke:var(--txt);fill:none;stroke-width:2;stroke-linecap:round}
+body.solo .conteudo{margin-left:236px;max-width:none;padding:24px 28px 60px}
+body.solo .conteudo>*{max-width:1240px}
+body.solo .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(min-width:1500px){body.solo .kpis{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:600px){body.solo .kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:860px){
+  body.solo .lateral{transform:translateX(-100%);transition:transform .2s ease}
+  body.solo.menu-aberto .lateral{transform:none;box-shadow:10px 0 40px #0005}
+  body.solo .cab,body.solo .conteudo{margin-left:0}
+  body.solo .cab{padding:10px 14px}
+  body.solo .conteudo{padding:16px 14px 50px}
+  .menu-btn{display:flex}
+  .cab h1{font-size:17px}
+  .cab p{display:none}
+}
+
+/* Entrada própria */
+body.fora .lateral,body.fora .cab,body.fora .conteudo{display:none!important}
+body.fora .entrada{display:flex}
+.entrada{min-height:100vh;background:var(--bg)}
+.ent-lado{flex:0 0 44%;background:linear-gradient(160deg,#1B1F4B 0%,#2A2F6C 100%);color:#C9CDEE;padding:56px 56px 40px;display:flex;flex-direction:column}
+.ent-lado img{width:104px;background:#fff;border-radius:14px;padding:8px 10px}
+.marca img{background:#fff;border-radius:9px;padding:4px 5px}
+.ent-lado h1{color:#fff;font-size:30px;margin:28px 0 10px;line-height:1.15}
+.ent-lado h1 span{color:var(--ouro-cl)}
+.ent-lado p{font-size:15px;line-height:1.55;max-width:420px;margin:0}
+.ent-lado ul{list-style:none;padding:0;margin:34px 0 0;display:flex;flex-direction:column;gap:14px}
+.ent-lado li{display:flex;gap:12px;align-items:flex-start;font-size:13.5px}
+.ent-lado li svg{width:20px;height:20px;flex:none;stroke:var(--ouro-cl);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;margin-top:1px}
+.ent-lado li b{color:#fff;display:block}
+.ent-lado .rod{margin-top:auto;font-size:11.5px;color:#8A90C2}
+.ent-form{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.ent-caixa{width:100%;max-width:400px;background:var(--sup);border:1px solid var(--borda);border-radius:16px;padding:32px 30px 26px;box-shadow:0 12px 40px #1b1f4b14}
+.ent-caixa h2{margin:0 0 4px;font-size:22px}
+.ent-caixa .sub{color:var(--txt3);margin:0 0 24px}
+.ent-caixa label.campo>span{font-size:11px}
+.ent-caixa input{padding:11px 12px!important;font-size:14px}
+.ent-caixa .btn.pri{width:100%;padding:12px;font-size:14px;margin-top:6px}
+.ent-erro{min-height:20px;color:var(--ruim);font-weight:600;font-size:12.5px;margin:4px 0 8px}
+.ent-link{background:none;border:none;color:var(--azul);cursor:pointer;padding:0;font-weight:600;font-size:12.5px}
+.ent-dica{font-size:12px;color:var(--txt3);margin-top:18px;line-height:1.5}
+.armadilha{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+@media(max-width:860px){
+  .entrada{flex-direction:column}
+  .ent-lado{flex:none;padding:28px 22px}
+  .ent-lado h1{font-size:23px;margin-top:16px}
+  .ent-lado ul,.ent-lado .rod{display:none}
+  .ent-lado img{width:64px}
+}
 </style>
 </head>
 <body>
+
+<!-- Entrada própria (só no modo separado) -->
+<section class="entrada" id="entrada">
+  <div class="ent-lado">
+    <img src="../img/redentor.png" alt="Redentor">
+    <h1>SGI <span>Redentor</span></h1>
+    <p>Sistema de Gestão Integrada das empresas do grupo: qualidade, segurança e meio ambiente no mesmo lugar.</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><div><b>Documentos</b>Lista mestra, revisões, aprovação e ciência de leitura.</div></li>
+      <li><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg><div><b>Indicadores</b>Metas por empresa, lançamento mensal e o que está fora.</div></li>
+      <li><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>Não conformidades</b>Registro, análise de causa, plano de ação e eficácia.</div></li>
+    </ul>
+    <div class="rod">Viação Redentor · acesso restrito a usuários autorizados</div>
+  </div>
+  <div class="ent-form">
+    <form class="ent-caixa" id="entForm" autocomplete="on">
+      <h2 id="entTit">Entrar</h2>
+      <p class="sub" id="entSub">Use o mesmo usuário do Redentor Hub.</p>
+      <div id="entPassoUsu">
+        <label class="campo"><span>Usuário</span><input type="text" id="entUsu" autocomplete="username" autocapitalize="off" spellcheck="false"></label>
+        <label class="campo" id="entSenhaL" style="display:none"><span>Senha</span><input type="password" id="entSenha" autocomplete="current-password"></label>
+        <input type="text" class="armadilha" id="entApelido" tabindex="-1" autocomplete="off" aria-hidden="true">
+      </div>
+      <div id="entPassoCod" style="display:none">
+        <label class="campo"><span>Código do autenticador</span><input type="text" id="entCod" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="6 dígitos"></label>
+      </div>
+      <div class="ent-erro" id="entErro" role="alert"></div>
+      <button class="btn pri" id="entBtn" type="submit">Continuar</button>
+      <div style="display:flex;justify-content:space-between;margin-top:14px">
+        <button type="button" class="ent-link" id="entComSenha">Entrar com senha</button>
+        <button type="button" class="ent-link" id="entVoltar" style="display:none">Trocar usuário</button>
+      </div>
+      <p class="ent-dica">O código vem do Google Authenticator, o mesmo que você usa no Hub. Primeiro acesso ou celular novo? Entre uma vez pelo <a href="https://redentorhub.com.br">Redentor Hub</a>.</p>
+    </form>
+  </div>
+</section>
+
+<!-- Menu lateral e cabeçalho (só no modo separado) -->
+<aside class="lateral" id="lateral">
+  <div class="marca"><img src="../img/redentor.png" alt=""><div><b>SGI Redentor</b><small>Gestão integrada</small></div></div>
+  <div id="latNav" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  <div class="quem"><div class="av" id="quemAv"></div><div style="min-width:0"><div class="nm" id="quemNm"></div><div class="pp" id="quemPp"></div></div><button id="btnSair" type="button">Sair</button></div>
+</aside>
+<header class="cab" id="cab">
+  <button class="menu-btn" id="menuBtn" type="button" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <div class="tit"><h1 id="cabTit">Início</h1><p id="cabSub"></p></div>
+  <div id="cabAcoes" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
+</header>
 
 <div class="topo" id="topo" style="display:none">
   <nav class="abas" id="abas"></nav>
@@ -243,7 +375,7 @@ function api(acao, corpo){
       return j;
     }); });
 }
-function falha(e){ avisar(e.message || String(e), true); }
+function falha(e){ if(SOLO && e && e.sessao){ mostrarEntrada('Sua sessão expirou. Entre de novo.'); return; } avisar(e.message || String(e), true); }
 
 /* Botão que chama a API: trava enquanto espera, mostra o erro sem fechar. */
 function executar(botao, promessa, depois){
@@ -295,18 +427,33 @@ document.addEventListener('keydown', function(e){
 });
 
 /* ═════════ Navegação ═════════ */
+/* Fora do Hub (endereço próprio do SGI) a página é a janela principal. */
+var SOLO = window.top === window;
 var ABAS = [
-  {k:'painel', t:'Painel'}, {k:'ocorrencias', t:'Ocorrências'}, {k:'acoes', t:'Plano de ação'},
-  {k:'documentos', t:'Documentos'}, {k:'indicadores', t:'Indicadores'}, {k:'config', t:'Configurações', gestor:true}
+  {k:'painel', t:'Painel', st:'Visão geral e o que depende de você', ic:'<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>'},
+  {k:'ocorrencias', t:'Ocorrências', st:'Não conformidades, reclamações e melhorias', ic:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>'},
+  {k:'acoes', t:'Plano de ação', st:'Ações corretivas e de melhoria por prazo', ic:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'},
+  {k:'documentos', t:'Documentos', st:'Lista mestra, revisões e ciência de leitura', ic:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'},
+  {k:'indicadores', t:'Indicadores', st:'Metas e resultados mês a mês', ic:'<path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/>'},
+  {k:'config', t:'Configurações', st:'Empresas, acessos e indicadores', gestor:true, ic:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'}
 ];
 function desenharAbas(){
   $('abas').innerHTML = ABAS.filter(function(a){ return !a.gestor || S.eu.papel === 'gestor'; }).map(function(a){
-    return '<button class="aba'+(S.aba === a.k ? ' on' : '')+'" data-aba="'+a.k+'">'+a.t+(a.n ? '<span class="n">'+a.n+'</span>' : '')+'</button>';
+    return (SOLO && a.k === 'ocorrencias' ? '<div class="grupo-lat">Módulos</div>' : '')+
+      (SOLO && a.k === 'config' ? '<div class="grupo-lat">Administração</div>' : '')+
+      '<button class="aba'+(S.aba === a.k ? ' on' : '')+'" data-aba="'+a.k+'">'+
+      (SOLO ? '<svg viewBox="0 0 24 24">'+a.ic+'</svg>' : '')+a.t+(a.n ? '<span class="n">'+a.n+'</span>' : '')+'</button>';
   }).join('');
-  Array.prototype.forEach.call($('abas').querySelectorAll('.aba'), function(b){ b.onclick = function(){ irPara(b.getAttribute('data-aba')); }; });
+  Array.prototype.forEach.call($('abas').querySelectorAll('.aba'), function(b){ b.onclick = function(){ document.body.classList.remove('menu-aberto'); irPara(b.getAttribute('data-aba')); }; });
 }
 function irPara(aba){
   S.aba = aba; desenharAbas();
+  if(SOLO){
+    var a = ABAS.filter(function(x){ return x.k === aba; })[0] || ABAS[0];
+    $('cabTit').textContent = a.t; $('cabSub').textContent = a.st;
+    document.title = a.t + ' · SGI Redentor';
+    window.scrollTo(0, 0);
+  }
   try { sessionStorage.setItem('sgi_aba', aba); } catch(e){}
   ({painel:telaPainel, ocorrencias:telaOcorrencias, acoes:telaAcoes, documentos:telaDocumentos,
     indicadores:telaIndicadores, config:telaConfig})[aba]();
@@ -320,6 +467,7 @@ function iniciar(){
   tema();
   api('eu').then(function(r){
     S.eu = r.eu; S.empresas = r.empresas; S.usuarios = r.usuarios; S.L = r.listas; S.hoje = r.hoje;
+    if(SOLO) $('quemPp').textContent = {gestor:'Gestor do SGI', membro:'Membro', leitor:'Consulta'}[S.eu.papel] || 'Sem acesso';
     if(!S.eu.papel){
       $('conteudo').innerHTML = '<div class="boas cartao"><div style="font-size:38px">🔒</div><h2>Você ainda não tem acesso ao SGI</h2>'+
         '<p class="mudo">Peça ao gestor do SGI (ou a quem administra o Hub) para liberar o seu usuário em <b>SGI → Configurações → Acessos</b>.</p></div>';
@@ -344,6 +492,7 @@ function iniciar(){
     if(aba === 'config' && S.eu.papel !== 'gestor') aba = 'painel';
     irPara(aba);
   }).catch(function(e){
+    if(SOLO && e.sessao){ mostrarEntrada(); return; }
     $('conteudo').innerHTML = '<div class="boas cartao"><h2>Não foi possível abrir o SGI</h2><p class="erro-caixa">'+esc(e.message)+'</p>'+
       (e.sessao ? '<p class="mudo">Saia e entre de novo no Hub.</p>' : '<button class="btn" onclick="location.reload()">Tentar de novo</button>')+'</div>';
   });
@@ -1037,9 +1186,107 @@ function editarIndicador(i){
     }}]);
 }
 
-/* O Hub pode trocar o tema com o sistema aberto. */
-try { new MutationObserver(tema).observe(window.parent.document.body, {attributes:true, attributeFilter:['class']}); } catch(e){}
-iniciar();
+/* ═════════ Modo separado: entrada própria ═════════
+   Mesmo login do Hub (auth.php): usuário → código do autenticador, ou
+   usuário + senha → código. O primeiro acesso, que cadastra o
+   autenticador com QR, continua sendo feito no Hub. */
+var AUTH = '../auth.php';
+var ent = { aberta: Date.now(), passo: 'usu', comSenha: false };
+function auth(acao, corpo){
+  return fetch(AUTH + '?action=' + acao, { method:'POST', credentials:'same-origin', cache:'no-store',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify(corpo || {}) })
+    .then(function(r){ return r.text().then(function(t){
+      var j; try { j = JSON.parse(t); } catch(e){ throw new Error('Resposta inesperada do servidor (HTTP '+r.status+').'); }
+      if(!j.ok) throw new Error(j.error || j.erro || 'Não foi possível entrar.');
+      return j;
+    }); });
+}
+function entErro(m){ $('entErro').textContent = m || ''; }
+function entPasso(p){
+  ent.passo = p;
+  $('entPassoUsu').style.display = p === 'usu' ? '' : 'none';
+  $('entPassoCod').style.display = p === 'cod' ? '' : 'none';
+  $('entSenhaL').style.display = p === 'usu' && ent.comSenha ? '' : 'none';
+  $('entComSenha').style.display = p === 'usu' && !ent.comSenha ? '' : 'none';
+  $('entVoltar').style.display = p === 'cod' ? '' : 'none';
+  $('entBtn').textContent = p === 'cod' ? 'Entrar' : 'Continuar';
+  setTimeout(function(){ (p === 'cod' ? $('entCod') : (ent.comSenha && $('entUsu').value ? $('entSenha') : $('entUsu'))).focus(); }, 30);
+}
+function mostrarEntrada(msg){
+  document.body.classList.add('fora');
+  document.title = 'Entrar · SGI Redentor';
+  ent.aberta = Date.now(); ent.comSenha = false;
+  $('entTit').textContent = 'Entrar'; $('entSub').textContent = 'Use o mesmo usuário do Redentor Hub.';
+  $('entSenha').value = ''; $('entCod').value = '';
+  entPasso('usu'); entErro(msg || '');
+}
+function entrou(user){
+  document.body.classList.remove('fora');
+  $('quemNm').textContent = user.name || user.username || '';
+  var ini = String(user.name || user.username || '?').trim().split(/\s+/);
+  $('quemAv').innerHTML = user.foto ? '<img src="'+esc(user.foto)+'" alt="">' : esc((ini[0][0] || '') + (ini.length > 1 ? ini[ini.length-1][0] : '')).toUpperCase();
+  iniciar();
+}
+$('entComSenha').onclick = function(){ ent.comSenha = true; entPasso('usu'); };
+$('entVoltar').onclick = function(){ $('entTit').textContent = 'Entrar'; $('entSub').textContent = 'Use o mesmo usuário do Redentor Hub.'; entPasso('usu'); entErro(''); };
+$('entForm').onsubmit = function(ev){
+  ev.preventDefault(); entErro('');
+  var b = $('entBtn'), p;
+  if(ent.passo === 'usu'){
+    var u = $('entUsu').value.trim();
+    if(!u){ entErro('Digite seu usuário.'); return; }
+    if(ent.comSenha && !$('entSenha').value){ entErro('Digite sua senha.'); return; }
+    p = auth('login', { user:u, pass: ent.comSenha ? $('entSenha').value : '', apelido: $('entApelido').value, ms: Date.now() - ent.aberta })
+      .then(function(d){
+        if(d.user){ entrou(d.user); return; }
+        if(d.need_pass){ ent.comSenha = true; entPasso('usu'); entErro('Digite sua senha para continuar.'); return; }
+        if(d.enroll){ entErro('Seu autenticador ainda não foi cadastrado. Faça o primeiro acesso pelo Redentor Hub e depois volte aqui.'); return; }
+        if(d.need2fa){
+          $('entTit').textContent = 'Olá, ' + String(d.name || u).split(' ')[0];
+          $('entSub').textContent = 'Digite o código de 6 dígitos do autenticador.';
+          entPasso('cod');
+        }
+      });
+  } else {
+    var c = $('entCod').value.replace(/\s/g, '');
+    if(!c){ entErro('Digite o código do autenticador.'); return; }
+    p = auth('login_2fa', { code:c }).then(function(d){ entrou(d.user); });
+  }
+  b.disabled = true;
+  p.catch(function(e){
+    var m = e.message || 'Não foi possível entrar.';
+    if(/Failed to fetch|NetworkError|Load failed/i.test(m)) m = 'Sem conexão com o servidor. Confira a internet.';
+    entErro(m);
+    if(/Sessão expirada|Entre com usuario/i.test(m)) entPasso('usu');
+  }).then(function(){ b.disabled = false; });
+};
+$('btnSair').onclick = function(){
+  auth('logout').catch(function(){}).then(function(){ try { sessionStorage.removeItem('sgi_aba'); } catch(e){} mostrarEntrada(); });
+};
+$('menuBtn').onclick = function(){ document.body.classList.toggle('menu-aberto'); };
+document.addEventListener('click', function(e){
+  if(document.body.classList.contains('menu-aberto') && !e.target.closest('#lateral') && !e.target.closest('#menuBtn')) document.body.classList.remove('menu-aberto');
+});
+
+function comecarSolo(){
+  document.body.classList.add('solo');
+  /* As peças do topo do Hub mudam de lugar: abas no menu lateral,
+     empresa e "+ Registrar" no cabeçalho. */
+  $('latNav').appendChild($('abas'));
+  $('cabAcoes').appendChild($('filtroEmpresa'));
+  $('cabAcoes').appendChild($('btnNovo'));
+  auth('session').then(function(d){
+    if(d.user) entrou(d.user); else mostrarEntrada();
+  }).catch(function(){ mostrarEntrada(); });
+}
+
+if(SOLO){
+  comecarSolo();
+} else {
+  /* O Hub pode trocar o tema com o sistema aberto. */
+  try { new MutationObserver(tema).observe(window.parent.document.body, {attributes:true, attributeFilter:['class']}); } catch(e){}
+  iniciar();
+}
 </script>
 </body>
 </html>
