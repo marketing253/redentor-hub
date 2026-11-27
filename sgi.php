@@ -36,7 +36,7 @@ date_default_timezone_set('America/Sao_Paulo');
    (testes/sgi_teste.php).
    ============================================================ */
 
-define('SGI_SCHEMA', 2);
+define('SGI_SCHEMA', 3);
 define('SGI_MAX_BYTES', 25 * 1024 * 1024);
 
 class SgiErro extends Exception {}
@@ -314,6 +314,24 @@ function sgi_estrutura(SgiDb $db){
     $db->ddl("ALTER TABLE sgi_ind_valores MODIFY valor DECIMAL(18,6) NOT NULL");
   }
 
+  /* Esquema 3: níveis de acesso por módulo, processos e superior imediato. */
+  $db->ddl("CREATE TABLE IF NOT EXISTS sgi_niveis (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(60) NOT NULL,
+    permissoes TEXT NULL,
+    ordem INT NOT NULL DEFAULT 0
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->ddl("CREATE TABLE IF NOT EXISTS sgi_processos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(80) NOT NULL,
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    ordem INT NOT NULL DEFAULT 0
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  foreach(array('nivel_id INT NULL', 'superior_id INT NULL') as $col){
+    /* ADD COLUMN não tem IF NOT EXISTS no MySQL 5.7: se já existe, segue. */
+    try { $db->ddl("ALTER TABLE sgi_acessos ADD COLUMN $col"); } catch(Throwable $e){}
+  }
+
   /* Indicadores de partida, comuns a quem opera ônibus urbano. As metas
      são ponto de partida: o gestor ajusta em Configurações. */
   if(!(int)$db->valor("SELECT COUNT(*) FROM sgi_indicadores")){
@@ -385,10 +403,16 @@ function sgi_listas(){
 function sgi_eu(SgiDb $db, $uid){
   $u = $db->linha("SELECT id, name, username, role FROM portal_usuarios WHERE id=?", array((int)$uid));
   if(!$u) sgi_erro('Usuário não encontrado. Entre novamente no Hub.');
-  $a = $db->linha("SELECT papel, empresas FROM sgi_acessos WHERE usuario_id=?", array((int)$uid));
+  $a = $db->linha("SELECT papel, empresas, nivel_id FROM sgi_acessos WHERE usuario_id=?", array((int)$uid));
 
   $papel = $a ? $a['papel'] : null;
-  if($u['role'] === 'admin') $papel = 'gestor';
+  $nivel = null; $perms = null;
+  if($a && $a['nivel_id']){
+    $nivel = $db->linha("SELECT id, nome, permissoes FROM sgi_niveis WHERE id=?", array((int)$a['nivel_id']));
+    if($nivel){ $perms = sgi_limpar_perms(json_decode($nivel['permissoes'] ?: '[]', true)); $papel = sgi_papel_de_perms($perms); }
+  }
+  if($u['role'] === 'admin'){ $papel = 'gestor'; $perms = sgi_todas_perms(); }
+  if($perms === null) $perms = sgi_perms_legado($papel);
 
   $todas = array_map('intval', array_column(
     $db->q("SELECT id FROM sgi_empresas WHERE ativo=1 ORDER BY ordem, nome"), 'id'));
@@ -398,7 +422,93 @@ function sgi_eu(SgiDb $db, $uid){
     $emp = array_values(array_intersect($todas, array_map('intval', (array)$lista)));
   }
   return array('id'=>(int)$u['id'], 'nome'=>$u['name'] ?: $u['username'],
-               'papel'=>$papel, 'empresas'=>$emp, 'admin_hub'=>$u['role'] === 'admin');
+               'papel'=>$papel, 'empresas'=>$emp, 'admin_hub'=>$u['role'] === 'admin',
+               'nivel_id'=>$nivel && $u['role'] !== 'admin' ? (int)$nivel['id'] : null,
+               'nivel'=>$u['role'] === 'admin' ? 'Administrador do Hub' : ($nivel ? $nivel['nome'] : null), 'perms'=>$perms);
+}
+
+/* ══════════════ NÍVEIS DE ACESSO ══════════════
+   Cada nível diz, módulo por módulo, o que quem está nele pode fazer.
+   "_modulo" liga o módulo inteiro; sem ele a pessoa nem vê o módulo.
+   Os níveis e as marcações são dados (tabela sgi_niveis): a Redentor
+   trouxe os seus do sistema anterior e o gestor ajusta em Configurações.
+
+   Quem ainda não tem nível segue no esquema antigo de papel (gestor,
+   membro, leitor): sgi_perms_legado() traduz o papel em permissões e as
+   checagens antigas continuam valendo para essas pessoas. */
+function sgi_permissoes(){
+  return array(
+    'geral' => array('titulo'=>'Geral', 'itens'=>array(
+      'empresa'=>'Dados da empresa', 'unidades'=>'Unidades da empresa', 'processos'=>'Processos',
+      'niveis'=>'Níveis de acesso', 'usuarios'=>'Acessos dos usuários')),
+    'doc' => array('titulo'=>'Documentos', 'itens'=>array(
+      'internos'=>'Documentos internos', 'externos'=>'Documentos externos', 'registros'=>'Registros',
+      'categorias'=>'Categorias de documentos', 'revisoes'=>'Ver revisões anteriores',
+      'excluir'=>'Excluir ou tornar obsoleto', 'imprimir_controlada'=>'Imprimir cópia controlada',
+      'imprimir_nao_controlada'=>'Imprimir cópia não controlada', 'copias_controladas'=>'Excluir ou alterar cópias controladas impressas',
+      'substituir_arquivo'=>'Substituir arquivo', 'categoria_registro'=>'Categoria de registro',
+      'so_minhas_pendencias'=>'Ver só as pendências em que está envolvido', 'pendencia_outros'=>'Ver pendências dos outros')),
+    'ind' => array('titulo'=>'Indicadores', 'itens'=>array(
+      'objetivos'=>'Objetivos', 'indicadores'=>'Cadastrar e lançar indicadores', 'excluir'=>'Excluir indicador',
+      'pendencia_outros'=>'Ver pendências dos outros')),
+    'nc' => array('titulo'=>'Não conformidades', 'itens'=>array(
+      'nova'=>'Registrar ocorrência', 'aprovar'=>'Aprovar ocorrências', 'analise'=>'Análise e plano de ação',
+      'validar_planos'=>'Validar planos', 'eficacia'=>'Avaliar eficácia', 'origem'=>'Cadastrar origem',
+      'pendencia_outros'=>'Ver pendências dos outros', 'reabrir'=>'Reabrir', 'acompanhar'=>'Acompanhar implementação',
+      'excluir'=>'Excluir ocorrência', 'acoes_iniciais'=>'Responsável por ações iniciais', 'consulta'=>'Acesso à consulta',
+      'visao_geral'=>'Acesso à visão geral', 'planejamento'=>'Planejamento anual', 'cancelar'=>'Cancelar',
+      'alterar_plano'=>'Sempre alterar o plano de ação', 'total'=>'Acesso total ao módulo')),
+  );
+}
+function sgi_todas_perms(){
+  $r = array();
+  foreach(sgi_permissoes() as $m => $def){ $r[] = $m.'._modulo'; foreach($def['itens'] as $k => $t) $r[] = $m.'.'.$k; }
+  return $r;
+}
+function sgi_perms_legado($papel){
+  if($papel === 'gestor') return sgi_todas_perms();
+  $leitor = array('doc._modulo','doc.internos','doc.externos','doc.registros','ind._modulo','nc._modulo','nc.nova','nc.consulta','nc.acompanhar');
+  if($papel === 'leitor') return $leitor;
+  if($papel === 'membro') return array_merge($leitor, array('doc.revisoes','ind.indicadores','nc.analise','nc.acoes_iniciais','nc.planejamento','nc.alterar_plano'));
+  return array();
+}
+/* Papel resumido de um nível — usado pelas telas e pelas listas de
+   responsáveis, que ainda falam em gestor/membro/leitor. */
+function sgi_papel_de_perms($p){
+  if(in_array('geral.niveis', $p, true) || in_array('geral.usuarios', $p, true) || in_array('nc.total', $p, true)) return 'gestor';
+  foreach(array('nc.nova','nc.analise','ind.indicadores','doc.substituir_arquivo') as $k) if(in_array($k, $p, true)) return 'membro';
+  return $p ? 'leitor' : null;
+}
+function sgi_limpar_perms($lista){
+  $validas = sgi_todas_perms();
+  return array_values(array_intersect($validas, array_map('strval', (array)$lista)));
+}
+function sgi_pode($me, $chave){
+  if(!empty($me['admin_hub'])) return true;
+  $p = $me['perms'] ?? array();
+  if(in_array($chave, $p, true)) return true;
+  /* "Acesso total ao módulo" de NC libera qualquer item do módulo. */
+  return strpos($chave, 'nc.') === 0 && in_array('nc.total', $p, true);
+}
+/* Com nível: confere a permissão. Sem nível: o papel antigo decide. */
+function sgi_exige_perm($me, $chave, $papel_antigo){
+  if(empty($me['nivel_id'])){ sgi_exige($me, $papel_antigo); return; }
+  if(!sgi_pode($me, $chave)){
+    $p = explode('.', $chave); $def = sgi_permissoes()[$p[0]] ?? null;
+    $rot = $def ? ($p[1] === '_modulo' ? $def['titulo'] : ($def['itens'][$p[1]] ?? $chave)) : $chave;
+    sgi_erro('Seu nível de acesso não permite: '.$rot.'.');
+  }
+}
+function sgi_exige_modulo($me, $mod){
+  if(empty($me['nivel_id']) || sgi_pode($me, $mod.'._modulo')) return;
+  sgi_erro('Seu nível de acesso não inclui o módulo '.sgi_permissoes()[$mod]['titulo'].'.');
+}
+function sgi_cfg(SgiDb $db){
+  $r = array();
+  foreach($db->q("SELECT chave, valor FROM sgi_config WHERE chave LIKE 'cfg_%'") as $c) $r[substr($c['chave'], 4)] = $c['valor'];
+  return $r + array('nc_validar_plano'=>'0', 'nc_validador'=>'', 'nc_dias_etapas'=>'7', 'nc_obrigar_acoes_iniciais'=>'0',
+    'ishikawa'=>'Método|Máquina|Mão de obra|Material|Meio ambiente|Medição', 'doc_revisao'=>'numero',
+    'doc_restricao_obrigatoria'=>'0', 'ind_dias_pendencia'=>'0', 'ind_bsc'=>'0');
 }
 
 function sgi_nivel($papel){ return array('leitor'=>1, 'membro'=>2, 'gestor'=>3)[$papel] ?? 0; }
@@ -770,7 +880,9 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
           'empresas'=>$p === 'gestor' ? 'todas' : array_map('intval', (array)json_decode($u['empresas'] ?: '[]', true)));
       }
     }
-    return array('eu'=>$me, 'empresas'=>$emp, 'usuarios'=>$usuarios, 'listas'=>$L, 'hoje'=>$hoje);
+    $proc = $db->q("SELECT id, nome, ativo FROM sgi_processos ORDER BY ordem, nome");
+    return array('eu'=>$me, 'empresas'=>$emp, 'usuarios'=>$usuarios, 'listas'=>$L, 'hoje'=>$hoje,
+                 'processos'=>$proc, 'cfg'=>sgi_cfg($db));
   }
 
   if(!$me['papel']) sgi_erro('Você ainda não tem acesso ao SGI. Peça ao gestor do SGI para liberar.');
@@ -873,6 +985,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
 
   /* ─────────────── OCORRÊNCIAS ─────────────── */
   case 'oc_lista': {
+    sgi_exige_modulo($me, 'nc');
     $ids = $me['empresas'];
     if(!empty($b['empresa'])){ sgi_empresa_ok($me, $b['empresa']); $ids = array((int)$b['empresa']); }
     list($in, $p) = sgi_in($ids);
@@ -899,6 +1012,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'oc_detalhe': {
+    sgi_exige_modulo($me, 'nc');
     $o = sgi_oc_carregar($db, $me, $b['id'] ?? 0);
     $n = sgi_nomes($db);
     $o['responsavel'] = $n[(int)$o['responsavel_id']] ?? null;
@@ -945,6 +1059,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       sgi_hist($db, 'ocorrencia', $id, $me, 'Dados da ocorrência atualizados.');
       return array('id'=>$id);
     }
+    sgi_exige_perm($me, 'nc.nova', 'leitor');
     $tipo = sgi_escolha($b, 'tipo', array_keys($L['tipos_ocorrencia']));
     if(!$tipo) sgi_erro('Escolha o tipo da ocorrência.');
     if(empty($b['empresa_id'])) sgi_erro('Escolha a empresa.');
@@ -957,7 +1072,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'oc_analise': {
-    sgi_exige($me, 'membro');
+    sgi_exige_perm($me, 'nc.analise', 'membro');
     $o = sgi_oc_carregar($db, $me, $b['id'] ?? 0);
     if(in_array($o['status'], array('encerrada','cancelada'), true)) sgi_erro('Ocorrência encerrada.');
     $metodo = sgi_escolha($b, 'causa_metodo', array_keys($L['metodos_causa']), 'livre');
@@ -989,7 +1104,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $de = $o['status'];
     $pode = sgi_transicoes($o['tipo'])[$de] ?? array();
     if(!in_array($para, $pode, true)) sgi_erro('Não é possível passar de "'.$L['status'][$de].'" para essa fase.');
-    sgi_exige($me, 'membro');
+    sgi_exige_perm($me, 'nc.analise', 'membro');
 
     $obs = sgi_txt($b, 'obs', 4000);
     $pend = (int)$db->valor("SELECT COUNT(*) FROM sgi_acoes WHERE ocorrencia_id=? AND status='pendente'", array((int)$o['id']));
@@ -998,11 +1113,11 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $texto = 'Fase: '.$L['status'][$de].' → '.$L['status'][$para].'.';
 
     if($para === 'cancelada'){
-      sgi_exige($me, 'gestor');
+      sgi_exige_perm($me, 'nc.cancelar', 'gestor');
       if(!$obs) sgi_erro('Informe o motivo do cancelamento.');
     }
     if(in_array($de, array('encerrada','cancelada'), true)){
-      sgi_exige($me, 'gestor');
+      sgi_exige_perm($me, 'nc.reabrir', 'gestor');
       if(!$obs) sgi_erro('Informe o motivo da reabertura.');
       $mud['encerrada_em'] = null; $mud['eficacia'] = null; $mud['eficacia_obs'] = null;
       $mud['verificado_por'] = null; $mud['verificado_em'] = null;
@@ -1015,7 +1130,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
         if($pend) sgi_erro('Ainda há '.$pend.' ação(ões) pendente(s) no plano.');
       }
       if($para === 'encerrada'){
-        sgi_exige($me, 'gestor');
+        sgi_exige_perm($me, 'nc.eficacia', 'gestor');
         $ef = sgi_escolha($b, 'eficacia', array('eficaz','ineficaz'));
         if(!$ef) sgi_erro('Diga se as ações foram eficazes.');
         if(!$obs) sgi_erro('Descreva a evidência de eficácia (o que foi verificado).');
@@ -1045,7 +1160,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'oc_gerar_nc': {
-    sgi_exige($me, 'membro');
+    sgi_exige_perm($me, 'nc.nova', 'membro');
     $o = sgi_oc_carregar($db, $me, $b['id'] ?? 0);
     if($o['tipo'] === 'nc') sgi_erro('Esta ocorrência já é uma não conformidade.');
     $ja = $db->linha("SELECT numero FROM sgi_ocorrencias WHERE origem_id=? AND tipo='nc'", array((int)$o['id']));
@@ -1069,7 +1184,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
 
   /* ─────────────── AÇÕES DO PLANO ─────────────── */
   case 'acao_salvar': {
-    sgi_exige($me, 'membro');
+    sgi_exige_perm($me, 'nc.analise', 'membro');
     $id = (int)($b['id'] ?? 0);
     if($id){
       $a = $db->linha("SELECT * FROM sgi_acoes WHERE id=?", array($id));
@@ -1117,6 +1232,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'acao_lista': {
+    sgi_exige_modulo($me, 'nc');
     list($in, $p) = sgi_in($me['empresas']);
     $w = array("o.empresa_id IN $in");
     if(!empty($b['empresa'])){ sgi_empresa_ok($me, $b['empresa']); $w[] = 'o.empresa_id=?'; $p[] = (int)$b['empresa']; }
@@ -1154,6 +1270,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
 
   /* ─────────────── DOCUMENTOS ─────────────── */
   case 'doc_lista': {
+    sgi_exige_modulo($me, 'doc');
     list($in, $p) = sgi_in($me['empresas']);
     $w = array("(d.empresa_id IS NULL OR d.empresa_id IN $in)");
     if(!empty($b['empresa'])){ $w[] = '(d.empresa_id IS NULL OR d.empresa_id=?)'; $p[] = (int)$b['empresa']; }
@@ -1174,6 +1291,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'doc_detalhe': {
+    sgi_exige_modulo($me, 'doc');
     $d = sgi_doc_carregar($db, $me, $b['id'] ?? 0);
     $n = sgi_nomes($db);
     $vers = $db->q("SELECT id, versao, nome_original, bytes, alteracao, status, enviado_por, enviado_em,
@@ -1197,7 +1315,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'doc_salvar': {
-    sgi_exige($me, 'membro');
+    sgi_exige_modulo($me, 'doc'); sgi_exige_perm($me, 'doc.substituir_arquivo', 'membro');
     $id = (int)($b['id'] ?? 0);
     $emp = !empty($b['empresa_id']) ? (int)$b['empresa_id'] : null;
     if($emp === null) sgi_exige($me, 'gestor'); else sgi_empresa_ok($me, $emp);
@@ -1231,7 +1349,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'doc_versao_enviar': {
-    sgi_exige($me, 'membro');
+    sgi_exige_modulo($me, 'doc'); sgi_exige_perm($me, 'doc.substituir_arquivo', 'membro');
     $d = sgi_doc_carregar($db, $me, $b['documento_id'] ?? 0);
     if($d['empresa_id'] === null) sgi_exige($me, 'gestor');
     if($d['status'] === 'obsoleto') sgi_erro('Documento obsoleto.');
@@ -1274,7 +1392,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'doc_obsoletar': {
-    sgi_exige($me, 'gestor');
+    sgi_exige_perm($me, 'doc.excluir', 'gestor');
     $d = sgi_doc_carregar($db, $me, $b['id'] ?? 0);
     $motivo = sgi_txt($b, 'motivo', 1000, true, 'motivo');
     $db->atualizar('sgi_documentos', array('status'=>'obsoleto', 'atualizado_em'=>sgi_agora()), $d['id']);
@@ -1332,6 +1450,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'ind_lista': {
+    sgi_exige_modulo($me, 'ind');
     $ano = (int)($b['ano'] ?? date('Y'));
     if($ano < 2000 || $ano > 2100) sgi_erro('Ano inválido.');
     $ids = $me['empresas'];
@@ -1344,7 +1463,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'ind_lancar': {
-    sgi_exige($me, 'membro');
+    sgi_exige_modulo($me, 'ind'); sgi_exige_perm($me, 'ind.indicadores', 'membro');
     $emp = (int)($b['empresa_id'] ?? 0);
     sgi_empresa_ok($me, $emp);
     $comp = (string)($b['competencia'] ?? '');
@@ -1370,7 +1489,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   case 'ind_salvar': {
-    sgi_exige($me, 'gestor');
+    sgi_exige_perm($me, 'ind.indicadores', 'gestor');
     $id = (int)($b['id'] ?? 0);
     $meta = isset($b['meta']) && $b['meta'] !== '' ? str_replace(',', '.', (string)$b['meta']) : null;
     if($meta !== null && !is_numeric($meta)) sgi_erro('Meta inválida.');
@@ -1397,7 +1516,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
 
   /* ─────────────── CONFIGURAÇÃO ─────────────── */
   case 'empresa_salvar': {
-    sgi_exige($me, 'gestor');
+    sgi_exige_perm($me, 'geral.empresa', 'gestor');
     $id = (int)($b['id'] ?? 0);
     $c = array('nome'=>sgi_txt($b, 'nome', 120, true, 'nome'), 'sigla'=>sgi_txt($b, 'sigla', 20),
                'ativo'=>!isset($b['ativo']) || !empty($b['ativo']) ? 1 : 0);
@@ -1411,31 +1530,109 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     return array('id'=>$id);
   }
 
+  /* ── Níveis de acesso, processos e configuração dos módulos ── */
+  case 'niveis_lista': {
+    $n = array();
+    foreach($db->q("SELECT n.*, (SELECT COUNT(*) FROM sgi_acessos a WHERE a.nivel_id=n.id) pessoas FROM sgi_niveis n ORDER BY n.ordem, n.nome") as $r){
+      $n[] = array('id'=>(int)$r['id'], 'nome'=>$r['nome'], 'pessoas'=>(int)$r['pessoas'],
+                   'permissoes'=>sgi_limpar_perms(json_decode($r['permissoes'] ?: '[]', true)));
+    }
+    return array('niveis'=>$n, 'catalogo'=>sgi_permissoes());
+  }
+
+  case 'nivel_salvar': {
+    sgi_exige_perm($me, 'geral.niveis', 'gestor');
+    $id = (int)($b['id'] ?? 0);
+    $c = array('nome'=>sgi_txt($b, 'nome', 60, true, 'nome do nível'),
+               'permissoes'=>json_encode(sgi_limpar_perms($b['permissoes'] ?? array())));
+    $dup = $db->valor("SELECT id FROM sgi_niveis WHERE LOWER(nome)=LOWER(?) AND id<>?", array($c['nome'], $id));
+    if($dup) sgi_erro('Já existe um nível com esse nome.');
+    if($id){
+      if(!$db->valor("SELECT id FROM sgi_niveis WHERE id=?", array($id))) sgi_erro('Nível não encontrado.');
+      $db->atualizar('sgi_niveis', $c, $id);
+    } else {
+      $c['ordem'] = 1 + (int)$db->valor("SELECT MAX(ordem) FROM sgi_niveis");
+      $id = $db->inserir('sgi_niveis', $c);
+    }
+    /* O papel resumido de quem está no nível acompanha a mudança. */
+    $papel = sgi_papel_de_perms(json_decode($c['permissoes'], true)) ?: 'leitor';
+    $db->q("UPDATE sgi_acessos SET papel=? WHERE nivel_id=?", array($papel, $id));
+    return array('id'=>$id);
+  }
+
+  case 'nivel_excluir': {
+    sgi_exige_perm($me, 'geral.niveis', 'gestor');
+    $id = (int)($b['id'] ?? 0);
+    if((int)$db->valor("SELECT COUNT(*) FROM sgi_acessos WHERE nivel_id=?", array($id)))
+      sgi_erro('Há pessoas neste nível. Mude o nível delas antes de excluir.');
+    $db->q("DELETE FROM sgi_niveis WHERE id=?", array($id));
+    return array();
+  }
+
+  case 'processo_salvar': {
+    sgi_exige_perm($me, 'geral.processos', 'gestor');
+    $id = (int)($b['id'] ?? 0);
+    $c = array('nome'=>sgi_txt($b, 'nome', 80, true, 'nome do processo'), 'ativo'=>!isset($b['ativo']) || !empty($b['ativo']) ? 1 : 0);
+    if($db->valor("SELECT id FROM sgi_processos WHERE LOWER(nome)=LOWER(?) AND id<>?", array($c['nome'], $id))) sgi_erro('Esse processo já existe.');
+    if($id) $db->atualizar('sgi_processos', $c, $id);
+    else { $c['ordem'] = 1 + (int)$db->valor("SELECT MAX(ordem) FROM sgi_processos"); $id = $db->inserir('sgi_processos', $c); }
+    return array('id'=>$id);
+  }
+
+  case 'config_salvar': {
+    sgi_exige_perm($me, 'geral.empresa', 'gestor');
+    $permitidas = array('nc_validar_plano','nc_validador','nc_dias_etapas','nc_obrigar_acoes_iniciais','ishikawa',
+                        'doc_revisao','doc_restricao_obrigatoria','ind_dias_pendencia','ind_bsc');
+    foreach((array)($b['cfg'] ?? array()) as $k => $v){
+      if(!in_array($k, $permitidas, true)) continue;
+      $v = mb_substr(trim((string)$v), 0, 300, 'UTF-8');
+      if($k === 'ishikawa' && count(array_filter(explode('|', $v), 'strlen')) !== 6) sgi_erro('O Ishikawa precisa de 6 categorias.');
+      if(in_array($k, array('nc_dias_etapas','ind_dias_pendencia'), true)) $v = (string)max(0, min(365, (int)$v));
+      $chave = 'cfg_'.$k;
+      if($db->valor("SELECT chave FROM sgi_config WHERE chave=?", array($chave)) !== null)
+        $db->q("UPDATE sgi_config SET valor=? WHERE chave=?", array($v, $chave));
+      else $db->q("INSERT INTO sgi_config (chave, valor) VALUES (?, ?)", array($chave, $v));
+    }
+    return array('cfg'=>sgi_cfg($db));
+  }
+
   case 'acessos_lista': {
-    sgi_exige($me, 'gestor');
+    sgi_exige_perm($me, 'geral.usuarios', 'gestor');
     $r = array();
-    foreach($db->q("SELECT u.id, u.name, u.username, u.role, a.papel, a.empresas FROM portal_usuarios u
+    foreach($db->q("SELECT u.id, u.name, u.username, u.role, a.papel, a.empresas, a.nivel_id, a.superior_id FROM portal_usuarios u
                     LEFT JOIN sgi_acessos a ON a.usuario_id=u.id ORDER BY u.name") as $u){
       $r[] = array('id'=>(int)$u['id'], 'nome'=>$u['name'] ?: $u['username'], 'usuario'=>$u['username'],
         'admin_hub'=>$u['role'] === 'admin', 'papel'=>$u['role'] === 'admin' ? 'gestor' : $u['papel'],
+        'nivel_id'=>$u['nivel_id'] ? (int)$u['nivel_id'] : null, 'superior_id'=>$u['superior_id'] ? (int)$u['superior_id'] : null,
         'empresas'=>array_map('intval', (array)json_decode($u['empresas'] ?: '[]', true)));
     }
     return array('usuarios'=>$r);
   }
 
   case 'acesso_salvar': {
-    sgi_exige($me, 'gestor');
+    sgi_exige_perm($me, 'geral.usuarios', 'gestor');
     $uid2 = (int)($b['usuario_id'] ?? 0);
     $u = $db->linha("SELECT id, role FROM portal_usuarios WHERE id=?", array($uid2));
     if(!$u) sgi_erro('Usuário não encontrado.');
     if($u['role'] === 'admin') sgi_erro('Administrador do Hub já é gestor do SGI.');
     $papel = sgi_escolha($b, 'papel', array('gestor','membro','leitor',''), '');
+    /* Com nível, o papel resumido sai das permissões do nível. */
+    $nivel_id = (int)($b['nivel_id'] ?? 0);
+    if($nivel_id){
+      $nv = $db->linha("SELECT permissoes FROM sgi_niveis WHERE id=?", array($nivel_id));
+      if(!$nv) sgi_erro('Nível de acesso não encontrado.');
+      $papel = sgi_papel_de_perms(sgi_limpar_perms(json_decode($nv['permissoes'] ?: '[]', true))) ?: 'leitor';
+    }
+    $sup = (int)($b['superior_id'] ?? 0);
+    if($sup && !$db->valor("SELECT id FROM portal_usuarios WHERE id=?", array($sup))) sgi_erro('Superior imediato não encontrado.');
+    if($sup === $uid2) sgi_erro('A pessoa não pode ser superior dela mesma.');
     $db->q("DELETE FROM sgi_acessos WHERE usuario_id=?", array($uid2));
     if($papel !== ''){
       $emp = array_values(array_unique(array_map('intval', (array)($b['empresas'] ?? array()))));
       if($papel !== 'gestor' && !$emp) sgi_erro('Escolha pelo menos uma empresa para este usuário.');
       $db->inserir('sgi_acessos', array('usuario_id'=>$uid2, 'papel'=>$papel,
-        'empresas'=>json_encode($emp), 'atualizado_em'=>sgi_agora()));
+        'empresas'=>json_encode($emp), 'nivel_id'=>$nivel_id ?: null, 'superior_id'=>$sup ?: null,
+        'atualizado_em'=>sgi_agora()));
     }
     return array();
   }

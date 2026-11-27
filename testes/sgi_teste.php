@@ -303,6 +303,54 @@ confere('ocorrência repetida é ignorada', $r['ignorados'] === 1 && $r['criados
 $n = api(2, 'oc_salvar', array('tipo'=>'nc', 'empresa_id'=>$A, 'titulo'=>'Depois da importação', 'descricao'=>'Teste', 'gravidade'=>'media'));
 confere('numeração segue depois da importação', strpos($n['numero'], 'RNC-'.date('Y').'-') === 0);
 
+echo "Níveis de acesso\n";
+/* Os 5 níveis da Redentor, com as marcações trazidas do sistema anterior. */
+$NV = array(
+  'Gestor Sistema' => sgi_todas_perms(),
+  'Gestor de Área' => array('doc._modulo','doc.internos','doc.externos','doc.registros','doc.categorias','doc.revisoes','doc.imprimir_nao_controlada',
+    'doc.substituir_arquivo','doc.categoria_registro','doc.so_minhas_pendencias','doc.pendencia_outros','ind._modulo','ind.objetivos','ind.indicadores',
+    'ind.pendencia_outros','nc._modulo','nc.nova','nc.analise','nc.pendencia_outros','nc.acompanhar','nc.acoes_iniciais','nc.consulta','nc.planejamento'),
+  'Diretoria' => array('geral._modulo','doc._modulo','doc.internos','doc.externos','doc.registros','doc.revisoes','doc.pendencia_outros','ind._modulo',
+    'nc._modulo','nc.analise','nc.validar_planos','nc.pendencia_outros','nc.acompanhar','nc.acoes_iniciais','nc.consulta','nc.visao_geral','nc.planejamento','nc.alterar_plano'),
+  'Usuário' => array('doc._modulo','doc.internos','doc.externos','doc.registros','doc.imprimir_nao_controlada','doc.so_minhas_pendencias','ind._modulo',
+    'ind.objetivos','ind.indicadores','nc._modulo','nc.nova','nc.analise','nc.origem','nc.acompanhar','nc.acoes_iniciais','nc.consulta','nc.planejamento','nc.alterar_plano'),
+  'Consulta' => array('doc._modulo','doc.internos','doc.externos','doc.categorias','ind._modulo'),
+);
+$nid = array();
+foreach($NV as $nome => $pp) $nid[$nome] = api(2, 'nivel_salvar', array('nome'=>$nome, 'permissoes'=>array_merge($pp, array('lixo.qualquer'))))['id'];
+confere('cinco níveis', count(api(2, 'niveis_lista')['niveis']) === 5);
+confere('permissão desconhecida descartada', !in_array('lixo.qualquer', api(2, 'niveis_lista')['niveis'][0]['permissoes'], true));
+confere('nome de nível repetido barrado', erro(2, 'nivel_salvar', array('nome'=>'diretoria')) !== null);
+confere('membro antigo não cria nível', erro(3, 'nivel_salvar', array('nome'=>'X')) !== null);
+$pdo->exec("INSERT INTO portal_usuarios VALUES (7,'dir','Diretor Teste','user',''),(8,'area','Gestor Área','user',''),(9,'usu','Usuário Teste','user',''),(10,'cons','Consulta Teste','user','')");
+api(2, 'acesso_salvar', array('usuario_id'=>7, 'nivel_id'=>$nid['Diretoria'], 'empresas'=>array($A)));
+api(2, 'acesso_salvar', array('usuario_id'=>8, 'nivel_id'=>$nid['Gestor de Área'], 'empresas'=>array($A), 'superior_id'=>7));
+api(2, 'acesso_salvar', array('usuario_id'=>9, 'nivel_id'=>$nid['Usuário'], 'empresas'=>array($A), 'superior_id'=>8));
+api(2, 'acesso_salvar', array('usuario_id'=>10, 'nivel_id'=>$nid['Consulta'], 'empresas'=>array($A)));
+$eu9 = api(9, 'eu');
+confere('nível vem no eu', $eu9['eu']['nivel'] === 'Usuário' && $eu9['eu']['papel'] === 'membro' && in_array('nc.nova', $eu9['eu']['perms'], true));
+confere('papel resumido da diretoria', api(7, 'eu')['eu']['papel'] === 'membro');
+confere('superior gravado', (int)$db->valor("SELECT superior_id FROM sgi_acessos WHERE usuario_id=8") === 7);
+confere('ninguém é superior de si', erro(2, 'acesso_salvar', array('usuario_id'=>9, 'nivel_id'=>$nid['Usuário'], 'empresas'=>array($A), 'superior_id'=>9)) !== null);
+$oc9 = api(9, 'oc_salvar', array('tipo'=>'nc', 'empresa_id'=>$A, 'titulo'=>'NC do usuário', 'descricao'=>'x', 'gravidade'=>'media'))['id'];
+confere('usuário registra ocorrência', $oc9 > 0);
+confere('diretoria não registra ocorrência', strpos((string)erro(7, 'oc_salvar', array('tipo'=>'nc', 'empresa_id'=>$A, 'titulo'=>'x', 'descricao'=>'x', 'gravidade'=>'media')), 'nível de acesso') !== false);
+confere('consulta não vê não conformidades', strpos((string)erro(10, 'oc_lista'), 'Não conformidades') !== false);
+confere('consulta vê documentos', erro(10, 'doc_lista') === null);
+confere('usuário não cancela', erro(9, 'oc_status', array('id'=>$oc9, 'para'=>'cancelada', 'obs'=>'x')) !== null);
+confere('gestor de área analisa', erro(8, 'oc_status', array('id'=>$oc9, 'para'=>'analise')) === null);
+confere('gestor de área não cadastra empresa', erro(8, 'empresa_salvar', array('nome'=>'Z')) !== null);
+confere('usuário lança indicador mas consulta não', erro(10, 'ind_lancar', array('empresa_id'=>$A, 'competencia'=>date('Y-m'), 'valores'=>array())) !== null);
+api(2, 'nivel_salvar', array('id'=>$nid['Consulta'], 'nome'=>'Consulta', 'permissoes'=>array_merge($NV['Consulta'], array('nc._modulo','nc.consulta'))));
+confere('mudar o nível vale na hora', erro(10, 'oc_lista') === null);
+confere('nível com gente não é excluído', erro(2, 'nivel_excluir', array('id'=>$nid['Consulta'])) !== null);
+api(2, 'processo_salvar', array('nome'=>'Manutenção'));
+confere('processo repetido barrado', erro(2, 'processo_salvar', array('nome'=>'manutenção')) !== null);
+confere('processos no eu', count(api(2, 'eu')['processos']) === 1);
+$cf = api(2, 'config_salvar', array('cfg'=>array('nc_validar_plano'=>'1', 'nc_dias_etapas'=>'7', 'ishikawa'=>'Método|Máquina|Medida|Meio Ambiente|Mão de Obra|Material', 'xpto'=>'1')))['cfg'];
+confere('configuração gravada', $cf['nc_validar_plano'] === '1' && strpos($cf['ishikawa'], 'Medida') !== false && !isset($cf['xpto']));
+confere('ishikawa precisa de 6', erro(2, 'config_salvar', array('cfg'=>array('ishikawa'=>'A|B'))) !== null);
+
 echo "\n$ok ok, ".count($falhas)." falha(s)\n";
 array_map('unlink', glob(SGI_PASTA.'/*') ?: array()); @unlink(SGI_PASTA.'/.htaccess'); @rmdir(SGI_PASTA);
 exit($falhas ? 1 : 0);

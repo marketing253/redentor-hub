@@ -171,6 +171,13 @@ td b{font-weight:500}
 .graf .g-val{fill:var(--txt2);font-size:11px;paint-order:stroke;stroke:var(--sup);stroke-width:4px;stroke-linejoin:round}
 html[data-tema="escuro"] .g-linha{stroke:var(--info)} html[data-tema="escuro"] .g-pt{stroke:var(--info)}
 .graf-vazio{height:96px;display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:12.5px;border-top:1px dashed var(--borda2);margin-top:8px}
+/* Níveis de acesso */
+.nv-mod{border:1px solid var(--borda);border-radius:10px;padding:12px 16px;margin-bottom:12px}
+.nv-tit{display:flex;gap:8px;align-items:center;font-weight:500;margin-bottom:8px}
+.nv-itens{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 16px;font-size:13px;transition:opacity .15s var(--ease)}
+.nv-itens label{display:flex;gap:8px;align-items:flex-start}
+.nv-itens input,.nv-tit input{margin-top:2px}
+.cf-sub{margin:8px 0 12px;font-size:13px;font-weight:500;color:var(--txt2)}
 /* Importação */
 .imp-chamada{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .imp-chamada h3{margin-bottom:4px}
@@ -514,6 +521,7 @@ function tema(){
 /* ═════════ Modal ═════════ */
 function modal(titulo, html, botoes){
   $('modalT').textContent = titulo; $('modalC').innerHTML = html; $('modalR').innerHTML = '';
+  $('modalF').querySelector('.modal').style.maxWidth = '';
   (botoes || []).forEach(function(b){
     var el = document.createElement('button'); el.className = 'btn ' + (b.cls || ''); el.textContent = b.t;
     el.onclick = function(){ b.fn(el); }; $('modalR').appendChild(el);
@@ -559,7 +567,9 @@ var ABAS = [
   {k:'config', t:'Configurações', st:'Empresas, acessos e indicadores', gestor:true, ic:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'}
 ];
 function desenharAbas(){
-  $('abas').innerHTML = ABAS.filter(function(a){ return !a.gestor || S.eu.papel === 'gestor'; }).map(function(a){
+  var modAba = {ocorrencias:'nc._modulo', acoes:'nc._modulo', documentos:'doc._modulo', indicadores:'ind._modulo'};
+  var vePainel = pode('geral.empresa') || pode('geral.usuarios') || pode('geral.niveis') || pode('geral.processos') || S.eu.papel === 'gestor';
+  $('abas').innerHTML = ABAS.filter(function(a){ return (a.gestor ? vePainel : true) && (!modAba[a.k] || pode(modAba[a.k])); }).map(function(a){
     return (SOLO && a.k === 'ocorrencias' ? '<div class="grupo-lat">Módulos</div>' : '')+
       (SOLO && a.k === 'config' ? '<div class="grupo-lat">Administração</div>' : '')+
       '<button class="aba'+(S.aba === a.k ? ' on' : '')+'" data-aba="'+a.k+'">'+
@@ -588,7 +598,9 @@ function iniciar(){
   tema();
   api('eu').then(function(r){
     S.eu = r.eu; S.empresas = r.empresas; S.usuarios = r.usuarios; S.L = r.listas; S.hoje = r.hoje;
-    if(SOLO) $('quemPp').textContent = {gestor:'Gestor do SGI', membro:'Membro', leitor:'Consulta'}[S.eu.papel] || 'Sem acesso';
+    S.processos = r.processos || []; S.cfg = r.cfg || {}; aplicarCfg();
+    if(SOLO) $('quemPp').textContent = S.eu.nivel || {gestor:'Gestor do SGI', membro:'Membro', leitor:'Consulta'}[S.eu.papel] || 'Sem acesso';
+    $('btnNovo').style.display = pode('nc.nova') && pode('nc._modulo') ? '' : 'none';
     if(!S.eu.papel){
       $('conteudo').innerHTML = '<div class="boas cartao"><div class="boas-ic">'+IC('lock')+'</div><h2>Você ainda não tem acesso ao SGI</h2>'+
         '<p class="mudo">Peça ao gestor do SGI (ou a quem administra o Hub) para liberar o seu usuário em <b>SGI → Configurações → Acessos</b>.</p></div>';
@@ -610,7 +622,9 @@ function iniciar(){
     S.empresa = $('filtroEmpresa').value;
     $('topo').style.display = '';
     var aba = 'painel'; try { aba = sessionStorage.getItem('sgi_aba') || 'painel'; } catch(e){}
-    if(aba === 'config' && S.eu.papel !== 'gestor') aba = 'painel';
+    if(aba === 'config' && !(S.eu.papel === 'gestor' || pode('geral.usuarios') || pode('geral.niveis'))) aba = 'painel';
+    var modAba2 = {ocorrencias:'nc._modulo', acoes:'nc._modulo', documentos:'doc._modulo', indicadores:'ind._modulo'};
+    if(modAba2[aba] && !pode(modAba2[aba])) aba = 'painel';
     irPara(aba);
   }).catch(function(e){
     if(SOLO && e.sessao){ mostrarEntrada(); return; }
@@ -1335,17 +1349,28 @@ function telaConfig(){
   c.innerHTML = '<div class="cartao imp-chamada"><div><h3>Importar do Qualyteam</h3><p class="mudo peq" style="margin:0">Traga documentos, indicadores com os valores mensais e não conformidades pelas planilhas que o Qualyteam exporta.</p></div>'+
       '<button class="btn pri" id="cfImportar">Importar planilhas</button></div>'+
     '<div class="cartao"><h3>Empresas <small>cada registro do SGI pertence a uma delas</small></h3><div id="cfEmp"></div><button class="btn sm pri" id="cfNovaEmp" style="margin-top:10px">+ Empresa</button></div>'+
-    '<div class="cartao"><h3>Acessos <small>quem entra no SGI e em quais empresas</small></h3>'+
-    '<div class="mudo peq" style="margin-bottom:10px"><b>Gestor</b>: todas as empresas, aprova documentos, verifica eficácia e configura. <b>Membro</b>: registra, analisa, monta plano e lança indicadores nas empresas marcadas. <b>Leitor</b>: lê documentos, acompanha e registra ocorrências. Administradores do Hub são sempre gestores.</div>'+
+    '<div class="cartao"><h3>Níveis de acesso <small>o que cada nível pode fazer em cada módulo</small></h3><div id="cfNiveis"></div>'+
+      '<button class="btn sm pri" id="cfNovoNivel" style="margin-top:12px">+ Nível</button></div>'+
+    '<div class="cartao"><h3>Acessos <small>nível, superior imediato e empresas de cada pessoa</small></h3>'+
+    '<div class="mudo peq" style="margin-bottom:10px">Administradores do Hub têm acesso total. Quem não tem nível usa o papel simples (Gestor, Membro, Leitor).</div>'+
     '<input type="search" id="cfBusca" placeholder="Buscar pessoa…" style="max-width:320px;margin-bottom:10px"><div id="cfAcessos" class="vazio">Carregando…</div></div>'+
+    '<div class="cartao"><h3>Processos <small>clique em um processo para desativar ou reativar</small></h3><div id="cfProc"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px;max-width:420px"><input type="text" id="cfProcNome" maxlength="80" placeholder="Novo processo"><button class="btn sm pri" id="cfProcAdd">Adicionar</button></div></div>'+
+    '<div class="cartao"><h3>Configuração dos módulos</h3><div id="cfMod"></div></div>'+
     '<div class="cartao"><h3>Indicadores</h3><div id="cfInd"></div><button class="btn sm pri" id="cfNovoInd" style="margin-top:10px">+ Indicador</button></div>'+
     '<div class="cartao"><h3>Avisos automáticos (n8n)</h3><div class="peq texto">O endereço abaixo devolve, por pessoa, as ações vencidas e as que vencem em 3 dias, com o telefone cadastrado no Hub. Crie um fluxo no n8n que chame este endereço todo dia às 7h e envie a mensagem pelo WhatsApp.\n\n'+
     '<code>'+esc(location.origin)+'/sgi.php?action=alertas&amp;chave=SUA_CHAVE</code>\n\nA chave é a variável <b>SGI_CRON_CHAVE</b> do EasyPanel (ou <b>sgi_alertas</b> em cron_secrets.php).</div></div>';
   $('cfNovaEmp').onclick = function(){ editarEmpresa(null, telaConfig); };
+  $('cfNovoNivel').onclick = function(){ editarNivel(null); };
+  $('cfProcAdd').onclick = function(){ var nm = val('cfProcNome'); if(!nm) return;
+    executar(this, api('processo_salvar', {nome:nm}), function(r){ S.processos.push({id:r.id, nome:nm, ativo:1}); $('cfProcNome').value = ''; desenharProcessos(); }); };
+  desenharProcessos(); formConfigModulos();
+  S.catalogoPerms = null; desenharNiveis();
   $('cfImportar').onclick = telaImportar;
   $('cfNovoInd').onclick = function(){ editarIndicador({sentido:'maior', casas:1, ativo:1}); };
   desenharEmpresasCfg();
-  api('acessos_lista').then(function(r){ desenharAcessos(r.usuarios); $('cfBusca').oninput = function(){ desenharAcessos(r.usuarios, this.value); }; })
+  api('niveis_lista').then(function(rn){ S.niveis = rn.niveis; S.catalogoPerms = rn.catalogo; desenharNiveis(); return api('acessos_lista'); })
+    .then(function(r){ desenharAcessos(r.usuarios); $('cfBusca').oninput = function(){ desenharAcessos(r.usuarios, this.value); }; })
     .catch(function(e){ $('cfAcessos').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
   api('ind_lista', {inativos:1}).then(function(r){
     $('cfInd').innerHTML = '<div class="tab-wrap" style="box-shadow:none"><table><thead><tr><th>Indicador</th><th>Unidade</th><th>Meta</th><th>Norma</th><th></th></tr></thead><tbody>'+
@@ -1384,28 +1409,134 @@ function desenharAcessos(lista, filtro){
   filtro = (filtro || '').toLowerCase();
   var emps = S.empresas.filter(function(e){ return +e.ativo; });
   var ls = lista.filter(function(u){ return !filtro || (u.nome + ' ' + u.usuario).toLowerCase().indexOf(filtro) >= 0; });
+  /* Com níveis cadastrados, a pessoa recebe um nível; sem eles, segue o papel antigo. */
+  var opNivel = [['','Sem acesso']].concat((S.niveis || []).length
+    ? S.niveis.map(function(n){ return ['n:'+n.id, n.nome]; })
+    : [['leitor','Leitor'],['membro','Membro'],['gestor','Gestor']]);
+  var opSup = [['','—']].concat(lista.filter(function(u){ return u.papel || u.admin_hub; }).map(function(u){ return [u.id, u.nome]; }));
   $('cfAcessos').className = '';
-  $('cfAcessos').innerHTML = '<div class="tab-wrap" style="box-shadow:none"><table><thead><tr><th>Pessoa</th><th>Papel no SGI</th><th>Empresas</th><th></th></tr></thead><tbody>'+
+  $('cfAcessos').innerHTML = '<div class="tab-wrap" style="box-shadow:none"><table><thead><tr><th>Pessoa</th><th>Nível de acesso</th><th>Superior imediato</th><th>Empresas</th><th></th></tr></thead><tbody>'+
     ls.map(function(u){
-      if(u.admin_hub) return '<tr><td><b>'+esc(u.nome)+'</b><div class="mudo peq">'+esc(u.usuario)+'</div></td><td colspan="3" class="mudo">Administrador do Hub · gestor em todas</td></tr>';
+      if(u.admin_hub) return '<tr><td><b>'+esc(u.nome)+'</b><div class="mudo peq">'+esc(u.usuario)+'</div></td><td colspan="4" class="mudo">Administrador do Hub · acesso total em todas as empresas</td></tr>';
+      var atual = u.nivel_id ? 'n:'+u.nivel_id : (u.papel || '');
       return '<tr data-u="'+u.id+'"><td><b>'+esc(u.nome)+'</b><div class="mudo peq">'+esc(u.usuario)+'</div></td>'+
-        '<td><select class="aPapel" style="min-width:130px">'+opcoes([['','Sem acesso'],['leitor','Leitor'],['membro','Membro'],['gestor','Gestor']], u.papel || '')+'</select></td>'+
+        '<td><select class="aNivel" style="min-width:150px">'+opcoes(opNivel, atual)+'</select></td>'+
+        '<td><select class="aSup" style="min-width:150px">'+opcoes(opSup.filter(function(o){ return +o[0] !== u.id; }), u.superior_id || '')+'</select></td>'+
         '<td class="aEmp">'+emps.map(function(e){ return '<label class="peq" style="display:inline-flex;gap:4px;margin:0 10px 4px 0"><input type="checkbox" value="'+e.id+'"'+(u.empresas.indexOf(+e.id) >= 0 ? ' checked' : '')+'> '+esc(e.sigla || e.nome)+'</label>'; }).join('')+'</td>'+
         '<td><button class="btn sm aSalvar">Salvar</button></td></tr>';
     }).join('')+'</tbody></table></div>';
   Array.prototype.forEach.call($('cfAcessos').querySelectorAll('tr[data-u]'), function(tr){
-    var sel = tr.querySelector('.aPapel'), cx = tr.querySelector('.aEmp');
+    var sel = tr.querySelector('.aNivel'), sup = tr.querySelector('.aSup'), cx = tr.querySelector('.aEmp');
     var ajusta = function(){ cx.style.opacity = sel.value === 'gestor' || !sel.value ? .35 : 1; };
     sel.onchange = ajusta; ajusta();
     tr.querySelector('.aSalvar').onclick = function(){
       var id = +tr.getAttribute('data-u'), emp = Array.prototype.filter.call(cx.querySelectorAll('input'), function(x){ return x.checked; }).map(function(x){ return +x.value; });
-      executar(this, api('acesso_salvar', {usuario_id:id, papel:sel.value, empresas:emp}), function(){
+      var v = sel.value, corpo = {usuario_id:id, empresas:emp, superior_id:+sup.value || 0};
+      if(v.indexOf('n:') === 0){ corpo.nivel_id = +v.slice(2); corpo.papel = 'leitor'; } else corpo.papel = v;
+      executar(this, api('acesso_salvar', corpo), function(){
         avisar('Acesso salvo.');
-        var u = lista.filter(function(x){ return x.id === id; })[0]; u.papel = sel.value || null; u.empresas = emp;
+        var u = lista.filter(function(x){ return x.id === id; })[0];
+        u.nivel_id = corpo.nivel_id || null; u.papel = v ? (corpo.nivel_id ? 'nivel' : v) : null; u.empresas = emp; u.superior_id = corpo.superior_id || null;
         api('eu').then(function(r){ S.usuarios = r.usuarios; });
       });
     };
   });
+}
+
+/* ═════════ Níveis de acesso ═════════ */
+function desenharNiveis(){
+  var cat = S.catalogoPerms;
+  if(!cat){ $('cfNiveis').innerHTML = '<div class="vazio">Carregando…</div>'; return; }
+  if(!S.niveis.length){
+    $('cfNiveis').innerHTML = '<p class="mudo peq" style="margin:0 0 12px">Nenhum nível cadastrado. Enquanto não houver, cada pessoa usa o papel simples (Gestor, Membro ou Leitor).</p>';
+    return;
+  }
+  var mods = Object.keys(cat);
+  $('cfNiveis').innerHTML = '<div class="tab-wrap" style="box-shadow:none"><table><thead><tr><th>Nível</th><th>Pessoas</th>'+
+    mods.map(function(m){ return '<th>'+esc(cat[m].titulo)+'</th>'; }).join('')+'<th></th></tr></thead><tbody>'+
+    S.niveis.map(function(n){
+      return '<tr class="cl" data-nivel="'+n.id+'"><td><b>'+esc(n.nome)+'</b></td><td class="num">'+n.pessoas+'</td>'+
+        mods.map(function(m){
+          var tem = n.permissoes.indexOf(m+'._modulo') >= 0, tot = Object.keys(cat[m].itens).length;
+          var q = Object.keys(cat[m].itens).filter(function(k){ return n.permissoes.indexOf(m+'.'+k) >= 0; }).length;
+          return '<td class="num">'+(tem ? '<span class="selo s-concluida">'+q+' de '+tot+'</span>' : '<span class="mudo">sem acesso</span>')+'</td>';
+        }).join('')+'<td class="mudo peq">editar</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  Array.prototype.forEach.call($('cfNiveis').querySelectorAll('[data-nivel]'), function(tr){
+    tr.onclick = function(){ editarNivel(S.niveis.filter(function(n){ return n.id === +tr.getAttribute('data-nivel'); })[0]); };
+  });
+}
+function editarNivel(n){
+  n = n || {id:0, nome:'', permissoes:[], pessoas:0};
+  var cat = S.catalogoPerms;
+  var h = '<label class="campo"><span>Nome do nível</span><input type="text" id="nvNome" maxlength="60" value="'+esc(n.nome)+'"></label>'+
+    '<p class="mudo peq" style="margin:0 0 16px">Marque o que quem está neste nível pode fazer. Sem o módulo marcado, a pessoa nem vê o módulo.</p>'+
+    Object.keys(cat).map(function(m){
+      var on = n.permissoes.indexOf(m+'._modulo') >= 0;
+      return '<div class="nv-mod" data-mod="'+m+'"><label class="nv-tit"><input type="checkbox" class="nvMod" value="'+m+'._modulo"'+(on ? ' checked' : '')+'> '+esc(cat[m].titulo)+'</label>'+
+        '<div class="nv-itens">'+Object.keys(cat[m].itens).map(function(k){
+          return '<label><input type="checkbox" class="nvItem" value="'+m+'.'+k+'"'+(n.permissoes.indexOf(m+'.'+k) >= 0 ? ' checked' : '')+'> '+esc(cat[m].itens[k])+'</label>';
+        }).join('')+'</div></div>';
+    }).join('');
+  var botoes = [{t:'Cancelar', fn:fecharModal}];
+  if(n.id && !n.pessoas) botoes.unshift({t:'Excluir', cls:'perigo', fn:function(b){
+    executar(b, api('nivel_excluir', {id:n.id}), function(){ fecharModal(); avisar('Nível excluído.'); telaConfig(); }); }});
+  botoes.push({t:'Salvar', cls:'pri', fn:function(b){
+    var p = Array.prototype.filter.call(document.querySelectorAll('#modalC .nvMod, #modalC .nvItem'), function(x){ return x.checked; }).map(function(x){ return x.value; });
+    executar(b, api('nivel_salvar', {id:n.id, nome:val('nvNome'), permissoes:p}), function(){ fecharModal(); avisar('Nível salvo.'); telaConfig(); });
+  }});
+  modal(n.id ? 'Nível: '+n.nome : 'Novo nível de acesso', h, botoes);
+  $('modalF').querySelector('.modal').style.maxWidth = '860px';
+  var liga = function(box){ var on = box.querySelector('.nvMod').checked; box.querySelector('.nv-itens').style.opacity = on ? 1 : .4; };
+  Array.prototype.forEach.call(document.querySelectorAll('#modalC .nv-mod'), function(box){ box.querySelector('.nvMod').onchange = function(){ liga(box); }; liga(box); });
+}
+
+/* ═════════ Processos ═════════ */
+function desenharProcessos(){
+  $('cfProc').innerHTML = (S.processos || []).length ? '<div class="chips">'+S.processos.map(function(p){
+    return '<button class="chip'+(+p.ativo ? '' : ' mudo')+'" data-proc="'+p.id+'" title="Clique para '+(+p.ativo ? 'desativar' : 'reativar')+'">'+esc(p.nome)+(+p.ativo ? '' : ' (inativo)')+'</button>'; }).join('')+'</div>'
+    : '<p class="mudo peq" style="margin:0">Nenhum processo cadastrado.</p>';
+  Array.prototype.forEach.call($('cfProc').querySelectorAll('[data-proc]'), function(b){
+    b.onclick = function(){ var p = S.processos.filter(function(x){ return x.id == b.getAttribute('data-proc'); })[0];
+      executar(b, api('processo_salvar', {id:p.id, nome:p.nome, ativo:+p.ativo ? 0 : 1}), function(){ p.ativo = +p.ativo ? 0 : 1; desenharProcessos(); }); };
+  });
+}
+
+/* ═════════ Configuração dos módulos ═════════ */
+function formConfigModulos(){
+  var c = S.cfg || {}, ik = (c.ishikawa || '').split('|');
+  var pessoas = [['','—']].concat((S.usuarios || []).map(function(u){ return [u.nome, u.nome]; }));
+  $('cfMod').innerHTML =
+    '<h4 class="cf-sub">Não conformidades</h4><div class="grade">'+
+      '<label class="campo"><span>Validar plano de ação</span><select id="cfgVal">'+opcoes([['1','Sim'],['0','Não']], c.nc_validar_plano)+'</select></label>'+
+      '<label class="campo"><span>Validador padrão</span><select id="cfgValid">'+opcoes(pessoas, c.nc_validador)+'</select></label>'+
+      '<label class="campo"><span>Dias a mais entre as etapas</span><input type="number" id="cfgDias" min="0" max="365" value="'+esc(c.nc_dias_etapas)+'"></label>'+
+      '<label class="campo"><span>Exigir ações nas disposições iniciais</span><select id="cfgAcIni">'+opcoes([['0','Não'],['1','Sim']], c.nc_obrigar_acoes_iniciais)+'</select></label></div>'+
+    '<div class="grade">'+[0,1,2,3,4,5].map(function(i){ return '<label class="campo"><span>Ishikawa, causa '+(i+1)+'</span><input type="text" class="cfgIk" maxlength="40" value="'+esc(ik[i] || '')+'"></label>'; }).join('')+'</div>'+
+    '<h4 class="cf-sub">Documentos</h4><div class="grade">'+
+      '<label class="campo"><span>Revisões em</span><select id="cfgRev">'+opcoes([['numero','Número (1, 2, 3)'],['letra','Letra (A, B, C)']], c.doc_revisao)+'</select></label>'+
+      '<label class="campo"><span>Restrição de acesso obrigatória</span><select id="cfgRestr">'+opcoes([['0','Não'],['1','Sim']], c.doc_restricao_obrigatoria)+'</select></label></div>'+
+    '<h4 class="cf-sub">Indicadores</h4><div class="grade">'+
+      '<label class="campo"><span>Dias para a coleta aparecer como pendência</span><input type="number" id="cfgIndDias" min="0" max="365" value="'+esc(c.ind_dias_pendencia)+'"></label>'+
+      '<label class="campo"><span>Mapa estratégico (BSC)</span><select id="cfgBsc">'+opcoes([['1','Habilitado'],['0','Desligado']], c.ind_bsc)+'</select></label></div>'+
+    '<button class="btn sm pri" id="cfgSalvar">Salvar configuração</button>';
+  $('cfgSalvar').onclick = function(){
+    var ik2 = Array.prototype.map.call(document.querySelectorAll('.cfgIk'), function(x){ return x.value.trim(); }).join('|');
+    executar(this, api('config_salvar', {cfg:{nc_validar_plano:val('cfgVal'), nc_validador:val('cfgValid'), nc_dias_etapas:val('cfgDias'),
+      nc_obrigar_acoes_iniciais:val('cfgAcIni'), ishikawa:ik2, doc_revisao:val('cfgRev'), doc_restricao_obrigatoria:val('cfgRestr'),
+      ind_dias_pendencia:val('cfgIndDias'), ind_bsc:val('cfgBsc')}}), function(r){ S.cfg = r.cfg; aplicarCfg(); avisar('Configuração salva.'); });
+  };
+}
+/* Nomes do Ishikawa vêm da configuração; as chaves (metodo, maquina…) não mudam. */
+function aplicarCfg(){
+  var ik = ((S.cfg || {}).ishikawa || '').split('|');
+  if(ik.length === 6) M6.forEach(function(m, i){ if(ik[i]) m[1] = ik[i]; });
+}
+function pode(k){
+  if(!S.eu) return false;
+  if(S.eu.admin_hub) return true;
+  var p = S.eu.perms || [];
+  return p.indexOf(k) >= 0 || (k.indexOf('nc.') === 0 && p.indexOf('nc.total') >= 0);
 }
 function editarIndicador(i){
   modal(i.id ? 'Editar indicador' : 'Novo indicador',
