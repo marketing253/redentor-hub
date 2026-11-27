@@ -36,7 +36,7 @@ date_default_timezone_set('America/Sao_Paulo');
    (testes/sgi_teste.php).
    ============================================================ */
 
-define('SGI_SCHEMA', 1);
+define('SGI_SCHEMA', 2);
 define('SGI_MAX_BYTES', 25 * 1024 * 1024);
 
 class SgiErro extends Exception {}
@@ -284,7 +284,7 @@ function sgi_estrutura(SgiDb $db){
     descricao TEXT NULL,
     unidade VARCHAR(20) NULL,
     sentido VARCHAR(10) NOT NULL DEFAULT 'maior',
-    meta DECIMAL(14,4) NULL,
+    meta DECIMAL(18,6) NULL,
     casas INT NOT NULL DEFAULT 1,
     norma VARCHAR(10) NULL,
     processo VARCHAR(80) NULL,
@@ -297,7 +297,7 @@ function sgi_estrutura(SgiDb $db){
     indicador_id INT NOT NULL,
     empresa_id INT NOT NULL,
     competencia CHAR(7) NOT NULL,
-    valor DECIMAL(14,4) NOT NULL,
+    valor DECIMAL(18,6) NOT NULL,
     obs TEXT NULL,
     lancado_por INT NULL,
     lancado_em DATETIME NULL,
@@ -305,6 +305,14 @@ function sgi_estrutura(SgiDb $db){
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
   foreach($t as $sql) $db->ddl($sql);
+
+  /* Esquema 2: indicadores com 6 casas decimais. O Índice SAU do Qualyteam
+     vem na casa de 0,00002 e com 4 casas virava zero. CREATE IF NOT EXISTS
+     não muda tabela que já existe, então o MySQL precisa do ALTER. */
+  if($db->drv !== 'sqlite'){
+    $db->ddl("ALTER TABLE sgi_indicadores MODIFY meta DECIMAL(18,6) NULL");
+    $db->ddl("ALTER TABLE sgi_ind_valores MODIFY valor DECIMAL(18,6) NOT NULL");
+  }
 
   /* Indicadores de partida, comuns a quem opera ônibus urbano. As metas
      são ponto de partida: o gestor ajusta em Configurações. */
@@ -688,7 +696,7 @@ function sgi_importar_linha(SgiDb $db, $me, $tipo, $emp, $l){
     $c = array('nome'=>$nome, 'descricao'=>imp_txt_longo($l, 'descricao'), 'unidade'=>imp_txt($l, 'unidade', 20),
                'sentido'=>(strpos($sent, 'menor') !== false || strpos($sent, 'diminu') !== false || strpos($sent, 'reduz') !== false || strpos($sent, 'baixo') !== false) ? 'menor' : 'maior',
                'meta'=>$meta, 'processo'=>imp_txt($l, 'processo', 80), 'ativo'=>1);
-    if($casas !== null && $casas !== false) $c['casas'] = max(0, min(4, (int)$casas));
+    if($casas !== null && $casas !== false) $c['casas'] = max(0, min(6, (int)$casas));
     $id = (int)$db->valor("SELECT id FROM sgi_indicadores WHERE LOWER(nome)=LOWER(?)", array($nome));
     if($id){ $db->atualizar('sgi_indicadores', $c, $id); return 'atualizados'; }
     $db->inserir('sgi_indicadores', $c + array('casas'=>1, 'ordem'=>0));
@@ -1372,7 +1380,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       'unidade'=>sgi_txt($b, 'unidade', 20),
       'sentido'=>sgi_escolha($b, 'sentido', array('maior','menor'), 'maior'),
       'meta'=>$meta === null ? null : (float)$meta,
-      'casas'=>max(0, min(4, (int)($b['casas'] ?? 1))),
+      'casas'=>max(0, min(6, (int)($b['casas'] ?? 1))),
       'norma'=>sgi_escolha($b, 'norma', array_map('strval', array_keys($L['normas']))),
       'processo'=>sgi_txt($b, 'processo', 80),
       'ativo'=>!isset($b['ativo']) || !empty($b['ativo']) ? 1 : 0,

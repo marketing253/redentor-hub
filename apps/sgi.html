@@ -1384,7 +1384,7 @@ function editarIndicador(i){
     '<div class="grade"><label class="campo"><span>Unidade</span><input type="text" id="iUn" maxlength="20" value="'+esc(i.unidade)+'" placeholder="%, km/L, índice…"></label>'+
     '<label class="campo"><span>Melhor quando</span><select id="iSent">'+opcoes([['maior','Maior (≥ meta)'],['menor','Menor (≤ meta)']], i.sentido)+'</select></label>'+
     '<label class="campo"><span>Meta</span><input type="text" inputmode="decimal" id="iMeta" value="'+(i.meta !== null && i.meta !== undefined ? esc(numBR(i.meta, +i.casas).replace(/\./g,'')) : '')+'"></label>'+
-    '<label class="campo"><span>Casas decimais</span><input type="number" id="iCasas" min="0" max="4" value="'+esc(i.casas)+'"></label>'+
+    '<label class="campo"><span>Casas decimais</span><input type="number" id="iCasas" min="0" max="6" value="'+esc(i.casas)+'"></label>'+
     '<label class="campo"><span>Norma</span><select id="iNorma">'+opcoes(paresObj(S.L.normas), i.norma, '—')+'</select></label>'+
     '<label class="campo"><span>Processo</span><input type="text" id="iProc" maxlength="80" value="'+esc(i.processo)+'"></label></div>'+
     '<label class="peq" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="iAtivo"'+(+i.ativo ? ' checked' : '')+'> Ativo</label>',

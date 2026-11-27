@@ -264,6 +264,10 @@ $km = $db->linha("SELECT * FROM sgi_indicadores WHERE nome='Km por litro'");
 confere('indicador importado', $km && (float)$km['meta'] === 2.5 && $km['sentido'] === 'maior' && (int)$km['casas'] === 2);
 confere('sentido menor reconhecido', $db->valor("SELECT sentido FROM sgi_indicadores WHERE nome='Acidentes com afastamento'") === 'menor');
 $r = api(2, 'importar', array('tipo'=>'indicadores', 'empresa_id'=>$A, 'linhas'=>array(array('nome'=>'KM POR LITRO', 'meta'=>'2,6'))));
+api(2, 'importar', array('tipo'=>'indicadores', 'empresa_id'=>$A, 'linhas'=>array(array('nome'=>'Índice SAU', 'meta'=>'0.00007', 'sentido'=>'menor', 'casas'=>'5'))));
+api(2, 'importar', array('tipo'=>'valores', 'empresa_id'=>$A, 'linhas'=>array(array('indicador'=>'Índice SAU', 'competencia'=>'2026-01', 'valor'=>'0.00002'))));
+confere('seis casas decimais', abs((float)$db->valor("SELECT v.valor FROM sgi_ind_valores v JOIN sgi_indicadores i ON i.id=v.indicador_id WHERE i.nome='Índice SAU'") - 0.00002) < 1e-9
+  && (int)$db->valor("SELECT casas FROM sgi_indicadores WHERE nome='Índice SAU'") === 5);
 confere('reimportar atualiza pelo nome', $r['atualizados'] === 1 && (float)$db->valor("SELECT meta FROM sgi_indicadores WHERE id=?", array($km['id'])) === 2.6);
 $r = api(2, 'importar', array('tipo'=>'valores', 'empresa_id'=>$A, 'linhas'=>array(
   array('indicador'=>'Km por litro', 'competencia'=>'jan/2026', 'valor'=>'2,48'),
