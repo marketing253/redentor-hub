@@ -94,6 +94,23 @@ for pasta in uploads midias_tv app anexos \
 done
 
 # ------------------------------------------------------------
+# Sessões do PHP numa pasta permanente
+#
+# O padrão é /tmp, dentro do container: cada deploy cria um container
+# novo e todo mundo que estava logado cai. uploads/sgi é volume nos dois
+# serviços (redentor/sgi monta essa pasta; academy/redentorhub monta
+# uploads inteira) e já nega acesso pela web (.htaccess acima). Se a
+# pasta não der para criar, o PHP segue no /tmp como antes.
+# ------------------------------------------------------------
+SESSOES="$RAIZ/uploads/sgi/.sessoes"
+if mkdir -p "$SESSOES" 2>/dev/null; then
+    chown www-data:www-data "$SESSOES" 2>/dev/null || true
+    chmod 700 "$SESSOES"
+    printf 'session.save_path = "%s"\n' "$SESSOES" > /usr/local/etc/php/conf.d/zz-sessoes.ini
+    echo "  sessões em ${SESSOES#$RAIZ/} (sobrevivem ao deploy)"
+fi
+
+# ------------------------------------------------------------
 # 3) Segredos vindos das variáveis do EasyPanel
 #
 # Arquivo que você montou no EasyPanel sempre ganha; arquivo escrito
