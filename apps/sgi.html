@@ -866,7 +866,7 @@ function irAcoes(st){ S.filtros.ac.status = st; irPara('acoes'); }
 function filtrarEmpresa(id){ $('filtroEmpresa').value = id; $('filtroEmpresa').onchange(); }
 function rncDeIndicador(x){
   novaOcorrencia('nc', { empresa_id:x.e, origem:'Indicador fora da meta', titulo:x.n+' fora da meta em '+mesNome(x.c),
-    descricao:'Indicador "'+x.n+'" ficou em '+x.v+' '+x.u+' em '+mesNome(x.c)+', contra a meta de '+x.m+' '+x.u+'.', gravidade:'media' });
+    descricao:'Indicador "'+x.n+'" ficou em '+x.v+(x.u ? ' '+x.u : '')+' em '+mesNome(x.c)+', contra a meta de '+x.m+(x.u ? ' '+x.u : '')+'.', gravidade:'media' });
 }
 
 /* ═════════ OCORRÊNCIAS ═════════ */
