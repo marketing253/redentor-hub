@@ -351,8 +351,70 @@ body.solo .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
   .cab p{display:none}
 }
 
+/* ═════════ Barra de módulos no topo (modo separado) ═════════
+   Linha 1: módulo atual (troca pelo menu), o menu do módulo, empresa e
+   usuário. Linha 2: faixa com o nome do módulo e a ação principal.
+   Abaixo, o conteúdo numa coluna central. */
+.mbar,.faixa{display:none}
+body.solo .lateral,body.solo .cab{display:none!important}
+body.solo .mbar{display:flex;align-items:center;position:sticky;top:0;z-index:30;height:52px;padding:0 24px;background:var(--sup);border-bottom:1px solid var(--borda2)}
+.mbar svg{stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.mbar-logo{width:32px;height:32px;object-fit:contain;background:#fff;border:1px solid var(--borda);border-radius:8px;padding:3px;margin-right:8px;flex:none}
+.mod-sel,.usu{position:relative}
+.mod-btn,.usu-btn{display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border:none;background:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.mod-btn{font-size:14px;font-weight:600;color:var(--azul)}
+html[data-tema="escuro"] .mod-btn{color:var(--info)}
+.mod-btn:hover,.usu-btn:hover{background:var(--sup2)}
+.mod-btn svg,.usu-btn svg{width:14px;height:14px;stroke-width:2}
+.mod-menu,.usu-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:var(--sup);border:1px solid var(--borda2);border-radius:10px;box-shadow:0 12px 32px rgba(17,24,39,.16);padding:6px;display:none;z-index:50}
+.mod-menu.on,.usu-menu.on{display:block}
+.mod-menu button,.usu-menu button{display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 12px;border:none;background:none;border-radius:6px;text-align:left;font-family:inherit;font-size:14px;color:var(--txt);cursor:pointer}
+.mod-menu button:hover,.usu-menu button:hover{background:var(--sup2)}
+.mod-menu button.on{color:var(--azul);font-weight:600}
+.mod-menu svg{width:18px;height:18px;color:var(--txt3)}
+.mod-menu button.on svg{color:var(--azul)}
+.sub{display:flex;align-self:stretch;margin-left:8px;padding-left:8px;border-left:1px solid var(--borda);overflow-x:auto}
+.sub button{display:flex;align-items:center;gap:6px;padding:0 12px;border:none;border-bottom:2px solid transparent;background:none;color:var(--txt2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.sub button svg{width:16px;height:16px}
+.sub button:hover{color:var(--txt)}
+.sub button.on{color:var(--azul);border-bottom-color:var(--ouro-cl)}
+html[data-tema="escuro"] .sub button.on{color:var(--info)}
+.mbar-dir{margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px}
+.mbar-dir select{width:auto;max-width:200px;height:34px;padding-top:0;padding-bottom:0}
+.usu-btn{font-size:14px;font-weight:500;color:var(--txt)}
+.usu-btn .av{width:30px;height:30px;border-radius:50%;background:var(--azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;overflow:hidden;flex:none}
+.usu-btn .av img{width:100%;height:100%;object-fit:cover}
+.usu-menu{left:auto;right:0;min-width:220px}
+.usu-menu .pp{padding:8px 12px 10px;font-size:12px;color:var(--txt3);border-bottom:1px solid var(--borda);margin-bottom:4px}
+.usu-menu .pp b{display:block;font-size:14px;font-weight:500;color:var(--txt)}
+body.solo .faixa{display:block;background:linear-gradient(180deg,var(--sup) 0%,var(--info-bg) 100%);border-bottom:1px solid var(--borda)}
+.faixa-in{max-width:1240px;margin:0 auto;padding:20px 32px;display:flex;align-items:center;gap:16px}
+.faixa-ic{width:48px;height:48px;border-radius:12px;background:var(--sup);border:1px solid var(--borda2);display:flex;align-items:center;justify-content:center;color:var(--azul);flex:none}
+.faixa-ic svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.faixa h1{margin:0;font-size:20px;font-weight:500;line-height:1.2;color:var(--txt)}
+.faixa p{margin:4px 0 0;font-size:13px;color:var(--txt3)}
+.faixa-acao{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+body.solo .conteudo{margin:0 auto;max-width:1240px;padding:24px 32px 64px}
+body.solo .conteudo>*{max-width:none}
+body.solo #docNovo{display:none}
+.pend-cab{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--borda2);padding-bottom:8px;margin-bottom:12px}
+.pend-cab h2{margin:0;font-size:15px;font-weight:600;flex:1}
+.busca-p{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--txt2)}
+.busca-p input{width:220px;height:32px}
+@media(max-width:900px){
+  body.solo .mbar{padding:0 12px}
+  .mbar-logo,#usuNm,.usu-btn>svg{display:none}
+  .mbar-dir select{max-width:120px}
+  .faixa-in{padding:16px;flex-wrap:wrap}
+  .faixa-acao{margin-left:0;width:100%}
+  body.solo .conteudo{padding:16px 12px 48px}
+  .busca-p span{display:none}
+  .busca-p input{width:150px}
+}
+@media(max-width:600px){.mbar-dir select{display:none}}
+
 /* Entrada própria */
-body.fora .lateral,body.fora .cab,body.fora .conteudo{display:none!important}
+body.fora .lateral,body.fora .cab,body.fora .conteudo,body.fora .mbar,body.fora .faixa{display:none!important}
 body.fora .entrada{display:flex}
 .entrada{min-height:100vh;background:var(--bg)}
 .ent-lado{flex:0 0 44%;background:#12152B;color:#B9BEDC;padding:56px 64px;display:flex;flex-direction:column;justify-content:center;position:relative}
@@ -450,6 +512,18 @@ body.fora .entrada{display:flex}
   <div class="tit"><h1 id="cabTit">Início</h1><p id="cabSub"></p></div>
   <div id="cabAcoes" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
 </header>
+
+<!-- Barra de módulos e faixa do módulo (só no modo separado) -->
+<header class="mbar" id="mbar">
+  <img class="mbar-logo" src="../img/redentor.png" alt="Redentor">
+  <div class="mod-sel"><button type="button" class="mod-btn" id="modBtn" aria-haspopup="true"><span id="modNome">Visão geral</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="mod-menu" id="modMenu" role="menu"></div></div>
+  <nav class="sub" id="subNav"></nav>
+  <div class="mbar-dir" id="mbarDir">
+    <div class="usu"><button type="button" class="usu-btn" id="usuBtn" aria-haspopup="true"><span class="av" id="usuAv"></span><span id="usuNm"></span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="usu-menu" id="usuMenu" role="menu"><div class="pp"><b id="usuNm2"></b><span id="usuPp"></span></div><button type="button" id="usuSair">Sair</button></div></div>
+  </div>
+</header>
+<section class="faixa" id="faixa"><div class="faixa-in"><div class="faixa-ic" id="faixaIc"></div><div><h1 id="faixaTit"></h1><p id="faixaSub"></p></div><div class="faixa-acao" id="faixaAcao"></div></div></section>
 
 <div class="topo" id="topo" style="display:none">
   <nav class="abas" id="abas"></nav>
@@ -583,6 +657,8 @@ document.addEventListener('keydown', function(e){
 var SOLO = window.top === window;
 var ABAS = [
   {k:'painel', t:'Painel', st:'Visão geral e o que depende de você', ic:'<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>'},
+  {k:'nc_inicio', t:'Minhas pendências', st:'O que depende de você em não conformidades', solo:true, ic:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'},
+  {k:'doc_inicio', t:'Minhas pendências', st:'Documentos para elaborar, avaliar, aprovar ou ler', solo:true, ic:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'},
   {k:'ocorrencias', t:'Ocorrências', st:'Não conformidades, reclamações e melhorias', ic:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>'},
   {k:'acoes', t:'Plano de ação', st:'Ações corretivas e de melhoria por prazo', ic:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'},
   {k:'documentos', t:'Documentos', st:'Lista mestra, revisões e ciência de leitura', ic:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'},
@@ -592,7 +668,8 @@ var ABAS = [
 function desenharAbas(){
   var modAba = {ocorrencias:'nc._modulo', acoes:'nc._modulo', documentos:'doc._modulo', indicadores:'ind._modulo'};
   var vePainel = pode('geral.empresa') || pode('geral.usuarios') || pode('geral.niveis') || pode('geral.processos') || S.eu.papel === 'gestor';
-  $('abas').innerHTML = ABAS.filter(function(a){ return (a.gestor ? vePainel : true) && (!modAba[a.k] || pode(modAba[a.k])); }).map(function(a){
+  if(SOLO) desenharModulos(vePainel);
+  $('abas').innerHTML = ABAS.filter(function(a){ return !a.solo && (a.gestor ? vePainel : true) && (!modAba[a.k] || pode(modAba[a.k])); }).map(function(a){
     return (SOLO && a.k === 'ocorrencias' ? '<div class="grupo-lat">Módulos</div>' : '')+
       (SOLO && a.k === 'config' ? '<div class="grupo-lat">Administração</div>' : '')+
       '<button class="aba'+(S.aba === a.k ? ' on' : '')+'" data-aba="'+a.k+'">'+
@@ -605,14 +682,82 @@ function irPara(aba){
   if(SOLO){
     var a = ABAS.filter(function(x){ return x.k === aba; })[0] || ABAS[0];
     $('cabTit').textContent = a.t; $('cabSub').textContent = a.st;
-    document.title = a.t + ' · SGI Redentor';
+    var md = moduloDe(aba);
+    $('faixaIc').innerHTML = '<svg viewBox="0 0 24 24">'+md.ic+'</svg>';
+    $('faixaTit').textContent = md.t; $('faixaSub').textContent = a.st;
+    desenharAcaoFaixa(md);
+    document.title = (md.abas.length > 1 ? a.t + ' · ' + md.t : md.t) + ' · SGI Redentor';
     window.scrollTo(0, 0);
   }
   try { sessionStorage.setItem('sgi_aba', aba); } catch(e){}
-  ({painel:telaPainel, ocorrencias:telaOcorrencias, acoes:telaAcoes, documentos:telaDocumentos,
+  ({painel:telaPainel, nc_inicio:function(){ telaPendencias('nc'); }, doc_inicio:function(){ telaPendencias('doc'); }, ocorrencias:telaOcorrencias, acoes:telaAcoes, documentos:telaDocumentos,
     indicadores:telaIndicadores, config:telaConfig})[aba]();
 }
 function recarregar(){ irPara(S.aba); }
+
+/* ── Módulos (modo separado): cada um com o seu menu ── */
+var MODULOS = [
+  {k:'geral', t:'Visão geral', abas:[['painel','Início']]},
+  {k:'nc', t:'Não conformidades', perm:'nc._modulo', abas:[['nc_inicio','Início'],['ocorrencias','Consultas'],['acoes','Plano de ação']]},
+  {k:'doc', t:'Documentos', perm:'doc._modulo', abas:[['doc_inicio','Início'],['documentos','Consultas']]},
+  {k:'ind', t:'Indicadores', perm:'ind._modulo', abas:[['indicadores','Indicadores']]},
+  {k:'cfg', t:'Configurações', gestor:true, abas:[['config','Configurações']]}
+];
+MODULOS.forEach(function(m){ m.ic = icAba(m.k === 'geral' ? 'painel' : m.k === 'nc' ? 'ocorrencias' : m.abas[m.abas.length > 1 ? 1 : 0][0]); });
+function icAba(k){ var a = ABAS.filter(function(x){ return x.k === k; })[0]; return a ? a.ic : ''; }
+function moduloDe(aba){ return MODULOS.filter(function(m){ return m.abas.some(function(x){ return x[0] === aba; }); })[0] || MODULOS[0]; }
+function desenharModulos(vePainel){
+  var md = moduloDe(S.aba);
+  var vis = MODULOS.filter(function(m){ return (m.gestor ? vePainel : true) && (!m.perm || pode(m.perm)); });
+  $('modNome').textContent = md.t;
+  $('modMenu').innerHTML = vis.map(function(m){
+    return '<button type="button" role="menuitem" class="'+(m.k === md.k ? 'on' : '')+'" data-ir="'+m.abas[0][0]+'"><svg viewBox="0 0 24 24">'+m.ic+'</svg>'+esc(m.t)+'</button>';
+  }).join('');
+  $('subNav').innerHTML = md.abas.length > 1 ? md.abas.map(function(x){
+    return '<button type="button" class="'+(x[0] === S.aba ? 'on' : '')+'" data-ir="'+x[0]+'">'+esc(x[1])+'</button>';
+  }).join('') : '';
+  $('subNav').style.display = md.abas.length > 1 ? '' : 'none';
+  Array.prototype.forEach.call(document.querySelectorAll('#modMenu [data-ir], #subNav [data-ir]'), function(b){
+    b.onclick = function(){ fecharMenus(); irPara(b.getAttribute('data-ir')); };
+  });
+}
+function desenharAcaoFaixa(md){
+  var h = '';
+  if((md.k === 'nc' || md.k === 'geral') && pode('nc.nova') && pode('nc._modulo')) h = '<button class="btn ouro" id="fxNova">+ Nova ocorrência</button>';
+  if(md.k === 'doc' && nivel() >= 2) h = '<button class="btn ouro" id="fxNovoDoc">+ Novo documento</button>';
+  $('faixaAcao').innerHTML = h;
+  if($('fxNova')) $('fxNova').onclick = function(){ novaOcorrencia(); };
+  if($('fxNovoDoc')) $('fxNovoDoc').onclick = function(){ formDoc({revisao_meses:12}); };
+}
+function fecharMenus(){ $('modMenu').classList.remove('on'); $('usuMenu').classList.remove('on'); }
+$('modBtn').onclick = function(e){ e.stopPropagation(); $('usuMenu').classList.remove('on'); $('modMenu').classList.toggle('on'); };
+$('usuBtn').onclick = function(e){ e.stopPropagation(); $('modMenu').classList.remove('on'); $('usuMenu').classList.toggle('on'); };
+document.addEventListener('click', function(e){ if(!e.target.closest('.mod-sel') && !e.target.closest('.usu')) fecharMenus(); });
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') fecharMenus(); });
+$('usuSair').onclick = function(){ fecharMenus(); $('btnSair').onclick(); };
+
+/* Minhas pendências de um módulo, com busca. */
+function telaPendencias(mod){
+  var c = $('conteudo');
+  c.innerHTML = '<div class="pend-cab"><h2>Minhas pendências</h2><label class="busca-p"><span>Buscar</span><input type="search" id="pdBusca"></label></div>'+
+    '<div class="cartao" id="pdLista"><div class="vazio">Carregando…</div></div>';
+  api('painel', {empresa:S.empresa}).then(function(p){
+    var m = p.minhas, h = '';
+    if(mod === 'nc'){
+      m.verificar.forEach(function(o){ h += pend('check', 'Verificar eficácia · '+o.numero, o.titulo, '', "abrirOc("+o.id+")"); });
+      m.ocorrencias.forEach(function(o){ h += pend('flag', o.numero+' · '+o.titulo, 'Você é o responsável · '+rotStatus(o), o.prazo, "abrirOc("+o.id+")"); });
+      m.acoes.forEach(function(a){ h += pend('wrench', a.descricao, a.numero+' · '+a.titulo, a.prazo, "abrirOc("+a.ocorrencia_id+")"); });
+    } else {
+      m.aprovar.forEach(function(d){ h += pend('file', d.acao+' · '+d.codigo+(d.versao ? ' rev. '+d.versao : ''), d.titulo, d.prazo, "abrirDoc("+d.id+")"); });
+      m.ciencia.forEach(function(d){ h += pend('eye', 'Ler e dar ciência: '+d.codigo, d.titulo+' · rev. '+d.versao_vigente, '', "abrirDoc("+d.id+")"); });
+    }
+    $('pdLista').innerHTML = h || '<div class="vazio">Nenhuma pendência com você.</div>';
+    $('pdBusca').oninput = function(){
+      var q = this.value.trim().toLowerCase();
+      Array.prototype.forEach.call($('pdLista').querySelectorAll('.pend'), function(el){ el.style.display = !q || el.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none'; });
+    };
+  }).catch(function(e){ $('pdLista').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
+}
 
 $('filtroEmpresa').onchange = function(){ S.empresa = this.value; try { sessionStorage.setItem('sgi_emp', S.empresa); } catch(e){} recarregar(); };
 $('btnNovo').onclick = function(){ novaOcorrencia(); };
@@ -622,7 +767,7 @@ function iniciar(){
   api('eu').then(function(r){
     S.eu = r.eu; S.empresas = r.empresas; S.usuarios = r.usuarios; S.L = r.listas; S.hoje = r.hoje;
     S.processos = r.processos || []; S.cfg = r.cfg || {}; S.niveis = r.niveis || []; aplicarCfg();
-    if(SOLO) $('quemPp').textContent = S.eu.nivel || {gestor:'Gestor do SGI', membro:'Membro', leitor:'Consulta'}[S.eu.papel] || 'Sem acesso';
+    if(SOLO){ $('quemPp').textContent = S.eu.nivel || {gestor:'Gestor do SGI', membro:'Membro', leitor:'Consulta'}[S.eu.papel] || 'Sem acesso'; $('usuPp').textContent = $('quemPp').textContent; }
     $('btnNovo').style.display = pode('nc.nova') && pode('nc._modulo') ? '' : 'none';
     if(!S.eu.papel){
       $('conteudo').innerHTML = '<div class="boas cartao"><div class="boas-ic">'+IC('lock')+'</div><h2>Você ainda não tem acesso ao SGI</h2>'+
@@ -2025,6 +2170,8 @@ function entrou(user){
   $('quemNm').textContent = user.name || user.username || '';
   var ini = String(user.name || user.username || '?').trim().split(/\s+/);
   $('quemAv').innerHTML = user.foto ? '<img src="'+esc(user.foto)+'" alt="">' : esc((ini[0][0] || '') + (ini.length > 1 ? ini[ini.length-1][0] : '')).toUpperCase();
+  $('usuAv').innerHTML = $('quemAv').innerHTML;
+  $('usuNm').textContent = ini[0] || ''; $('usuNm2').textContent = $('quemNm').textContent;
   iniciar();
 }
 $('entComSenha').onclick = function(){ ent.comSenha = true; entPasso('usu'); };
@@ -2073,8 +2220,7 @@ function comecarSolo(){
   /* As peças do topo do Hub mudam de lugar: abas no menu lateral,
      empresa e "+ Registrar" no cabeçalho. */
   $('latNav').appendChild($('abas'));
-  $('cabAcoes').appendChild($('filtroEmpresa'));
-  $('cabAcoes').appendChild($('btnNovo'));
+  $('mbarDir').insertBefore($('filtroEmpresa'), $('mbarDir').firstChild);
   auth('session').then(function(d){
     if(d.user) entrou(d.user); else mostrarEntrada();
   }).catch(function(){ mostrarEntrada(); });
