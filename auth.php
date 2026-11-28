@@ -617,15 +617,24 @@ if($action === 'invite_create'){
 }
 
 /* ---------- LISTAR USUÁRIOS ---------- */
+/* Lista completa (com token e permissões) só para administrador: o token
+   dá acesso ao Drive, ao chat e aos uploads como se fosse a pessoa. Os
+   demais recebem só id, usuário e nome. */
 if($action === 'users_list'){
+  $me = fetchUserById($mysqli, intval($_SESSION['uid']));
   $res = $mysqli->query("SELECT * FROM portal_usuarios ORDER BY role DESC, name ASC");
   $users = array();
-  while($row = $res->fetch_assoc()){ $users[] = userObj($row); }
+  $admin = $me && $me['role'] === 'admin';
+  while($row = $res->fetch_assoc()){
+    $users[] = $admin ? userObj($row) : array('id'=>intval($row['id']), 'username'=>$row['username'], 'name'=>$row['name']);
+  }
   out(array('ok'=>true, 'users'=>$users));
 }
 
 /* ---------- CRIAR / EDITAR USUÁRIO ---------- */
 if($action === 'user_save'){
+  $me = fetchUserById($mysqli, intval($_SESSION['uid']));
+  if(!$me || $me['role'] !== 'admin') fail('Apenas administradores.');
   $username = strtolower(trim(isset($body['username']) ? $body['username'] : ''));
   $name = trim(isset($body['name']) ? $body['name'] : '');
   $pass = isset($body['password']) ? $body['password'] : '';
@@ -673,6 +682,8 @@ if($action === 'user_save'){
 
 /* ---------- EXCLUIR USUÁRIO ---------- */
 if($action === 'user_delete'){
+  $me = fetchUserById($mysqli, intval($_SESSION['uid']));
+  if(!$me || $me['role'] !== 'admin') fail('Apenas administradores.');
   $id = isset($body['id']) ? intval($body['id']) : 0;
   if($id <= 0) fail('ID invalido.');
   if($id === intval($_SESSION['uid'])) fail('Voce nao pode excluir o proprio usuario.');

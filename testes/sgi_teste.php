@@ -437,6 +437,18 @@ confere('tela sabe o que a pessoa pode', $x['pode']['baixar'] === false && $x['p
 api(2, 'doc_salvar', array('id'=>$rs, 'codigo'=>'PO-RST-001', 'titulo'=>'Restrito', 'restrito'=>0) + $base);
 confere('tirar a restrição libera', erro(9, 'doc_detalhe', array('id'=>$rs)) === null && $baixa(9, 'baixar'));
 
+echo "Casos-limite\n";
+confere('título com 201 caracteres barrado', erro(2, 'doc_salvar', array('codigo'=>'PO-LIM-001', 'titulo'=>str_repeat('a', 201)) + $base) !== null);
+$emo = api(2, 'doc_salvar', array('codigo'=>'PO-LIM-002', 'titulo'=>'Ação de manutenção 🚌 — revisão nº 2') + $base)['id'];
+confere('acentos e emoji voltam iguais', api(2, 'doc_detalhe', array('id'=>$emo))['documento']['titulo'] === 'Ação de manutenção 🚌 — revisão nº 2');
+confere('documento inexistente dá erro claro', strpos((string)erro(2, 'doc_detalhe', array('id'=>999999)), 'não encontrado') !== false);
+confere('ocorrência inexistente dá erro claro', erro(2, 'oc_detalhe', array('id'=>999999)) !== null);
+confere('consenso de versão inexistente barrado', erro(7, 'doc_consenso', array('id'=>999999, 'aceitar'=>1)) !== null);
+confere('aprovar duas vezes a mesma versão barrado', erro(8, 'doc_versao_decidir', array('id'=>$vid, 'aprovar'=>1)) !== null);
+confere('ação desconhecida barrada', strpos((string)erro(2, 'xpto'), 'desconhecida') !== false);
+confere('consensador inexistente barrado', erro(2, 'doc_salvar', array('codigo'=>'PO-LIM-003', 'titulo'=>'x', 'consensadores'=>array(999)) + $base) !== null);
+confere('código com aspas barrado', erro(2, 'doc_salvar', array('codigo'=>"PO'1", 'titulo'=>'x') + $base) !== null);
+
 echo "\n$ok ok, ".count($falhas)." falha(s)\n";
 array_map('unlink', glob(SGI_PASTA.'/*') ?: array()); @unlink(SGI_PASTA.'/.htaccess'); @rmdir(SGI_PASTA);
 exit($falhas ? 1 : 0);
