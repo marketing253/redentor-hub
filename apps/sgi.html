@@ -402,7 +402,9 @@ body.solo #docNovo{display:none}
 .busca-p{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--txt2)}
 .busca-p input{width:220px;height:32px}
 @media(max-width:900px){
-  body.solo .mbar{padding:0 12px}
+  body.solo .mbar{padding:0 12px;height:auto;flex-wrap:wrap;min-height:52px}
+  .mod-sel{height:52px;display:flex;align-items:center}
+  .sub{order:3;flex:0 0 calc(100% + 24px);height:44px;margin:0 -12px;padding:0 4px;border-left:none;border-top:1px solid var(--borda)}
   .mbar-logo,#usuNm,.usu-btn>svg{display:none}
   .mbar-dir select{max-width:120px}
   .faixa-in{padding:16px;flex-wrap:wrap}
