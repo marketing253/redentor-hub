@@ -686,7 +686,8 @@ function irPara(aba){
     $('faixaIc').innerHTML = '<svg viewBox="0 0 24 24">'+md.ic+'</svg>';
     $('faixaTit').textContent = md.t; $('faixaSub').textContent = a.st;
     desenharAcaoFaixa(md);
-    document.title = (md.abas.length > 1 ? a.t + ' · ' + md.t : md.t) + ' · SGI Redentor';
+    var lab = (md.abas.filter(function(x){ return x[0] === aba; })[0] || [])[1];
+    document.title = (md.abas.length > 1 ? (lab === 'Início' ? a.t : lab) + ' · ' + md.t : md.t) + ' · SGI Redentor';
     window.scrollTo(0, 0);
   }
   try { sessionStorage.setItem('sgi_aba', aba); } catch(e){}
