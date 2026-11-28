@@ -355,7 +355,7 @@ body.solo .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
    Linha 1: módulo atual (troca pelo menu), o menu do módulo, empresa e
    usuário. Linha 2: faixa com o nome do módulo e a ação principal.
    Abaixo, o conteúdo numa coluna central. */
-.mbar,.faixa{display:none}
+.mbar,.mfaixa{display:none}
 body.solo .lateral,body.solo .cab{display:none!important}
 body.solo .mbar{display:flex;align-items:center;position:sticky;top:0;z-index:30;height:52px;padding:0 24px;background:var(--sup);border-bottom:1px solid var(--borda2)}
 .mbar svg{stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
@@ -387,12 +387,12 @@ html[data-tema="escuro"] .sub button.on{color:var(--info)}
 .usu-menu{left:auto;right:0;min-width:220px}
 .usu-menu .pp{padding:8px 12px 10px;font-size:12px;color:var(--txt3);border-bottom:1px solid var(--borda);margin-bottom:4px}
 .usu-menu .pp b{display:block;font-size:14px;font-weight:500;color:var(--txt)}
-body.solo .faixa{display:block;background:linear-gradient(180deg,var(--sup) 0%,var(--info-bg) 100%);border-bottom:1px solid var(--borda)}
+body.solo .mfaixa{display:block;background:linear-gradient(180deg,var(--sup) 0%,var(--info-bg) 100%);border-bottom:1px solid var(--borda)}
 .faixa-in{max-width:1240px;margin:0 auto;padding:20px 32px;display:flex;align-items:center;gap:16px}
 .faixa-ic{width:48px;height:48px;border-radius:12px;background:var(--sup);border:1px solid var(--borda2);display:flex;align-items:center;justify-content:center;color:var(--azul);flex:none}
 .faixa-ic svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.faixa h1{margin:0;font-size:20px;font-weight:500;line-height:1.2;color:var(--txt)}
-.faixa p{margin:4px 0 0;font-size:13px;color:var(--txt3)}
+.mfaixa h1{margin:0;font-size:20px;font-weight:500;line-height:1.2;color:var(--txt)}
+.mfaixa p{margin:4px 0 0;font-size:13px;color:var(--txt3)}
 .faixa-acao{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 body.solo .conteudo{margin:0 auto;max-width:1240px;padding:24px 32px 64px}
 body.solo .conteudo>*{max-width:none}
@@ -414,7 +414,7 @@ body.solo #docNovo{display:none}
 @media(max-width:600px){.mbar-dir select{display:none}}
 
 /* Entrada própria */
-body.fora .lateral,body.fora .cab,body.fora .conteudo,body.fora .mbar,body.fora .faixa{display:none!important}
+body.fora .lateral,body.fora .cab,body.fora .conteudo,body.fora .mbar,body.fora .mfaixa{display:none!important}
 body.fora .entrada{display:flex}
 .entrada{min-height:100vh;background:var(--bg)}
 .ent-lado{flex:0 0 44%;background:#12152B;color:#B9BEDC;padding:56px 64px;display:flex;flex-direction:column;justify-content:center;position:relative}
@@ -523,7 +523,7 @@ body.fora .entrada{display:flex}
       <div class="usu-menu" id="usuMenu" role="menu"><div class="pp"><b id="usuNm2"></b><span id="usuPp"></span></div><button type="button" id="usuSair">Sair</button></div></div>
   </div>
 </header>
-<section class="faixa" id="faixa"><div class="faixa-in"><div class="faixa-ic" id="faixaIc"></div><div><h1 id="faixaTit"></h1><p id="faixaSub"></p></div><div class="faixa-acao" id="faixaAcao"></div></div></section>
+<section class="mfaixa" id="faixa"><div class="faixa-in"><div class="faixa-ic" id="faixaIc"></div><div><h1 id="faixaTit"></h1><p id="faixaSub"></p></div><div class="faixa-acao" id="faixaAcao"></div></div></section>
 
 <div class="topo" id="topo" style="display:none">
   <nav class="abas" id="abas"></nav>
