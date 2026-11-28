@@ -36,7 +36,7 @@ date_default_timezone_set('America/Sao_Paulo');
    (testes/sgi_teste.php).
    ============================================================ */
 
-define('SGI_SCHEMA', 5);
+define('SGI_SCHEMA', 6);
 define('SGI_MAX_BYTES', 25 * 1024 * 1024);
 
 class SgiErro extends Exception {}
@@ -354,6 +354,23 @@ function sgi_estrutura(SgiDb $db){
     $coll = $db->valor("SELECT COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='portal_convites' AND COLUMN_NAME='token'");
     if($coll && preg_match('/^[a-z0-9_]+$/', $coll))
       $db->ddl("ALTER TABLE sgi_convites CONVERT TO CHARACTER SET utf8mb4 COLLATE $coll");
+  }
+  /* Esquema 6: fluxo do documento (elaboração → consenso → aprovação) e
+     restrição de quem consulta, imprime e baixa. */
+  $db->ddl("CREATE TABLE IF NOT EXISTS sgi_doc_pareceres (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    documento_id INT NOT NULL,
+    versao_id INT NOT NULL,
+    etapa VARCHAR(20) NOT NULL,
+    usuario_id INT NOT NULL,
+    decisao VARCHAR(20) NOT NULL,
+    texto TEXT NULL,
+    em DATETIME NULL,
+    KEY idx_versao (versao_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  foreach(array('elaborador_id INT NULL', 'consensadores TEXT NULL', 'aprovador_id INT NULL', 'etapa VARCHAR(20) NULL',
+                'etapa_prazo DATE NULL', 'restrito TINYINT(1) NOT NULL DEFAULT 0', 'acesso TEXT NULL') as $col){
+    try { $db->ddl("ALTER TABLE sgi_documentos ADD COLUMN $col"); } catch(Throwable $e){}
   }
   foreach(array('nivel_id INT NULL', 'superior_id INT NULL', 'superior_nome VARCHAR(120) NULL') as $col){
     /* ADD COLUMN não tem IF NOT EXISTS no MySQL 5.7: se já existe, segue. */
@@ -918,18 +935,19 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $emp = $db->q("SELECT id, nome, sigla, ativo, ordem FROM sgi_empresas ORDER BY ordem, nome");
     $usuarios = array();
     if($me['papel']){
-      foreach($db->q("SELECT u.id, u.name, u.username, u.role, a.papel, a.empresas
+      foreach($db->q("SELECT u.id, u.name, u.username, u.role, a.papel, a.empresas, a.nivel_id
                       FROM portal_usuarios u LEFT JOIN sgi_acessos a ON a.usuario_id=u.id
                       ORDER BY u.name") as $u){
         $p = $u['role'] === 'admin' ? 'gestor' : $u['papel'];
         if(!$p) continue;
-        $usuarios[] = array('id'=>(int)$u['id'], 'nome'=>$u['name'] ?: $u['username'], 'papel'=>$p,
+        $usuarios[] = array('id'=>(int)$u['id'], 'nome'=>$u['name'] ?: $u['username'], 'papel'=>$p, 'nivel_id'=>$u['nivel_id'] ? (int)$u['nivel_id'] : null,
           'empresas'=>$p === 'gestor' ? 'todas' : array_map('intval', (array)json_decode($u['empresas'] ?: '[]', true)));
       }
     }
     $proc = $db->q("SELECT id, nome, ativo FROM sgi_processos ORDER BY ordem, nome");
     return array('eu'=>$me, 'empresas'=>$emp, 'usuarios'=>$usuarios, 'listas'=>$L, 'hoje'=>$hoje,
-                 'processos'=>$proc, 'cfg'=>sgi_cfg($db));
+                 'processos'=>$proc, 'cfg'=>sgi_cfg($db),
+                 'niveis'=>$db->q("SELECT id, nome FROM sgi_niveis ORDER BY ordem, nome"));
   }
 
   if(!$me['papel']) sgi_erro('Você ainda não tem acesso ao SGI. Peça ao gestor do SGI para liberar.');
@@ -1012,10 +1030,15 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       WHERE d.status='vigente' AND d.exige_ciencia=1 AND (d.empresa_id IS NULL OR d.empresa_id IN $inMe)
       AND NOT EXISTS (SELECT 1 FROM sgi_doc_ciencias c WHERE c.documento_id=d.id AND c.versao=d.versao_vigente AND c.usuario_id=?)
       ORDER BY d.codigo LIMIT 50", array_merge($pinMe, array($me['id'])));
+    /* Documentos parados comigo: elaborar, dar consenso ou aprovar. */
     $aprovar = array();
-    if($me['papel'] === 'gestor'){
-      $aprovar = $db->q("SELECT d.id, d.codigo, d.titulo, v.versao, v.enviado_em FROM sgi_doc_versoes v
-        JOIN sgi_documentos d ON d.id=v.documento_id WHERE v.status='pendente' ORDER BY v.enviado_em");
+    foreach($db->q("SELECT d.*, v.id vid, v.versao vnum FROM sgi_documentos d
+        LEFT JOIN sgi_doc_versoes v ON v.documento_id=d.id AND v.status='pendente'
+        WHERE (d.empresa_id IS NULL OR d.empresa_id IN $inMe) AND d.status<>'obsoleto' AND (d.etapa IS NOT NULL OR v.id IS NOT NULL)
+        ORDER BY (d.etapa_prazo IS NULL), d.etapa_prazo, d.codigo", $pinMe) as $d){
+      $acao = sgi_doc_minha_vez($db, $me, $d, $d['vid'] ? (int)$d['vid'] : 0);
+      if($acao) $aprovar[] = array('id'=>(int)$d['id'], 'codigo'=>$d['codigo'], 'titulo'=>$d['titulo'],
+        'versao'=>$d['vnum'], 'acao'=>$acao, 'prazo'=>$d['etapa_prazo']);
     }
     $verificar = $me['papel'] === 'gestor' ? $db->q("SELECT id, numero, titulo FROM sgi_ocorrencias
       WHERE status='verificacao' AND empresa_id IN $inMe ORDER BY atualizado_em", $pinMe) : array();
@@ -1324,7 +1347,6 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $st = $b['status'] ?? 'ativos';
     if($st === 'ativos') $w[] = "d.status<>'obsoleto'";
     elseif($st !== 'todos'){ $w[] = 'd.status=?'; $p[] = sgi_escolha($b, 'status', array('rascunho','vigente','obsoleto')); }
-    if(sgi_nivel($me['papel']) < 2) $w[] = "d.status='vigente'";
     if(!empty($b['texto'])){
       $t = '%'.mb_substr((string)$b['texto'], 0, 80, 'UTF-8').'%';
       $w[] = '(d.codigo LIKE ? OR d.titulo LIKE ? OR d.processo LIKE ?)'; array_push($p, $t, $t, $t);
@@ -1334,7 +1356,16 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
         (SELECT COUNT(*) FROM sgi_doc_ciencias c WHERE c.documento_id=d.id AND c.versao=d.versao_vigente AND c.usuario_id=?) li
       FROM sgi_documentos d WHERE ".implode(' AND ', $w)." ORDER BY d.codigo LIMIT 1000",
       array_merge(array($me['id']), $p));
-    return array('itens'=>$linhas);
+    /* Leitor vê o vigente e o que está no fluxo com ele; documento restrito
+       só aparece para quem pode consultar. */
+    $itens = array();
+    foreach($linhas as $d){
+      if(sgi_nivel($me['papel']) < 2 && $d['status'] !== 'vigente' && !sgi_doc_envolvido($me, $d)) continue;
+      if(!sgi_doc_pode($me, $d, 'ver')) continue;
+      unset($d['acesso']);
+      $itens[] = $d;
+    }
+    return array('itens'=>$itens);
   }
 
   case 'doc_detalhe': {
@@ -1343,7 +1374,8 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $n = sgi_nomes($db);
     $vers = $db->q("SELECT id, versao, nome_original, bytes, alteracao, status, enviado_por, enviado_em,
       decidido_por, decidido_em, parecer FROM sgi_doc_versoes WHERE documento_id=? ORDER BY versao DESC", array((int)$d['id']));
-    if(sgi_nivel($me['papel']) < 2)
+    $envolvido = sgi_doc_envolvido($me, $d);
+    if(sgi_nivel($me['papel']) < 2 && !$envolvido)
       $vers = array_values(array_filter($vers, function($v) use ($d){ return (int)$v['versao'] === (int)$d['versao_vigente']; }));
     foreach($vers as &$v){ $v['enviado_por_nome'] = $n[(int)$v['enviado_por']] ?? null; $v['decidido_por_nome'] = $n[(int)$v['decidido_por']] ?? null; }
     unset($v);
@@ -1358,7 +1390,21 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $hist = $db->q("SELECT usuario_id, texto, em FROM sgi_historico WHERE ref_tipo='documento' AND ref_id=? ORDER BY id DESC", array((int)$d['id']));
     foreach($hist as &$h) $h['usuario'] = $n[(int)$h['usuario_id']] ?? 'Sistema';
     unset($h);
-    return array('documento'=>$d, 'versoes'=>$vers, 'ciencias'=>$ciencias, 'li'=>$li, 'historico'=>$hist);
+    $par = array();
+    foreach($db->q("SELECT versao_id, etapa, usuario_id, decisao, texto, em FROM sgi_doc_pareceres WHERE documento_id=? ORDER BY id",
+                   array((int)$d['id'])) as $x){ $x['nome'] = $n[(int)$x['usuario_id']] ?? '?'; $par[] = $x; }
+    $vp = 0; foreach($vers as $v) if($v['status'] === 'pendente') $vp = (int)$v['id'];
+    $cons = sgi_doc_ids($d['consensadores']);
+    $fluxo = array('elaborador'=>$d['elaborador_id'] ? ($n[(int)$d['elaborador_id']] ?? '?') : null,
+      'consensadores'=>array_map(function($i) use ($n){ return array('id'=>$i, 'nome'=>$n[$i] ?? '?'); }, $cons),
+      'aprovador'=>$d['aprovador_id'] ? ($n[(int)$d['aprovador_id']] ?? '?') : null,
+      'minha_vez'=>sgi_doc_minha_vez($db, $me, $d, $vp), 'versao_pendente'=>$vp);
+    $d['consensadores'] = $cons;
+    $d['acesso'] = sgi_doc_acesso_ler($d);
+    $pode = array('ver'=>true, 'imprimir'=>sgi_doc_pode($me, $d, 'imprimir'), 'baixar'=>sgi_doc_pode($me, $d, 'baixar'),
+      'enviar'=>$d['status'] !== 'obsoleto' && !$vp && ((int)$d['elaborador_id'] === $me['id'] || sgi_pode_perm_doc($me)));
+    return array('documento'=>$d, 'versoes'=>$vers, 'ciencias'=>$ciencias, 'li'=>$li, 'historico'=>$hist,
+                 'pareceres'=>$par, 'fluxo'=>$fluxo, 'pode'=>$pode);
   }
 
   case 'doc_salvar': {
@@ -1379,6 +1425,21 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       'exige_ciencia'=>!empty($b['exige_ciencia']) ? 1 : 0,
       'atualizado_em'=>sgi_agora(),
     );
+    /* Quem participa: elaborador anexa o arquivo, consensadores avaliam,
+       aprovador dá a palavra final. Sem aprovador, aprova o gestor do SGI. */
+    $c['elaborador_id'] = sgi_usuario_valido($db, $b['elaborador_id'] ?? null);
+    $c['aprovador_id'] = sgi_usuario_valido($db, $b['aprovador_id'] ?? null);
+    $cons = array();
+    foreach((array)($b['consensadores'] ?? array()) as $x){ $x = sgi_usuario_valido($db, $x); if($x && !in_array($x, $cons, true)) $cons[] = $x; }
+    if(count($cons) > 20) sgi_erro('No máximo 20 consensadores.');
+    $c['consensadores'] = $cons ? json_encode($cons) : null;
+    $c['restrito'] = !empty($b['restrito']) ? 1 : 0;
+    if(!$c['restrito'] && sgi_cfg($db)['doc_restricao_obrigatoria'] === '1') sgi_erro('Na sua empresa a restrição de acesso é obrigatória: diga quem pode consultar.');
+    $ac = sgi_doc_acesso_limpo($db, $b['acesso'] ?? array());
+    if($c['restrito'] && !$ac['ver']['todos'] && !$ac['ver']['niveis'] && !$ac['ver']['pessoas'])
+      sgi_erro('Diga quem pode consultar o documento restrito (todos, um nível ou pessoas).');
+    $c['acesso'] = $c['restrito'] ? json_encode($ac) : null;
+    $prazoElab = sgi_data($b, 'prazo_elaboracao', false, 'prazo da elaboração');
     if(!preg_match('/^[A-Z0-9._\-\/]+$/', $c['codigo'])) sgi_erro('Código: use letras, números, ponto, hífen ou barra (ex.: POP-MAN-001).');
     $dup = $db->valor("SELECT id FROM sgi_documentos WHERE codigo=? AND id<>?", array($c['codigo'], $id));
     if($dup) sgi_erro('Já existe um documento com o código '.$c['codigo'].'.');
@@ -1386,19 +1447,30 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       $d = sgi_doc_carregar($db, $me, $id);
       if($d['empresa_id'] === null) sgi_exige($me, 'gestor');
       if($d['status'] === 'obsoleto') sgi_erro('Documento obsoleto não é editado.');
+      /* Elaborador definido num documento parado: a elaboração começa. */
+      if($c['elaborador_id'] && !$d['etapa'] && !$d['versao_vigente']){
+        $c['etapa'] = 'elaboracao'; $c['etapa_prazo'] = $prazoElab ?: date('Y-m-d', strtotime('+30 days'));
+      } elseif($d['etapa'] === 'elaboracao' && $prazoElab) $c['etapa_prazo'] = $prazoElab;
       $db->atualizar('sgi_documentos', $c, $id);
       sgi_hist($db, 'documento', $id, $me, 'Dados do documento atualizados.');
     } else {
+      if($c['elaborador_id']){ $c['etapa'] = 'elaboracao'; $c['etapa_prazo'] = $prazoElab ?: date('Y-m-d', strtotime('+30 days')); }
       $id = $db->inserir('sgi_documentos', $c + array('status'=>'rascunho', 'criado_por'=>$me['id'], 'criado_em'=>sgi_agora()));
-      sgi_hist($db, 'documento', $id, $me, 'Documento cadastrado.');
+      $nm = sgi_nomes($db);
+      sgi_hist($db, 'documento', $id, $me, 'Documento cadastrado.'.($c['elaborador_id']
+        ? ' Elaboração com '.($nm[$c['elaborador_id']] ?? '?').' até '.date('d/m/Y', strtotime($c['etapa_prazo'])).'.' : ''));
     }
     return array('id'=>$id);
   }
 
   case 'doc_versao_enviar': {
-    sgi_exige_modulo($me, 'doc'); sgi_exige_perm($me, 'doc.substituir_arquivo', 'membro');
+    sgi_exige_modulo($me, 'doc');
     $d = sgi_doc_carregar($db, $me, $b['documento_id'] ?? 0);
-    if($d['empresa_id'] === null) sgi_exige($me, 'gestor');
+    /* O elaborador do documento anexa mesmo sem a permissão geral. */
+    if((int)$d['elaborador_id'] !== $me['id']){
+      sgi_exige_perm($me, 'doc.substituir_arquivo', 'membro');
+      if($d['empresa_id'] === null) sgi_exige($me, 'gestor');
+    }
     if($d['status'] === 'obsoleto') sgi_erro('Documento obsoleto.');
     if($db->valor("SELECT id FROM sgi_doc_versoes WHERE documento_id=? AND status='pendente'", array((int)$d['id'])))
       sgi_erro('Já existe uma versão aguardando aprovação. Aprove ou reprove antes de enviar outra.');
@@ -1407,15 +1479,53 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $v = 1 + (int)$db->valor("SELECT MAX(versao) FROM sgi_doc_versoes WHERE documento_id=?", array((int)$d['id']));
     $db->inserir('sgi_doc_versoes', $f + array('documento_id'=>(int)$d['id'], 'versao'=>$v, 'alteracao'=>$alt,
       'status'=>'pendente', 'enviado_por'=>$me['id'], 'enviado_em'=>sgi_agora()));
-    sgi_hist($db, 'documento', $d['id'], $me, 'Revisão '.$v.' enviada para aprovação: '.$alt);
-    return array('versao'=>$v);
+    $etapa = sgi_doc_ids($d['consensadores']) ? 'consenso' : 'aprovacao';
+    $db->atualizar('sgi_documentos', array('etapa'=>$etapa, 'etapa_prazo'=>sgi_doc_prazo_etapa($db), 'atualizado_em'=>sgi_agora()), $d['id']);
+    sgi_hist($db, 'documento', $d['id'], $me, 'Revisão '.$v.' elaborada e enviada para '.($etapa === 'consenso' ? 'consenso' : 'aprovação').': '.$alt);
+    return array('versao'=>$v, 'etapa'=>$etapa);
   }
 
-  case 'doc_versao_decidir': {
-    sgi_exige($me, 'gestor');
+  case 'doc_consenso': {
     $v = $db->linha("SELECT * FROM sgi_doc_versoes WHERE id=?", array((int)($b['id'] ?? 0)));
     if(!$v || $v['status'] !== 'pendente') sgi_erro('Versão não encontrada ou já decidida.');
     $d = sgi_doc_carregar($db, $me, $v['documento_id']);
+    if($d['etapa'] !== 'consenso') sgi_erro('Este documento não está na etapa de consenso.');
+    $cons = sgi_doc_ids($d['consensadores']);
+    if(!in_array($me['id'], $cons, true)) sgi_erro('Você não é consensador deste documento.');
+    if($db->valor("SELECT 1 FROM sgi_doc_pareceres WHERE versao_id=? AND usuario_id=? AND etapa='consenso'", array((int)$v['id'], $me['id'])))
+      sgi_erro('Você já deu seu parecer nesta revisão.');
+    $aceitar = !empty($b['aceitar']);
+    $txt = sgi_txt($b, 'texto', 2000, !$aceitar, 'o que precisa mudar');
+    $db->inicio();
+    try {
+      $db->inserir('sgi_doc_pareceres', array('documento_id'=>(int)$d['id'], 'versao_id'=>(int)$v['id'], 'etapa'=>'consenso',
+        'usuario_id'=>$me['id'], 'decisao'=>$aceitar ? 'aceito' : 'devolvido', 'texto'=>$txt, 'em'=>sgi_agora()));
+      if(!$aceitar){
+        $db->atualizar('sgi_doc_versoes', array('status'=>'reprovada', 'decidido_por'=>$me['id'], 'decidido_em'=>sgi_agora(), 'parecer'=>$txt), $v['id']);
+        $db->atualizar('sgi_documentos', array('etapa'=>$d['elaborador_id'] ? 'elaboracao' : null,
+          'etapa_prazo'=>$d['elaborador_id'] ? sgi_doc_prazo_etapa($db) : null, 'atualizado_em'=>sgi_agora()), $d['id']);
+        sgi_hist($db, 'documento', $d['id'], $me, 'Consenso: revisão '.$v['versao'].' devolvida para a elaboração. '.$txt);
+      } else {
+        $aceitos = array_map('intval', array_column($db->q("SELECT usuario_id FROM sgi_doc_pareceres WHERE versao_id=? AND etapa='consenso' AND decisao='aceito'",
+          array((int)$v['id'])), 'usuario_id'));
+        $faltam = array_diff($cons, $aceitos);
+        if(!$faltam) $db->atualizar('sgi_documentos', array('etapa'=>'aprovacao', 'etapa_prazo'=>sgi_doc_prazo_etapa($db), 'atualizado_em'=>sgi_agora()), $d['id']);
+        sgi_hist($db, 'documento', $d['id'], $me, 'Consenso: de acordo com a revisão '.$v['versao'].'.'.($txt ? ' '.$txt : '')
+          .($faltam ? ' Faltam '.count($faltam).'.' : ' Consenso completo; segue para aprovação.'));
+      }
+      $db->fim();
+    } catch(Exception $e){ $db->desfaz(); throw $e; }
+    return array();
+  }
+
+  case 'doc_versao_decidir': {
+    $v = $db->linha("SELECT * FROM sgi_doc_versoes WHERE id=?", array((int)($b['id'] ?? 0)));
+    if(!$v || $v['status'] !== 'pendente') sgi_erro('Versão não encontrada ou já decidida.');
+    $d = sgi_doc_carregar($db, $me, $v['documento_id']);
+    if($d['etapa'] === 'consenso') sgi_erro('A revisão ainda está em consenso.');
+    if($d['aprovador_id']){
+      if((int)$d['aprovador_id'] !== $me['id'] && empty($me['admin_hub'])) sgi_erro('Só o aprovador definido no documento aprova esta revisão.');
+    } else sgi_exige($me, 'gestor');
     $aprovar = !empty($b['aprovar']);
     $parecer = sgi_txt($b, 'parecer', 2000, !$aprovar, 'motivo da reprovação');
     $db->inicio();
@@ -1426,13 +1536,17 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
           'decidido_em'=>sgi_agora(), 'parecer'=>$parecer), $v['id']);
         $db->atualizar('sgi_documentos', array('status'=>'vigente', 'versao_vigente'=>(int)$v['versao'],
           'revisar_em'=>date('Y-m-d', strtotime('+'.(int)$d['revisao_meses'].' months')),
-          'atualizado_em'=>sgi_agora()), $d['id']);
+          'etapa'=>null, 'etapa_prazo'=>null, 'atualizado_em'=>sgi_agora()), $d['id']);
         sgi_hist($db, 'documento', $d['id'], $me, 'Revisão '.$v['versao'].' aprovada e vigente.'.($parecer ? ' '.$parecer : ''));
       } else {
         $db->atualizar('sgi_doc_versoes', array('status'=>'reprovada', 'decidido_por'=>$me['id'],
           'decidido_em'=>sgi_agora(), 'parecer'=>$parecer), $v['id']);
+        $db->atualizar('sgi_documentos', array('etapa'=>$d['elaborador_id'] ? 'elaboracao' : null,
+          'etapa_prazo'=>$d['elaborador_id'] ? sgi_doc_prazo_etapa($db) : null, 'atualizado_em'=>sgi_agora()), $d['id']);
         sgi_hist($db, 'documento', $d['id'], $me, 'Revisão '.$v['versao'].' reprovada: '.$parecer);
       }
+      $db->inserir('sgi_doc_pareceres', array('documento_id'=>(int)$d['id'], 'versao_id'=>(int)$v['id'], 'etapa'=>'aprovacao',
+        'usuario_id'=>$me['id'], 'decisao'=>$aprovar ? 'aprovado' : 'devolvido', 'texto'=>$parecer, 'em'=>sgi_agora()));
       $db->fim();
     } catch(Exception $e){ $db->desfaz(); throw $e; }
     return array();
@@ -1442,7 +1556,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     sgi_exige_perm($me, 'doc.excluir', 'gestor');
     $d = sgi_doc_carregar($db, $me, $b['id'] ?? 0);
     $motivo = sgi_txt($b, 'motivo', 1000, true, 'motivo');
-    $db->atualizar('sgi_documentos', array('status'=>'obsoleto', 'atualizado_em'=>sgi_agora()), $d['id']);
+    $db->atualizar('sgi_documentos', array('status'=>'obsoleto', 'etapa'=>null, 'etapa_prazo'=>null, 'atualizado_em'=>sgi_agora()), $d['id']);
     sgi_hist($db, 'documento', $d['id'], $me, 'Documento tornado obsoleto: '.$motivo);
     return array();
   }
@@ -1761,19 +1875,88 @@ function sgi_doc_carregar(SgiDb $db, $me, $id){
   $d = $db->linha("SELECT * FROM sgi_documentos WHERE id=?", array((int)$id));
   if(!$d) sgi_erro('Documento não encontrado.');
   if($d['empresa_id'] !== null) sgi_empresa_ok($me, $d['empresa_id']);
-  if(sgi_nivel($me['papel']) < 2 && $d['status'] !== 'vigente') sgi_erro('Documento não disponível.');
+  if(sgi_nivel($me['papel']) < 2 && $d['status'] !== 'vigente' && !sgi_doc_envolvido($me, $d)) sgi_erro('Documento não disponível.');
+  if(!sgi_doc_pode($me, $d, 'ver')) sgi_erro('Este documento tem acesso restrito.');
   return $d;
 }
 
+/* ── Fluxo e restrição de documentos ── */
+function sgi_doc_ids($json){
+  $l = is_array($json) ? $json : json_decode($json ?: '[]', true);
+  return array_values(array_unique(array_filter(array_map('intval', (array)$l))));
+}
+function sgi_doc_envolvido($me, $d){
+  $id = (int)$me['id'];
+  return (int)($d['elaborador_id'] ?? 0) === $id || (int)($d['aprovador_id'] ?? 0) === $id
+      || in_array($id, sgi_doc_ids($d['consensadores'] ?? null), true);
+}
+function sgi_pode_perm_doc($me){
+  return empty($me['nivel_id']) ? sgi_nivel($me['papel']) >= 2 : sgi_pode($me, 'doc.substituir_arquivo');
+}
+function sgi_doc_prazo_etapa(SgiDb $db){
+  return date('Y-m-d', strtotime('+'.max(1, (int)(sgi_cfg($db)['nc_dias_etapas'] ?: 7)).' days'));
+}
+/* Regras gravadas: {"ver":{todos,niveis,pessoas}, "imprimir":{...}, "baixar":{...}} */
+function sgi_doc_acesso_ler($d){
+  $a = is_array($d['acesso'] ?? null) ? $d['acesso'] : json_decode($d['acesso'] ?? '' ?: '{}', true);
+  $r = array();
+  foreach(array('ver','imprimir','baixar') as $k){
+    $x = is_array($a[$k] ?? null) ? $a[$k] : array();
+    $r[$k] = array('todos'=>!empty($x['todos']), 'niveis'=>sgi_doc_ids($x['niveis'] ?? array()), 'pessoas'=>sgi_doc_ids($x['pessoas'] ?? array()));
+  }
+  return $r;
+}
+function sgi_doc_acesso_limpo(SgiDb $db, $a){
+  $r = sgi_doc_acesso_ler(array('acesso'=>is_array($a) ? $a : array()));
+  $niveis = array_map('intval', array_column($db->q("SELECT id FROM sgi_niveis"), 'id'));
+  $pessoas = array_map('intval', array_column($db->q("SELECT id FROM portal_usuarios"), 'id'));
+  foreach($r as $k => $x){
+    $r[$k]['niveis'] = array_values(array_intersect($x['niveis'], $niveis));
+    $r[$k]['pessoas'] = array_values(array_intersect($x['pessoas'], $pessoas));
+  }
+  return $r;
+}
+/* ver | imprimir | baixar. Documento sem restrição: todos com acesso ao
+   módulo. Restrito: quem está na lista, quem participa do fluxo, quem
+   cadastrou, o gestor do SGI e o administrador do Hub. Lista vazia de
+   impressão ou download = ninguém além desses. */
+function sgi_doc_pode($me, $d, $tipo){
+  if(!(int)($d['restrito'] ?? 0)) return true;
+  if(!empty($me['admin_hub']) || $me['papel'] === 'gestor' || sgi_doc_envolvido($me, $d) || (int)($d['criado_por'] ?? 0) === (int)$me['id']) return true;
+  $regras = sgi_doc_acesso_ler($d);
+  foreach($tipo === 'ver' ? array('ver') : array('ver', $tipo) as $k){
+    $r = $regras[$k];
+    $ok = $r['todos'] || in_array((int)$me['id'], $r['pessoas'], true)
+       || (!empty($me['nivel_id']) && in_array((int)$me['nivel_id'], $r['niveis'], true));
+    if(!$ok) return false;
+  }
+  return true;
+}
+/* O que o documento espera de mim agora (texto curto) ou null. */
+function sgi_doc_minha_vez(SgiDb $db, $me, $d, $versao_pendente){
+  $et = $d['etapa'] ?: ($versao_pendente ? 'aprovacao' : null);
+  if($et === 'elaboracao' && (int)$d['elaborador_id'] === (int)$me['id'] && !$versao_pendente) return 'Elaborar';
+  if($et === 'consenso' && $versao_pendente && in_array((int)$me['id'], sgi_doc_ids($d['consensadores']), true)
+     && !$db->valor("SELECT 1 FROM sgi_doc_pareceres WHERE versao_id=? AND usuario_id=? AND etapa='consenso'", array($versao_pendente, (int)$me['id'])))
+    return 'Dar consenso';
+  if($et === 'aprovacao' && $versao_pendente && ((int)$d['aprovador_id'] === (int)$me['id'] || (!$d['aprovador_id'] && $me['papel'] === 'gestor')))
+    return 'Aprovar';
+  return null;
+}
+
 /* Arquivo pedido para download: confere o acesso e devolve o caminho. */
-function sgi_arquivo_permitido(SgiDb $db, $uid, $tipo, $id){
+function sgi_arquivo_permitido(SgiDb $db, $uid, $tipo, $id, $modo = 'ver'){
   $me = sgi_eu($db, $uid);
   if(!$me['papel']) sgi_erro('Sem acesso ao SGI.');
   if($tipo === 'versao'){
     $v = $db->linha("SELECT * FROM sgi_doc_versoes WHERE id=?", array((int)$id));
     if(!$v) sgi_erro('Arquivo não encontrado.');
     $d = sgi_doc_carregar($db, $me, $v['documento_id']);
-    if(sgi_nivel($me['papel']) < 2 && (int)$v['versao'] !== (int)$d['versao_vigente']) sgi_erro('Arquivo não disponível.');
+    if(sgi_nivel($me['papel']) < 2 && (int)$v['versao'] !== (int)$d['versao_vigente'] && !sgi_doc_envolvido($me, $d)) sgi_erro('Arquivo não disponível.');
+    /* Arquivo que o navegador não mostra (Word, Excel...) só sai baixando. */
+    if($modo === 'ver' && !preg_match('#^(application/pdf|image/(png|jpeg|webp|gif))$#', (string)$v['mime'])) $modo = 'baixar';
+    if($modo === 'baixar' && !sgi_doc_pode($me, $d, 'baixar')) sgi_erro('Você pode consultar este documento, mas não baixar.');
+    if($modo === 'imprimir' && !sgi_doc_pode($me, $d, 'imprimir')) sgi_erro('Você pode consultar este documento, mas não imprimir.');
     return $v;
   }
   $a = $db->linha("SELECT * FROM sgi_anexos WHERE id=?", array((int)$id));
@@ -1848,7 +2031,8 @@ if(!defined('SGI_TESTE')){
     session_write_close(); /* libera a sessão: o Hub faz vários pedidos em paralelo */
 
     if($acao === 'baixar'){
-      $f = sgi_arquivo_permitido($db, $uid, (string)($_GET['tipo'] ?? ''), (int)($_GET['id'] ?? 0));
+      $f = sgi_arquivo_permitido($db, $uid, (string)($_GET['tipo'] ?? ''), (int)($_GET['id'] ?? 0),
+        !empty($_GET['baixar']) ? 'baixar' : (!empty($_GET['imprimir']) ? 'imprimir' : 'ver'));
       $caminho = sgi_pasta().'/'.basename($f['arquivo']);
       if(!is_file($caminho)){ http_response_code(404); $json(array('ok'=>false, 'erro'=>'O arquivo sumiu do servidor.')); }
       $mime = $f['mime'] ?: 'application/octet-stream';

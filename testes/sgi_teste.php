@@ -383,6 +383,60 @@ confere('admin não se exclui', erro(1, 'pessoa_excluir', array('usuario_id'=>1,
 api(1, 'pessoa_excluir', array('usuario_id'=>20, 'confirmar'=>'sub'));
 confere('conta excluída', !$db->valor("SELECT id FROM portal_usuarios WHERE id=20") && !$db->valor("SELECT usuario_id FROM sgi_acessos WHERE usuario_id=20"));
 
+echo "Fluxo de documentos\n";
+$base = array('tipo'=>'Procedimento (POP)', 'empresa_id'=>$A);
+$fd = api(8, 'doc_salvar', array('codigo'=>'PO-FLX-001', 'titulo'=>'Fluxo completo', 'elaborador_id'=>9,
+  'consensadores'=>array(7, 3), 'aprovador_id'=>8) + $base)['id'];
+$x = api(9, 'doc_detalhe', array('id'=>$fd));
+confere('elaboração começa com prazo de 30 dias', $x['documento']['etapa'] === 'elaboracao'
+  && $x['documento']['etapa_prazo'] === date('Y-m-d', strtotime('+30 days')) && $x['fluxo']['minha_vez'] === 'Elaborar');
+confere('elaborador vê o rascunho na lista', in_array('PO-FLX-001', array_column(api(9, 'doc_lista')['itens'], 'codigo'), true));
+confere('pendência do elaborador no painel', in_array('Elaborar', array_column(api(9, 'painel')['minhas']['aprovar'], 'acao'), true));
+confere('consulta não anexa no lugar do elaborador', erro(10, 'doc_versao_enviar', array('documento_id'=>$fd, 'alteracao'=>'x'), arquivo('z.pdf')) !== null);
+$r = api(9, 'doc_versao_enviar', array('documento_id'=>$fd, 'alteracao'=>'Emissão inicial'), arquivo('flx.pdf'));
+confere('elaborador sem permissão geral anexa e vai a consenso', $r['etapa'] === 'consenso');
+$vid = api(8, 'doc_detalhe', array('id'=>$fd))['fluxo']['versao_pendente'];
+confere('aprovador não aprova antes do consenso', erro(8, 'doc_versao_decidir', array('id'=>$vid, 'aprovar'=>1)) !== null);
+confere('quem não é consensador não opina', erro(9, 'doc_consenso', array('id'=>$vid, 'aceitar'=>1)) !== null);
+confere('devolver exige dizer o que muda', erro(7, 'doc_consenso', array('id'=>$vid)) !== null);
+confere('consensador vê a pendência', in_array('Dar consenso', array_column(api(7, 'painel')['minhas']['aprovar'], 'acao'), true));
+api(7, 'doc_consenso', array('id'=>$vid, 'aceitar'=>0, 'texto'=>'Falta o item 3'));
+$x = api(9, 'doc_detalhe', array('id'=>$fd));
+confere('devolvido volta para a elaboração', $x['documento']['etapa'] === 'elaboracao' && $x['versoes'][0]['status'] === 'reprovada');
+api(9, 'doc_versao_enviar', array('documento_id'=>$fd, 'alteracao'=>'Inclui o item 3'), arquivo('flx2.pdf'));
+$vid = api(8, 'doc_detalhe', array('id'=>$fd))['fluxo']['versao_pendente'];
+api(7, 'doc_consenso', array('id'=>$vid, 'aceitar'=>1));
+confere('parecer não se repete', erro(7, 'doc_consenso', array('id'=>$vid, 'aceitar'=>1)) !== null);
+confere('espera todos os consensadores', api(8, 'doc_detalhe', array('id'=>$fd))['documento']['etapa'] === 'consenso');
+api(3, 'doc_consenso', array('id'=>$vid, 'aceitar'=>1, 'texto'=>'De acordo'));
+confere('consenso completo segue para aprovação', api(8, 'doc_detalhe', array('id'=>$fd))['documento']['etapa'] === 'aprovacao');
+confere('gestor não aprova no lugar do aprovador', erro(2, 'doc_versao_decidir', array('id'=>$vid, 'aprovar'=>1)) !== null);
+api(8, 'doc_versao_decidir', array('id'=>$vid, 'aprovar'=>1));
+$x = api(10, 'doc_detalhe', array('id'=>$fd));
+confere('aprovado fica vigente e sai do fluxo', $x['documento']['status'] === 'vigente' && $x['documento']['etapa'] === null && (int)$x['documento']['versao_vigente'] === 2);
+confere('pareceres guardados', count(api(8, 'doc_detalhe', array('id'=>$fd))['pareceres']) === 4);
+
+echo "Documento restrito\n";
+$rest = array('codigo'=>'PO-RST-001', 'titulo'=>'Restrito', 'restrito'=>1) + $base;
+confere('restrito exige quem consulta', erro(2, 'doc_salvar', $rest) !== null);
+$rs = api(2, 'doc_salvar', $rest + array('acesso'=>array('ver'=>array('niveis'=>array($nid['Diretoria']), 'pessoas'=>array(4)),
+  'baixar'=>array('pessoas'=>array(7)))))['id'];
+api(2, 'doc_versao_enviar', array('documento_id'=>$rs, 'alteracao'=>'Emissão'), arquivo('rst.pdf'));
+$vr = api(2, 'doc_detalhe', array('id'=>$rs))['fluxo']['versao_pendente'];
+api(2, 'doc_versao_decidir', array('id'=>$vr, 'aprovar'=>1));
+$baixa = function($uid, $modo) use ($db, $vr){ try { sgi_arquivo_permitido($db, $uid, 'versao', $vr, $modo); return true; } catch(SgiErro $e){ return false; } };
+confere('fora da lista não vê na lista', !in_array('PO-RST-001', array_column(api(9, 'doc_lista')['itens'], 'codigo'), true));
+confere('fora da lista não abre', strpos((string)erro(9, 'doc_detalhe', array('id'=>$rs)), 'restrito') !== false);
+confere('fora da lista não baixa', !$baixa(9, 'ver'));
+confere('nível na lista vê', in_array('PO-RST-001', array_column(api(7, 'doc_lista')['itens'], 'codigo'), true));
+confere('pessoa na lista consulta mas não baixa', $baixa(4, 'ver') && !$baixa(4, 'baixar'));
+confere('quem pode baixar baixa, impressão vazia = ninguém', $baixa(7, 'baixar') && !$baixa(7, 'imprimir'));
+confere('gestor sempre vê', $baixa(2, 'imprimir'));
+$x = api(4, 'doc_detalhe', array('id'=>$rs));
+confere('tela sabe o que a pessoa pode', $x['pode']['baixar'] === false && $x['pode']['imprimir'] === false);
+api(2, 'doc_salvar', array('id'=>$rs, 'codigo'=>'PO-RST-001', 'titulo'=>'Restrito', 'restrito'=>0) + $base);
+confere('tirar a restrição libera', erro(9, 'doc_detalhe', array('id'=>$rs)) === null && $baixa(9, 'baixar'));
+
 echo "\n$ok ok, ".count($falhas)." falha(s)\n";
 array_map('unlink', glob(SGI_PASTA.'/*') ?: array()); @unlink(SGI_PASTA.'/.htaccess'); @rmdir(SGI_PASTA);
 exit($falhas ? 1 : 0);

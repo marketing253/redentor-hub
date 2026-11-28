@@ -202,6 +202,29 @@ html[data-tema="escuro"] .g-linha{stroke:var(--info)} html[data-tema="escuro"] .
 .parada.gargalo i{border-color:var(--azul);background:var(--azul);box-shadow:0 0 0 4px var(--info-bg)}
 html[data-tema="escuro"] .parada.gargalo b{color:var(--info)}
 
+/* Etapas do documento: cadastro → elaboração → consenso → aprovação →
+   publicação, com a parada atual em azul. */
+.etapas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:relative;margin:4px 0 12px}
+.etapas::before{content:'';position:absolute;left:10%;right:10%;top:8px;height:4px;background:var(--sup2);border-radius:2px}
+.etapas .parada i{margin:0 auto 8px}
+.etapas .parada.feita i{background:var(--txt3);border-color:var(--txt3)}
+.etapas .parada.atual i{border-color:var(--azul);background:var(--azul);box-shadow:0 0 0 4px var(--info-bg)}
+.etapas .parada.atual span{color:var(--txt);font-weight:500}
+.etapas .parada small{display:block;font-size:12px;color:var(--txt3);margin-top:2px;padding:0 4px;overflow-wrap:anywhere}
+.agora{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--borda);padding-top:12px}
+.agora .botoes{margin-left:auto}
+.cx-pessoas{max-height:168px;overflow:auto;border:1px solid var(--borda2);border-radius:8px;padding:4px 0;margin-top:6px}
+.cx-pessoas label{display:flex;gap:8px;align-items:center;padding:4px 12px;font-size:13px;cursor:pointer}
+.cx-pessoas label:hover{background:var(--sup2)}
+.acx-tab{border:1px solid var(--borda2);border-radius:8px;overflow:auto;margin-top:8px}
+.acx-tab.rolar{max-height:220px}
+.acx-tab table{width:100%;border-collapse:collapse;font-size:13px}
+.acx-tab th,.acx-tab td{padding:6px 12px;border-bottom:1px solid var(--borda);text-align:left}
+.acx-tab th{font-weight:500;color:var(--txt2);background:var(--sup2);position:sticky;top:0}
+.acx-tab .c{text-align:center;width:88px}
+.acx-tab tr:last-child td{border-bottom:none}
+.cons-lista{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
 /* Gaveta de detalhe */
 /* Detalhe (NC, documento, indicador) numa janela no centro da tela,
    com o fundo escurecido; no celular ocupa a tela inteira. */
@@ -598,7 +621,7 @@ function iniciar(){
   tema();
   api('eu').then(function(r){
     S.eu = r.eu; S.empresas = r.empresas; S.usuarios = r.usuarios; S.L = r.listas; S.hoje = r.hoje;
-    S.processos = r.processos || []; S.cfg = r.cfg || {}; aplicarCfg();
+    S.processos = r.processos || []; S.cfg = r.cfg || {}; S.niveis = r.niveis || []; aplicarCfg();
     if(SOLO) $('quemPp').textContent = S.eu.nivel || {gestor:'Gestor do SGI', membro:'Membro', leitor:'Consulta'}[S.eu.papel] || 'Sem acesso';
     $('btnNovo').style.display = pode('nc.nova') && pode('nc._modulo') ? '' : 'none';
     if(!S.eu.papel){
@@ -651,7 +674,7 @@ function telaPainel(){
       '</div>';
 
     var m = p.minhas, itens = '';
-    m.aprovar.forEach(function(d){ itens += pend('file', 'Aprovar '+d.codigo+' rev. '+d.versao, d.titulo, '', "abrirDoc("+d.id+")"); });
+    m.aprovar.forEach(function(d){ itens += pend('file', d.acao+' · '+d.codigo+(d.versao ? ' rev. '+d.versao : ''), d.titulo, d.prazo, "abrirDoc("+d.id+")"); });
     m.verificar.forEach(function(o){ itens += pend('check', 'Verificar eficácia · '+o.numero, o.titulo, '', "abrirOc("+o.id+")"); });
     m.acoes.forEach(function(a){ itens += pend('wrench', a.descricao, a.numero+' · '+a.titulo, a.prazo, "abrirOc("+a.ocorrencia_id+")"); });
     m.ocorrencias.forEach(function(o){ itens += pend('flag', o.numero+' · '+o.titulo, 'Você é o responsável · '+rotStatus(o), o.prazo, "abrirOc("+o.id+")"); });
@@ -1058,7 +1081,8 @@ function carregarDocs(){
           (d.status === 'vigente' && +d.exige_ciencia && !+d.li ? ' <span class="selo s-pendente">ler</span>' : '')+'<div class="mudo peq">'+esc(d.processo || '')+'</div></td>'+
           '<td class="peq">'+esc(d.tipo)+'</td><td class="peq">'+(d.empresa_id ? esc(empNome(d.empresa_id)) : '<b>Todas</b>')+'</td>'+
           '<td class="num">'+(d.versao_vigente ? 'rev. '+d.versao_vigente : '—')+'</td>'+
-          '<td>'+selo(d.status, {rascunho:'Rascunho', vigente:'Vigente', obsoleto:'Obsoleto'}[d.status])+(+d.pendente ? ' '+selo('pendente','em aprovação') : '')+'</td>'+
+          '<td>'+selo(d.status, {rascunho:'Rascunho', vigente:'Vigente', obsoleto:'Obsoleto'}[d.status])+(d.etapa ? ' '+selo('pendente', ETAPA_DOC[d.etapa]) : (+d.pendente ? ' '+selo('pendente','em aprovação') : ''))+
+            (+d.restrito ? ' <span class="mudo" title="Acesso restrito">'+IC('lock')+'</span>' : '')+'</td>'+
           '<td class="num'+(rv ? ' venc' : '')+'">'+(dt(d.revisar_em) || '—')+'</td></tr>';
       }).join('')+'</tbody></table></div>';
   }).catch(function(e){ $('docLista').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
@@ -1076,15 +1100,92 @@ function formDoc(d, depois){
     '<label class="campo"><span>Processo / setor</span><input type="text" id="dProc" maxlength="80" value="'+esc(d.processo)+'"></label>'+
     '<label class="campo"><span>Revisar a cada (meses)</span><input type="number" id="dRev" min="1" max="60" value="'+esc(d.revisao_meses || 12)+'"></label></div>'+
     '<label class="campo"><span>Normas</span><div class="chips">'+paresObj(S.L.normas).map(function(n){ return '<label class="chip"><input type="checkbox" class="dNorma" value="'+n[0]+'"'+(normas.indexOf(n[0]) >= 0 ? ' checked' : '')+'> '+esc(n[1])+'</label>'; }).join('')+'</div></label>'+
-    '<label class="peq" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="dCien"'+(+d.exige_ciencia ? ' checked' : '')+'> Exigir ciência de leitura de quem tem acesso</label>',
+    '<label class="peq" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="dCien"'+(+d.exige_ciencia ? ' checked' : '')+'> Exigir ciência de leitura de quem tem acesso</label>'+
+    '<h4 class="cf-sub" style="margin-top:24px">Quem participa</h4>'+
+    '<div class="grade"><label class="campo"><span>Elaborador · anexa o arquivo</span>'+selPessoa('dElab', d.elaborador_id, 'Quem tiver permissão')+'</label>'+
+    '<label class="campo"><span>Prazo da elaboração</span><input type="date" id="dPrazo" value="'+esc(d.etapa === 'elaboracao' ? d.etapa_prazo : '')+'"></label></div>'+
+    '<div class="campo"><span>Consensadores · avaliam antes da aprovação</span>'+caixaPessoas('dCons', d.consensadores)+'</div>'+
+    '<label class="campo"><span>Aprovador</span>'+selPessoa('dApr', d.aprovador_id, 'Gestor do SGI')+'</label>'+
+    '<p class="mudo peq" style="margin-top:0">Sem prazo, a elaboração tem 30 dias. Consenso e aprovação têm '+diasEtapa()+' dias cada.</p>'+
+    '<h4 class="cf-sub" style="margin-top:24px">Quem pode ver</h4>'+
+    '<label class="peq" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="dRestr"'+(+d.restrito ? ' checked' : '')+'> Restringir consulta, impressão e download</label>'+
+    '<div id="dAcesso"'+(+d.restrito ? '' : ' hidden')+'><p class="mudo peq">Quem participa, quem cadastrou e o gestor do SGI sempre veem. Coluna sem marcação: ninguém além deles.</p>'+matrizAcesso(d.acesso)+'</div>',
     [{t:'Cancelar', fn:fecharModal}, {t:'Salvar', cls:'pri', fn:function(b){
       var ns = Array.prototype.filter.call(document.querySelectorAll('.dNorma'), function(x){ return x.checked; }).map(function(x){ return x.value; });
+      var restr = $('dRestr').checked, elab = val('dElab');
       executar(b, api('doc_salvar', {id:d.id || 0, codigo:val('dCod'), tipo:val('dTipo'), titulo:val('dTit'), empresa_id:val('dEmp'),
-        processo:val('dProc'), revisao_meses:val('dRev'), normas:ns, exige_ciencia:$('dCien').checked ? 1 : 0}), function(r){
+        processo:val('dProc'), revisao_meses:val('dRev'), normas:ns, exige_ciencia:$('dCien').checked ? 1 : 0,
+        elaborador_id:elab, prazo_elaboracao:val('dPrazo'), consensadores:marcados('dCons'), aprovador_id:val('dApr'),
+        restrito:restr ? 1 : 0, acesso:restr ? lerAcesso() : null}), function(r){
           fecharModal(); avisar('Documento salvo.'); if(S.aba === 'documentos') carregarDocs(); abrirDoc(r.id);
-          if(!d.id) setTimeout(function(){ formVersao({id:r.id, codigo:val('dCod')}); }, 300);
+          if(!d.id && (!elab || +elab === S.eu.id)) setTimeout(function(){ formVersao({id:r.id, codigo:val('dCod')}); }, 300);
         });
     }}]);
+  $('modalF').querySelector('.modal').style.maxWidth = '760px';
+  $('dRestr').onchange = function(){ $('dAcesso').hidden = !this.checked; };
+  ligarBuscas();
+  /* Imprimir ou baixar pressupõe consultar: marca a consulta junto. */
+  Array.prototype.forEach.call(document.querySelectorAll('#modalC .acx'), function(x){
+    x.onchange = function(){
+      var k = x.getAttribute('data-k'), irmao = function(kk){ return x.closest('tr').querySelector('.acx[data-k="'+kk+'"]'); };
+      if(x.checked && k !== 'ver') irmao('ver').checked = true;
+      if(!x.checked && k === 'ver'){ irmao('imprimir').checked = false; irmao('baixar').checked = false; }
+    };
+  });
+}
+
+/* ── peças do formulário de documento ── */
+var ETAPA_DOC = {elaboracao:'em elaboração', consenso:'em consenso', aprovacao:'em aprovação'};
+function diasEtapa(){ return +(S.cfg && S.cfg.nc_dias_etapas) || 7; }
+function selPessoa(id, atual, vazio){
+  return '<select id="'+id+'">'+opcoes((S.usuarios || []).map(function(u){ return [u.id, u.nome]; }), atual || '', vazio)+'</select>';
+}
+function caixaPessoas(cls, sel){
+  sel = (sel || []).map(Number);
+  return '<input type="search" class="cxBusca" data-alvo="'+cls+'" placeholder="Buscar pessoa" style="margin-top:4px">'+
+    '<div class="cx-pessoas" id="cx_'+cls+'">'+(S.usuarios || []).map(function(u){
+      return '<label data-n="'+esc(u.nome.toLowerCase())+'"><input type="checkbox" class="'+cls+'" value="'+u.id+'"'+(sel.indexOf(u.id) >= 0 ? ' checked' : '')+'> '+esc(u.nome)+'</label>';
+    }).join('')+'</div>';
+}
+function marcados(cls){
+  return Array.prototype.filter.call(document.querySelectorAll('.'+cls), function(x){ return x.checked; }).map(function(x){ return +x.value; });
+}
+function ligarBuscas(){
+  Array.prototype.forEach.call(document.querySelectorAll('#modalC .cxBusca'), function(inp){
+    inp.oninput = function(){
+      var q = inp.value.trim().toLowerCase();
+      Array.prototype.forEach.call($('cx_'+inp.getAttribute('data-alvo')).querySelectorAll('[data-n]'), function(el){
+        el.style.display = !q || el.getAttribute('data-n').indexOf(q) >= 0 ? '' : 'none';
+      });
+    };
+  });
+}
+/* Quem pode consultar, imprimir e baixar: uma linha por nível e por pessoa. */
+function matrizAcesso(ac){
+  ac = ac || {};
+  var cols = [['ver','Consultar'],['imprimir','Imprimir'],['baixar','Baixar']];
+  function cel(k, tipo, id){
+    var r = ac[k] || {}, on = tipo === 'todos' ? !!r.todos : (r[tipo] || []).map(Number).indexOf(id) >= 0;
+    return '<td class="c"><input type="checkbox" class="acx" data-k="'+k+'" data-t="'+tipo+'" value="'+(id || 0)+'"'+(on ? ' checked' : '')+' aria-label="'+k+'"></td>';
+  }
+  var cab = '<thead><tr><th>Grupo</th>'+cols.map(function(c){ return '<th class="c">'+c[1]+'</th>'; }).join('')+'</tr></thead>';
+  var grupos = '<tr><td><b>Todos</b></td>'+cols.map(function(c){ return cel(c[0], 'todos'); }).join('')+'</tr>'+
+    (S.niveis || []).map(function(n){ return '<tr><td>Nível '+esc(n.nome)+'</td>'+cols.map(function(c){ return cel(c[0], 'niveis', +n.id); }).join('')+'</tr>'; }).join('');
+  var pessoas = (S.usuarios || []).map(function(u){
+    return '<tr data-n="'+esc(u.nome.toLowerCase())+'"><td>'+esc(u.nome)+'</td>'+cols.map(function(c){ return cel(c[0], 'pessoas', u.id); }).join('')+'</tr>';
+  }).join('');
+  return '<div class="acx-tab"><table>'+cab+'<tbody>'+grupos+'</tbody></table></div>'+
+    '<input type="search" class="cxBusca" data-alvo="acxPes" placeholder="Buscar pessoa" style="margin-top:12px">'+
+    '<div class="acx-tab rolar" id="cx_acxPes"><table><thead><tr><th>Pessoa</th>'+cols.map(function(c){ return '<th class="c">'+c[1]+'</th>'; }).join('')+'</tr></thead><tbody>'+pessoas+'</tbody></table></div>';
+}
+function lerAcesso(){
+  var r = {ver:{todos:0, niveis:[], pessoas:[]}, imprimir:{todos:0, niveis:[], pessoas:[]}, baixar:{todos:0, niveis:[], pessoas:[]}};
+  Array.prototype.forEach.call(document.querySelectorAll('#modalC .acx'), function(x){
+    if(!x.checked) return;
+    var k = x.getAttribute('data-k'), tp = x.getAttribute('data-t');
+    if(tp === 'todos') r[k].todos = 1; else r[k][tp].push(+x.value);
+  });
+  return r;
 }
 
 function abrirDoc(id){
@@ -1094,24 +1195,29 @@ function abrirDoc(id){
     .catch(function(e){ $('gavCorpo').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
 }
 function desenharDoc(r){
-  var d = r.documento, membro = nivel() >= 2, gestor = S.eu.papel === 'gestor';
+  var d = r.documento, membro = nivel() >= 2, gestor = S.eu.papel === 'gestor', fx = r.fluxo, pd = r.pode;
   var podeEditar = membro && d.status !== 'obsoleto' && (d.empresa_id || gestor);
+  var envolvido = !!(fx.elaborador || fx.consensadores.length || fx.aprovador);
   $('gavTopo').innerHTML = '<div class="tipo">'+esc(d.tipo).toUpperCase()+' · '+(d.empresa_id ? esc(empNome(d.empresa_id)) : 'TODAS AS EMPRESAS')+'</div>'+
     '<span class="placa">'+esc(d.codigo)+'</span><h2>'+esc(d.titulo)+'</h2><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">'+
-    selo(d.status, {rascunho:'Rascunho', vigente:'Vigente', obsoleto:'Obsoleto'}[d.status])+(d.versao_vigente ? '<span class="selo s-cancelada">rev. '+d.versao_vigente+'</span>' : '')+'</div>';
+    selo(d.status, {rascunho:'Rascunho', vigente:'Vigente', obsoleto:'Obsoleto'}[d.status])+(d.versao_vigente ? '<span class="selo s-cancelada">rev. '+d.versao_vigente+'</span>' : '')+
+    (d.etapa ? selo('pendente', ETAPA_DOC[d.etapa]) : '')+(+d.restrito ? '<span class="selo s-cancelada">'+IC('lock')+' restrito</span>' : '')+'</div>';
   var vig = r.versoes.filter(function(v){ return v.status === 'aprovada'; })[0];
   var h = '';
   if(vig){
     h += '<div class="cartao" style="border-left:4px solid var(--ok)"><h3>Versão vigente · rev. '+vig.versao+'</h3>'+
-      '<div class="botoes"><a class="btn pri" target="_blank" rel="noopener" href="'+API+'?action=baixar&tipo=versao&id='+vig.id+'">Abrir documento</a>'+
-      '<a class="btn" href="'+API+'?action=baixar&tipo=versao&baixar=1&id='+vig.id+'">Baixar</a>'+
+      '<div class="botoes">'+(pd.baixar || /\.(pdf|png|jpe?g|webp|gif)$/i.test(vig.nome_original) ? '<a class="btn pri" target="_blank" rel="noopener" href="'+API+'?action=baixar&tipo=versao&id='+vig.id+'">Abrir documento</a>' : '')+
+      (pd.imprimir ? '<a class="btn" target="_blank" rel="noopener" href="'+API+'?action=baixar&tipo=versao&imprimir=1&id='+vig.id+'">Imprimir</a>' : '')+
+      (pd.baixar ? '<a class="btn" href="'+API+'?action=baixar&tipo=versao&baixar=1&id='+vig.id+'">Baixar</a>' : '')+
       (+d.exige_ciencia ? (r.li ? '<span class="selo s-vigente" style="align-self:center">✓ Você deu ciência</span>' : '<button class="btn ok" id="btCiencia">Li e estou ciente</button>') : '')+'</div>'+
       '<div class="mudo peq" style="margin-top:8px">'+esc(vig.nome_original)+' · '+kb(vig.bytes)+' · aprovada por '+esc(vig.decidido_por_nome || '—')+' em '+dth(vig.decidido_em)+'</div></div>';
   } else if(d.status !== 'obsoleto'){
     h += '<div class="cartao"><div class="mudo">Ainda não há versão aprovada deste documento.</div></div>';
   }
+  if(envolvido || d.etapa) h = cartaoEtapas(d, r) + h;
   var bt = '';
-  if(podeEditar) bt += '<button class="btn sm" id="btEditDoc">Editar dados</button><button class="btn sm pri" id="btVersao">Enviar nova revisão</button>';
+  if(podeEditar) bt += '<button class="btn sm" id="btEditDoc">Editar dados</button>';
+  if(pd.enviar && fx.minha_vez !== 'Elaborar') bt += '<button class="btn sm pri" id="btVersao">'+(d.etapa === 'elaboracao' ? 'Anexar arquivo' : 'Enviar nova revisão')+'</button>';
   if(gestor && d.status !== 'obsoleto') bt += '<button class="btn sm perigo" id="btObs">Tornar obsoleto</button>';
   if(bt) h += '<div class="botoes" style="margin-bottom:16px">'+bt+'</div>';
 
@@ -1120,14 +1226,17 @@ function desenharDoc(r){
     '<dt>Revisão periódica</dt><dd>a cada '+esc(d.revisao_meses)+' meses'+(d.revisar_em ? ' · próxima até <b class="'+(d.revisar_em < S.hoje ? 'venc' : '')+'">'+dt(d.revisar_em)+'</b>' : '')+'</dd>'+
     '<dt>Ciência de leitura</dt><dd>'+(+d.exige_ciencia ? 'Exigida' : 'Não exigida')+'</dd></dl></div>';
 
-  if(membro){
+  if(membro || envolvido){
     h += '<div class="cartao"><h3>Revisões</h3>'+(r.versoes.length ? r.versoes.map(function(v){
+      var pv = r.pareceres.filter(function(x){ return +x.versao_id === +v.id; });
       return '<div class="acao-it"><div class="l1"><b>rev. '+v.versao+'</b>'+selo(v.status, {pendente:'Aguardando aprovação', aprovada:'Vigente', reprovada:'Reprovada', substituida:'Substituída'}[v.status])+
         '<span class="mudo peq" style="margin-left:auto">'+esc(v.enviado_por_nome || '')+' · '+dth(v.enviado_em)+'</span></div>'+
         '<div class="ds">'+esc(v.alteracao)+'</div>'+
-        (v.parecer ? '<div class="peq"><span class="mudo">Parecer de '+esc(v.decidido_por_nome || '')+':</span> '+esc(v.parecer)+'</div>' : '')+
+        (pv.length ? pv.map(function(x){ return '<div class="peq"><span class="mudo">'+(x.etapa === 'consenso' ? 'Consenso' : 'Aprovação')+' · '+esc(x.nome)+':</span> '+
+            esc({aceito:'de acordo', aprovado:'aprovou', devolvido:'devolveu'}[x.decisao] || x.decisao)+(x.texto ? ' · '+esc(x.texto) : '')+'</div>'; }).join('')
+          : (v.parecer ? '<div class="peq"><span class="mudo">Parecer de '+esc(v.decidido_por_nome || '')+':</span> '+esc(v.parecer)+'</div>' : ''))+
         '<div class="botoes" style="margin-top:6px"><a class="anexo" target="_blank" rel="noopener" href="'+API+'?action=baixar&tipo=versao&id='+v.id+'">'+IC('file')+' '+esc(v.nome_original)+' <span class="mudo">'+kb(v.bytes)+'</span></a>'+
-        (gestor && v.status === 'pendente' ? '<button class="btn ok sm" data-dec="1" data-id="'+v.id+'">Aprovar</button><button class="btn perigo sm" data-dec="0" data-id="'+v.id+'">Reprovar</button>' : '')+'</div></div>';
+        (fx.minha_vez === 'Aprovar' && v.status === 'pendente' && !(envolvido || d.etapa) ?'<button class="btn ok sm" data-dec="1" data-id="'+v.id+'">Aprovar</button><button class="btn perigo sm" data-dec="0" data-id="'+v.id+'">Devolver</button>' : '')+'</div></div>';
     }).join('') : '<div class="mudo">Nenhuma revisão enviada.</div>')+'</div>';
     if(+d.exige_ciencia && d.versao_vigente){
       h += '<div class="cartao"><h3>Ciência da rev. '+d.versao_vigente+' <small>'+r.ciencias.length+' pessoa(s)</small></h3>'+
@@ -1139,6 +1248,19 @@ function desenharDoc(r){
   if($('btCiencia')) $('btCiencia').onclick = function(){ executar(this, api('doc_ciencia', {id:d.id}), function(){ avisar('Ciência registrada.'); abrirDoc(d.id); if(S.aba === 'documentos') carregarDocs(); }); };
   if($('btEditDoc')) $('btEditDoc').onclick = function(){ formDoc(d); };
   if($('btVersao')) $('btVersao').onclick = function(){ formVersao(d); };
+  if($('btElaborar')) $('btElaborar').onclick = function(){ formVersao(d); };
+  Array.prototype.forEach.call($('gavCorpo').querySelectorAll('[data-cons]'), function(b){
+    b.onclick = function(){
+      var aceitar = b.getAttribute('data-cons') === '1';
+      modal(aceitar ? 'De acordo com a revisão' : 'Devolver para ajuste',
+        '<p class="mudo" style="margin-top:0">'+(aceitar ? 'Quando todos os consensadores concordarem, a revisão segue para a aprovação.' : 'A revisão volta para o elaborador ajustar e enviar de novo.')+'</p>'+
+        '<label class="campo"><span>'+(aceitar ? 'Comentário (opcional)' : 'O que precisa mudar')+'</span><textarea id="consTxt"></textarea></label>',
+        [{t:'Voltar', fn:fecharModal}, {t:aceitar ? 'Estou de acordo' : 'Devolver', cls:aceitar ? 'ok' : 'perigo', fn:function(bb){
+          executar(bb, api('doc_consenso', {id:fx.versao_pendente, aceitar:aceitar ? 1 : 0, texto:val('consTxt')}), function(){
+            fecharModal(); avisar(aceitar ? 'Parecer registrado.' : 'Revisão devolvida ao elaborador.'); abrirDoc(d.id); if(S.aba === 'documentos') carregarDocs(); });
+        }}]);
+    };
+  });
   if($('btObs')) $('btObs').onclick = function(){
     modal('Tornar obsoleto · '+d.codigo, '<p class="mudo" style="margin-top:0">O documento sai da lista de vigentes, mas o histórico fica guardado.</p><label class="campo"><span>Motivo</span><textarea id="obMot"></textarea></label>',
       [{t:'Voltar', fn:fecharModal}, {t:'Tornar obsoleto', cls:'perigo', fn:function(b){
@@ -1147,26 +1269,53 @@ function desenharDoc(r){
   Array.prototype.forEach.call($('gavCorpo').querySelectorAll('[data-dec]'), function(b){
     b.onclick = function(){
       var aprovar = b.getAttribute('data-dec') === '1', vid = b.getAttribute('data-id');
-      modal(aprovar ? 'Aprovar revisão' : 'Reprovar revisão',
+      modal(aprovar ? 'Aprovar revisão' : 'Devolver revisão',
         (aprovar ? '<p class="mudo" style="margin-top:0">Ao aprovar, esta revisão passa a ser a vigente e a anterior fica como substituída.</p>' : '')+
-        '<label class="campo"><span>'+(aprovar ? 'Parecer (opcional)' : 'Motivo da reprovação')+'</span><textarea id="decPar"></textarea></label>',
-        [{t:'Voltar', fn:fecharModal}, {t:aprovar ? 'Aprovar' : 'Reprovar', cls:aprovar ? 'ok' : 'perigo', fn:function(bb){
+        '<label class="campo"><span>'+(aprovar ? 'Parecer (opcional)' : 'O que precisa mudar')+'</span><textarea id="decPar"></textarea></label>',
+        [{t:'Voltar', fn:fecharModal}, {t:aprovar ? 'Aprovar e publicar' : 'Devolver', cls:aprovar ? 'ok' : 'perigo', fn:function(bb){
           executar(bb, api('doc_versao_decidir', {id:vid, aprovar:aprovar ? 1 : 0, parecer:val('decPar')}), function(){
-            fecharModal(); avisar(aprovar ? 'Revisão aprovada e vigente.' : 'Revisão reprovada.'); abrirDoc(d.id); if(S.aba === 'documentos') carregarDocs(); });
+            fecharModal(); avisar(aprovar ? 'Revisão aprovada e vigente.' : 'Revisão devolvida.'); abrirDoc(d.id); if(S.aba === 'documentos') carregarDocs(); });
         }}]);
     };
   });
+}
+/* As cinco etapas, quem está em cada uma e o que é comigo agora. */
+function cartaoEtapas(d, r){
+  var fx = r.fluxo, idx = {elaboracao:1, consenso:2, aprovacao:3}[d.etapa];
+  if(idx === undefined) idx = d.status === 'vigente' ? 5 : (d.status === 'obsoleto' ? 5 : 0);
+  var vp = fx.versao_pendente, cons = fx.consensadores;
+  var deu = function(id){ return r.pareceres.filter(function(x){ return +x.versao_id === +vp && x.etapa === 'consenso' && +x.usuario_id === id; })[0]; };
+  var nCons = cons.length ? cons.length+' pessoa'+(cons.length > 1 ? 's' : '') : 'sem consenso';
+  var paradas = [['Cadastro', ''], ['Elaboração', fx.elaborador || '—'], ['Consenso', nCons], ['Aprovação', fx.aprovador || 'Gestor do SGI'], ['Publicação', d.versao_vigente ? 'rev. '+d.versao_vigente : '']];
+  var h = '<div class="cartao"><h3>Etapas'+(d.etapa && d.etapa_prazo ? ' <small class="'+(vencido(d.etapa_prazo) ? 'venc' : '')+'">'+esc(ETAPA_DOC[d.etapa])+' até '+dt(d.etapa_prazo)+'</small>' : '')+'</h3>'+
+    '<div class="etapas">'+paradas.map(function(p, i){
+      return '<div class="parada'+(i < idx ? ' feita' : (i === idx ? ' atual' : ''))+'"><i></i><span>'+p[0]+'</span>'+(p[1] ? '<small>'+esc(p[1])+'</small>' : '')+'</div>';
+    }).join('')+'</div>';
+  if(cons.length && (d.etapa === 'consenso' || d.etapa === 'aprovacao')){
+    h += '<div class="cons-lista">'+cons.map(function(c){
+      var x = deu(c.id);
+      return x ? selo(x.decisao === 'aceito' ? 'concluida' : 'vencida', c.nome+(x.decisao === 'aceito' ? ' · de acordo' : ' · devolveu')) : selo('cancelada', c.nome+' · aguardando');
+    }).join('')+'</div>';
+  }
+  var mv = fx.minha_vez, bt = '';
+  if(mv === 'Elaborar') bt = '<button class="btn pri" id="btElaborar">Anexar arquivo</button>';
+  else if(mv === 'Dar consenso') bt = '<button class="btn ok" data-cons="1">Estou de acordo</button><button class="btn perigo" data-cons="0">Devolver</button>';
+  else if(mv === 'Aprovar') bt = '<button class="btn ok" data-dec="1" data-id="'+vp+'">Aprovar e publicar</button><button class="btn perigo" data-dec="0" data-id="'+vp+'">Devolver</button>';
+  if(bt) h += '<div class="agora" style="margin-top:12px"><div><b>Com você</b><div class="mudo peq">'+
+    ({Elaborar:'Anexe o arquivo e diga o que mudou nesta revisão.', 'Dar consenso':'Leia a revisão abaixo e diga se está de acordo.', Aprovar:'Ao aprovar, a revisão é publicada e passa a valer.'}[mv])+
+    '</div></div><div class="botoes">'+bt+'</div></div>';
+  return h + '</div>';
 }
 function formVersao(d){
   modal('Enviar revisão · '+d.codigo,
     '<label class="campo"><span>Arquivo</span><input type="file" id="vArq" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.csv,.jpg,.jpeg,.png"></label>'+
     '<label class="campo"><span>O que mudou nesta revisão</span><textarea id="vAlt" placeholder="Ex.: emissão inicial; inclusão do item 4.2 sobre extintor"></textarea></label>'+
-    '<div class="mudo peq">A revisão fica aguardando a aprovação do gestor do SGI. Prefira PDF para a versão final.</div>',
-    [{t:'Cancelar', fn:fecharModal}, {t:'Enviar para aprovação', cls:'pri', fn:function(b){
+    '<div class="mudo peq">'+(d.consensadores && d.consensadores.length ? 'A revisão segue para o consenso e depois para a aprovação.' : 'A revisão segue para a aprovação.')+' Prefira PDF para a versão final.</div>',
+    [{t:'Cancelar', fn:fecharModal}, {t:'Enviar', cls:'pri', fn:function(b){
       var f = $('vArq').files[0]; if(!f){ avisar('Escolha o arquivo.', true); return; }
       if(f.size > 25*1048576){ avisar('Arquivo acima de 25 MB.', true); return; }
       var fd = new FormData(); fd.append('documento_id', d.id); fd.append('alteracao', val('vAlt')); fd.append('arquivo', f);
-      executar(b, api('doc_versao_enviar', fd), function(r){ fecharModal(); avisar('Revisão '+r.versao+' enviada para aprovação.'); abrirDoc(d.id); if(S.aba === 'documentos') carregarDocs(); });
+      executar(b, api('doc_versao_enviar', fd), function(r){ fecharModal(); avisar('Revisão '+r.versao+' enviada para '+(r.etapa === 'consenso' ? 'consenso.' : 'aprovação.')); abrirDoc(d.id); if(S.aba === 'documentos') carregarDocs(); });
     }}]);
 }
 
