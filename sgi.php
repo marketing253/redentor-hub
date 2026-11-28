@@ -36,11 +36,12 @@ date_default_timezone_set('America/Sao_Paulo');
    (testes/sgi_teste.php).
    ============================================================ */
 
-define('SGI_SCHEMA', 6);
+define('SGI_SCHEMA', 7);
 define('SGI_MAX_BYTES', 25 * 1024 * 1024);
 
 class SgiErro extends Exception {}
 function sgi_erro($m){ throw new SgiErro($m); }
+require_once __DIR__.'/sgi_extras.php';
 
 /* ══════════════ BANCO ══════════════ */
 
@@ -372,6 +373,8 @@ function sgi_estrutura(SgiDb $db){
                 'etapa_prazo DATE NULL', 'restrito TINYINT(1) NOT NULL DEFAULT 0', 'acesso TEXT NULL') as $col){
     try { $db->ddl("ALTER TABLE sgi_documentos ADD COLUMN $col"); } catch(Throwable $e){}
   }
+  /* Esquema 7: Auditorias, Calibração, Riscos, Oportunidades, Fornecedores. */
+  sgi_extras_estrutura($db);
   foreach(array('nivel_id INT NULL', 'superior_id INT NULL', 'superior_nome VARCHAR(120) NULL') as $col){
     /* ADD COLUMN não tem IF NOT EXISTS no MySQL 5.7: se já existe, segue. */
     try { $db->ddl("ALTER TABLE sgi_acessos ADD COLUMN $col"); } catch(Throwable $e){}
@@ -468,7 +471,9 @@ function sgi_eu(SgiDb $db, $uid){
     $lista = $a && $a['empresas'] ? json_decode($a['empresas'], true) : array();
     $emp = array_values(array_intersect($todas, array_map('intval', (array)$lista)));
   }
-  return array('id'=>(int)$u['id'], 'nome'=>$u['name'] ?: $u['username'],
+  $cfg = sgi_cfg($db); $off = array();
+  foreach(array_keys(sgi_modulos_lista()) as $m) if(($cfg['mod_'.$m] ?? '1') === '0') $off[] = $m;
+  return array('id'=>(int)$u['id'], 'nome'=>$u['name'] ?: $u['username'], 'mods_off'=>$off,
                'papel'=>$papel, 'empresas'=>$emp, 'admin_hub'=>$u['role'] === 'admin',
                'nivel_id'=>$nivel && $u['role'] !== 'admin' ? (int)$nivel['id'] : null,
                'nivel'=>$u['role'] === 'admin' ? 'Administrador do Hub' : ($nivel ? $nivel['nome'] : null), 'perms'=>$perms);
@@ -505,7 +510,12 @@ function sgi_permissoes(){
       'excluir'=>'Excluir ocorrência', 'acoes_iniciais'=>'Responsável por ações iniciais', 'consulta'=>'Acesso à consulta',
       'visao_geral'=>'Acesso à visão geral', 'planejamento'=>'Planejamento anual', 'cancelar'=>'Cancelar',
       'alterar_plano'=>'Sempre alterar o plano de ação', 'total'=>'Acesso total ao módulo')),
-  );
+  ) + sgi_mods_perms();
+}
+/* Módulos que o administrador pode ligar e desligar em Configurações. */
+function sgi_modulos_lista(){
+  return array('doc'=>'Documentos', 'ind'=>'Indicadores', 'nc'=>'Não conformidades', 'aud'=>'Auditorias',
+               'cal'=>'Calibração', 'risco'=>'Riscos', 'oport'=>'Oportunidades', 'forn'=>'Fornecedores');
 }
 function sgi_todas_perms(){
   $r = array();
@@ -547,6 +557,8 @@ function sgi_exige_perm($me, $chave, $papel_antigo){
   }
 }
 function sgi_exige_modulo($me, $mod){
+  if(!empty($me['mods_off']) && in_array($mod, $me['mods_off'], true))
+    sgi_erro('O módulo '.(sgi_modulos_lista()[$mod] ?? $mod).' está desligado. O administrador liga em Configurações.');
   if(empty($me['nivel_id']) || sgi_pode($me, $mod.'._modulo')) return;
   sgi_erro('Seu nível de acesso não inclui o módulo '.sgi_permissoes()[$mod]['titulo'].'.');
 }
@@ -555,7 +567,8 @@ function sgi_cfg(SgiDb $db){
   foreach($db->q("SELECT chave, valor FROM sgi_config WHERE chave LIKE 'cfg_%'") as $c) $r[substr($c['chave'], 4)] = $c['valor'];
   return $r + array('nc_validar_plano'=>'0', 'nc_validador'=>'', 'nc_dias_etapas'=>'7', 'nc_obrigar_acoes_iniciais'=>'0',
     'ishikawa'=>'Método|Máquina|Mão de obra|Material|Meio ambiente|Medição', 'doc_revisao'=>'numero',
-    'doc_restricao_obrigatoria'=>'0', 'ind_dias_pendencia'=>'0', 'ind_bsc'=>'0');
+    'doc_restricao_obrigatoria'=>'0', 'ind_dias_pendencia'=>'0', 'ind_bsc'=>'0',
+    'mod_doc'=>'1', 'mod_ind'=>'1', 'mod_nc'=>'1', 'mod_aud'=>'1', 'mod_cal'=>'1', 'mod_risco'=>'1', 'mod_oport'=>'1', 'mod_forn'=>'1');
 }
 
 /* Pessoa que entrou por convite com acesso ao SGI guardado: cria o acesso
@@ -947,7 +960,8 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     $proc = $db->q("SELECT id, nome, ativo FROM sgi_processos ORDER BY ordem, nome");
     return array('eu'=>$me, 'empresas'=>$emp, 'usuarios'=>$usuarios, 'listas'=>$L, 'hoje'=>$hoje,
                  'processos'=>$proc, 'cfg'=>sgi_cfg($db),
-                 'niveis'=>$db->q("SELECT id, nome FROM sgi_niveis ORDER BY ordem, nome"));
+                 'niveis'=>$db->q("SELECT id, nome FROM sgi_niveis ORDER BY ordem, nome"),
+                 'mods'=>sgi_mods_def(), 'modulos'=>sgi_modulos_lista());
   }
 
   if(!$me['papel']) sgi_erro('Você ainda não tem acesso ao SGI. Peça ao gestor do SGI para liberar.');
@@ -1050,7 +1064,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
       'docs'=>array('revisao_vencida'=>$docRevVencida, 'revisao_30'=>$docRev30, 'pendentes'=>$docPend),
       'indicadores'=>$ind, 'por_empresa'=>$porEmpresa,
       'minhas'=>array('acoes'=>$minhasAcoes, 'ocorrencias'=>$minhasOc, 'ciencia'=>$ciencia,
-                      'aprovar'=>$aprovar, 'verificar'=>$verificar));
+                      'aprovar'=>$aprovar, 'verificar'=>$verificar, 'registros'=>sgi_reg_pendencias($db, $me)));
   }
 
   /* ─────────────── OCORRÊNCIAS ─────────────── */
@@ -1744,8 +1758,13 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
     sgi_exige_perm($me, 'geral.empresa', 'gestor');
     $permitidas = array('nc_validar_plano','nc_validador','nc_dias_etapas','nc_obrigar_acoes_iniciais','ishikawa',
                         'doc_revisao','doc_restricao_obrigatoria','ind_dias_pendencia','ind_bsc');
+    foreach(array_keys(sgi_modulos_lista()) as $m) $permitidas[] = 'mod_'.$m;
     foreach((array)($b['cfg'] ?? array()) as $k => $v){
       if(!in_array($k, $permitidas, true)) continue;
+      if(strpos($k, 'mod_') === 0){
+        if(empty($me['admin_hub'])) sgi_erro('Só o administrador do Hub liga ou desliga módulos.');
+        $v = $v === '0' || $v === 0 || $v === false ? '0' : '1';
+      }
       $v = mb_substr(trim((string)$v), 0, 300, 'UTF-8');
       if($k === 'ishikawa' && count(array_filter(explode('|', $v), 'strlen')) !== 6) sgi_erro('O Ishikawa precisa de 6 categorias.');
       if(in_array($k, array('nc_dias_etapas','ind_dias_pendencia'), true)) $v = (string)max(0, min(365, (int)$v));
@@ -1868,6 +1887,7 @@ function sgi_executar(SgiDb $db, $uid, $acao, $b, $arquivos = array()){
   }
 
   }
+  if(strpos($acao, 'reg_') === 0) return sgi_reg_executar($db, $me, $acao, $b, $arquivos);
   sgi_erro('Ação desconhecida: '.$acao);
 }
 
@@ -1961,6 +1981,12 @@ function sgi_arquivo_permitido(SgiDb $db, $uid, $tipo, $id, $modo = 'ver'){
   }
   $a = $db->linha("SELECT * FROM sgi_anexos WHERE id=?", array((int)$id));
   if(!$a) sgi_erro('Arquivo não encontrado.');
+  if($a['ref_tipo'] === 'reg_item'){
+    $i = $db->linha("SELECT reg_id FROM sgi_reg_itens WHERE id=?", array((int)$a['ref_id']));
+    if(!$i) sgi_erro('Arquivo não encontrado.');
+    sgi_reg_carregar($db, $me, $i['reg_id']);
+    return $a;
+  }
   $ocId = $a['ref_id'];
   if($a['ref_tipo'] === 'acao') $ocId = $db->valor("SELECT ocorrencia_id FROM sgi_acoes WHERE id=?", array((int)$a['ref_id']));
   sgi_oc_carregar($db, $me, $ocId);

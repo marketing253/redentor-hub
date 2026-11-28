@@ -449,6 +449,76 @@ confere('ação desconhecida barrada', strpos((string)erro(2, 'xpto'), 'desconhe
 confere('consensador inexistente barrado', erro(2, 'doc_salvar', array('codigo'=>'PO-LIM-003', 'titulo'=>'x', 'consensadores'=>array(999)) + $base) !== null);
 confere('código com aspas barrado', erro(2, 'doc_salvar', array('codigo'=>"PO'1", 'titulo'=>'x') + $base) !== null);
 
+echo "Calibração\n";
+$ins = api(2, 'reg_salvar', array('modulo'=>'cal', 'empresa_id'=>$A, 'titulo'=>'Manômetro de pneus', 'responsavel_id'=>3,
+  'dados'=>array('tag'=>'MAN-01', 'periodicidade'=>'6', 'local'=>'Borracharia')));
+confere('instrumento numerado', strpos($ins['numero'], 'INS-'.date('Y').'-001') === 0);
+confere('periodicidade precisa ser número', erro(2, 'reg_salvar', array('modulo'=>'cal', 'empresa_id'=>$A, 'titulo'=>'X', 'dados'=>array('periodicidade'=>'seis'))) !== null);
+confere('calibração no futuro barrada', erro(2, 'reg_item_salvar', array('reg_id'=>$ins['id'], 'data'=>date('Y-m-d', strtotime('+2 days')), 'dados'=>array('resultado'=>'aprovado'))) !== null);
+api(3, 'reg_item_salvar', array('reg_id'=>$ins['id'], 'data'=>date('Y-m-d', strtotime('-7 months')), 'dados'=>array('resultado'=>'aprovado', 'certificado'=>'C-123')));
+$ri = api(3, 'reg_detalhe', array('id'=>$ins['id']))['registro'];
+confere('vencimento = calibração + periodicidade', $ri['data_ref'] === date('Y-m-d', strtotime(date('Y-m-d', strtotime('-7 months')).' +6 months')) && $ri['situacao'] === 'vencido');
+confere('calibração vencida na pendência do responsável', in_array('Calibrar', array_column(api(3, 'painel')['minhas']['registros'], 'acao'), true));
+api(3, 'reg_item_salvar', array('reg_id'=>$ins['id'], 'data'=>date('Y-m-d'), 'dados'=>array('resultado'=>'reprovado')));
+confere('reprovado muda a situação', api(3, 'reg_detalhe', array('id'=>$ins['id']))['registro']['status'] === 'reprovado');
+confere('outra empresa não vê o instrumento', count(api(5, 'reg_lista', array('modulo'=>'cal'))['itens']) === 0 && erro(5, 'reg_detalhe', array('id'=>$ins['id'])) !== null);
+
+echo "Riscos e oportunidades\n";
+$rs = api(2, 'reg_salvar', array('modulo'=>'risco', 'empresa_id'=>$A, 'titulo'=>'Falta de diesel', 'dados'=>array('probabilidade'=>'3', 'impacto'=>'5', 'origem'=>'Externo')));
+$rr = api(2, 'reg_detalhe', array('id'=>$rs['id']))['registro'];
+confere('nota = probabilidade × impacto', (float)$rr['nota'] === 15.0 && $rr['nivel'] === 'alto');
+confere('escala fora de 1 a 5 barrada', erro(2, 'reg_salvar', array('modulo'=>'risco', 'empresa_id'=>$A, 'titulo'=>'X', 'dados'=>array('probabilidade'=>'7'))) !== null);
+confere('opção inválida barrada', erro(2, 'reg_salvar', array('modulo'=>'risco', 'empresa_id'=>$A, 'titulo'=>'X', 'dados'=>array('origem'=>'Marte'))) !== null);
+api(2, 'reg_item_salvar', array('reg_id'=>$rs['id'], 'dados'=>array('probabilidade'=>'2', 'impacto'=>'2'), 'texto'=>'Contrato com 2º fornecedor'));
+$rr = api(2, 'reg_detalhe', array('id'=>$rs['id']))['registro'];
+confere('reavaliação atualiza a nota e a próxima data', (float)$rr['nota'] === 4.0 && $rr['nivel'] === 'baixo' && $rr['data_ref'] === date('Y-m-d', strtotime('+12 months')));
+confere('fluxo de situação respeitado', erro(2, 'reg_status', array('id'=>$rs['id'], 'para'=>'xpto')) !== null);
+confere('encerrar exige motivo', erro(2, 'reg_status', array('id'=>$rs['id'], 'para'=>'encerrado')) !== null);
+api(2, 'reg_status', array('id'=>$rs['id'], 'para'=>'tratamento'));
+$op = api(2, 'reg_salvar', array('modulo'=>'oport', 'empresa_id'=>$A, 'titulo'=>'Telemetria em toda a frota', 'dados'=>array('probabilidade'=>'4', 'impacto'=>'4')))['id'];
+$opi = api(2, 'reg_item_salvar', array('reg_id'=>$op, 'dados'=>array('probabilidade'=>'4', 'impacto'=>'5')))['id'];
+$oco = api(2, 'reg_abrir_oc', array('item_id'=>$opi));
+confere('oportunidade abre ocorrência de melhoria', $db->valor("SELECT tipo FROM sgi_ocorrencias WHERE id=?", array($oco['id'])) === 'melhoria');
+confere('não abre duas ocorrências do mesmo item', erro(2, 'reg_abrir_oc', array('item_id'=>$opi)) !== null);
+
+echo "Auditorias\n";
+$au = api(2, 'reg_salvar', array('modulo'=>'aud', 'empresa_id'=>$A, 'titulo'=>'Auditoria interna da manutenção', 'responsavel_id'=>2,
+  'data_ref'=>date('Y-m-d', strtotime('-1 day')), 'dados'=>array('tipo'=>'Interna', 'normas'=>'ISO 9001')))['id'];
+confere('auditoria atrasada aparece', api(2, 'reg_detalhe', array('id'=>$au))['registro']['situacao'] === 'vencido');
+confere('constatação só depois de iniciar', erro(2, 'reg_item_salvar', array('reg_id'=>$au, 'texto'=>'x', 'dados'=>array('classe'=>'nc_menor'))) !== null);
+api(2, 'reg_status', array('id'=>$au, 'para'=>'execucao'));
+confere('constatação exige descrição', erro(2, 'reg_item_salvar', array('reg_id'=>$au, 'dados'=>array('classe'=>'nc_menor'))) !== null);
+$ci = api(2, 'reg_item_salvar', array('reg_id'=>$au, 'texto'=>'Torquímetro sem etiqueta de calibração',
+  'dados'=>array('classe'=>'nc_maior', 'requisito'=>'7.1.5', 'evidencia'=>'Box 3')))['id'];
+$nc = api(2, 'reg_abrir_oc', array('item_id'=>$ci));
+$ocA = $db->linha("SELECT tipo, origem, gravidade FROM sgi_ocorrencias WHERE id=?", array($nc['id']));
+confere('NC maior vira RNC grave com origem auditoria', $ocA['tipo'] === 'nc' && $ocA['origem'] === 'Auditoria interna' && $ocA['gravidade'] === 'alta');
+confere('constatação mostra a NC ligada', api(2, 'reg_detalhe', array('id'=>$au))['itens'][0]['oc']['numero'] === $nc['numero']);
+confere('membro antigo não exclui auditoria', erro(3, 'reg_excluir', array('id'=>$au, 'confirmar'=>'x')) !== null);
+
+echo "Fornecedores\n";
+$fo = api(2, 'reg_salvar', array('modulo'=>'forn', 'empresa_id'=>$A, 'titulo'=>'Pneus Sul Ltda', 'dados'=>array('criticidade'=>'Crítico')))['id'];
+confere('nota acima de 10 barrada', erro(2, 'reg_item_salvar', array('reg_id'=>$fo, 'dados'=>array('qualidade'=>'11', 'prazo'=>'8', 'atendimento'=>'8', 'preco'=>'8', 'documentacao'=>'8'))) !== null);
+confere('todas as notas obrigatórias', erro(2, 'reg_item_salvar', array('reg_id'=>$fo, 'dados'=>array('qualidade'=>'8'))) !== null);
+$av = api(2, 'reg_item_salvar', array('reg_id'=>$fo, 'dados'=>array('qualidade'=>'9', 'prazo'=>'6', 'atendimento'=>'8', 'preco'=>'7', 'documentacao'=>'5')));
+$rf = api(2, 'reg_detalhe', array('id'=>$fo))['registro'];
+confere('nota do fornecedor é a média', (float)$av['nota'] === 7.0 && (float)$rf['nota'] === 7.0);
+confere('crítico reavalia em 6 meses', $rf['data_ref'] === date('Y-m-d', strtotime('+6 months')));
+api(2, 'reg_status', array('id'=>$fo, 'para'=>'homologado'));
+confere('bloquear exige motivo', erro(2, 'reg_status', array('id'=>$fo, 'para'=>'bloqueado')) !== null);
+
+echo "Liga/desliga e níveis\n";
+confere('níveis listam os módulos novos', isset(api(2, 'niveis_lista')['catalogo']['aud']['itens']['abrir_oc']));
+confere('consulta sem o módulo não vê auditorias', strpos((string)erro(10, 'reg_lista', array('modulo'=>'aud')), 'Auditorias') !== false);
+confere('gestor não-admin não desliga módulo', erro(2, 'config_salvar', array('cfg'=>array('mod_aud'=>'0'))) !== null);
+api(1, 'config_salvar', array('cfg'=>array('mod_aud'=>'0')));
+confere('módulo desligado some para todos', strpos((string)erro(2, 'reg_lista', array('modulo'=>'aud')), 'desligado') !== false
+  && in_array('aud', api(2, 'eu')['eu']['mods_off'], true));
+api(1, 'config_salvar', array('cfg'=>array('mod_aud'=>'1')));
+confere('religado volta', erro(2, 'reg_lista', array('modulo'=>'aud')) === null);
+api(1, 'reg_excluir', array('id'=>$au, 'confirmar'=>api(1, 'reg_detalhe', array('id'=>$au))['registro']['numero']));
+confere('excluir com confirmação', !$db->valor("SELECT id FROM sgi_reg WHERE id=?", array($au)));
+
 echo "\n$ok ok, ".count($falhas)." falha(s)\n";
 array_map('unlink', glob(SGI_PASTA.'/*') ?: array()); @unlink(SGI_PASTA.'/.htaccess'); @rmdir(SGI_PASTA);
 exit($falhas ? 1 : 0);

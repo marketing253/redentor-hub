@@ -225,6 +225,29 @@ html[data-tema="escuro"] .parada.gargalo b{color:var(--info)}
 .acx-tab tr:last-child td{border-bottom:none}
 .cons-lista{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 
+/* Módulos novos: matriz probabilidade × impacto e níveis */
+.matriz{display:grid;grid-template-columns:28px repeat(5,minmax(0,1fr));gap:4px;max-width:520px}
+.matriz .mz{aspect-ratio:1.6;border-radius:6px;display:flex;align-items:center;justify-content:center;font:500 15px var(--mono);color:var(--txt);cursor:pointer;border:1px solid transparent}
+.matriz .mz.v0{cursor:default;color:var(--txt3);font-weight:400}
+.matriz .mz:not(.v0):hover{border-color:var(--txt3)}
+.matriz .mz.on{border-color:var(--azul);box-shadow:0 0 0 2px var(--info-bg)}
+.matriz .eixo{font-size:11px;color:var(--txt3);display:flex;align-items:center;justify-content:center}
+.mz.baixo{background:#e6f2ea} .mz.medio{background:#fbf3dc} .mz.alto{background:#fbe5d6} .mz.critico{background:#f7d7d7}
+html[data-tema="escuro"] .mz.baixo{background:#16a34a26} html[data-tema="escuro"] .mz.medio{background:#e0b34a26}
+html[data-tema="escuro"] .mz.alto{background:#ea580c2e} html[data-tema="escuro"] .mz.critico{background:#dc262633}
+.matriz-leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--txt2);margin-top:8px}
+.matriz-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.nv-baixo{background:#e6f2ea;color:#166534} .nv-medio{background:#fbf3dc;color:#854d0e} .nv-alto{background:#fbe5d6;color:#9a3412} .nv-critico{background:#f7d7d7;color:#991b1b}
+html[data-tema="escuro"] .nv-baixo,html[data-tema="escuro"] .nv-medio,html[data-tema="escuro"] .nv-alto,html[data-tema="escuro"] .nv-critico{color:var(--txt)}
+.mods-cfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.mods-cfg label{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--borda2);border-radius:8px;font-weight:500;cursor:pointer}
+.mods-cfg label.off{color:var(--txt3)}
+.reg-it{border-top:1px solid var(--borda);padding:12px 0}
+.reg-it:first-child{border-top:none;padding-top:0}
+.reg-it .l1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.reg-it dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;margin:6px 0 0;font-size:13px}
+.reg-it dt{color:var(--txt3)} .reg-it dd{margin:0}
+
 /* Gaveta de detalhe */
 /* Detalhe (NC, documento, indicador) numa janela no centro da tela,
    com o fundo escurecido; no celular ocupa a tela inteira. */
@@ -665,10 +688,20 @@ var ABAS = [
   {k:'acoes', t:'Plano de ação', st:'Ações corretivas e de melhoria por prazo', ic:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'},
   {k:'documentos', t:'Documentos', st:'Lista mestra, revisões e ciência de leitura', ic:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'},
   {k:'indicadores', t:'Indicadores', st:'Metas e resultados mês a mês', ic:'<path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/>'},
+  {k:'reg_aud', t:'Auditorias', st:'Programa de auditorias, constatações e NC abertas a partir delas', ic:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>'},
+  {k:'aud_inicio', t:'Minhas pendências', st:'O que depende de você em auditorias', solo:true, ic:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>'},
+  {k:'reg_cal', t:'Calibração', st:'Instrumentos de medição, calibrações e vencimentos', ic:'<circle cx="12" cy="13" r="8"/><path d="M12 13l3-3M12 5V3M9 3h6"/>'},
+  {k:'cal_inicio', t:'Minhas pendências', st:'O que depende de você em calibração', solo:true, ic:'<circle cx="12" cy="13" r="8"/><path d="M12 13l3-3M12 5V3M9 3h6"/>'},
+  {k:'reg_risco', t:'Riscos', st:'Riscos por processo, matriz e tratamento', ic:'<path d="M12 3 2 21h20z"/><path d="M12 10v4M12 17h.01"/>'},
+  {k:'risco_inicio', t:'Minhas pendências', st:'O que depende de você em riscos', solo:true, ic:'<path d="M12 3 2 21h20z"/><path d="M12 10v4M12 17h.01"/>'},
+  {k:'reg_oport', t:'Oportunidades', st:'Oportunidades, benefício × viabilidade e implantação', ic:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>'},
+  {k:'oport_inicio', t:'Minhas pendências', st:'O que depende de você em oportunidades', solo:true, ic:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/>'},
+  {k:'reg_forn', t:'Fornecedores', st:'Qualificação, avaliação e bloqueio', ic:'<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'},
+  {k:'forn_inicio', t:'Minhas pendências', st:'O que depende de você em fornecedores', solo:true, ic:'<path d="M3 7h11v10H3zM14 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'},
   {k:'config', t:'Configurações', st:'Empresas, acessos e indicadores', gestor:true, ic:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'}
 ];
 function desenharAbas(){
-  var modAba = {ocorrencias:'nc._modulo', acoes:'nc._modulo', documentos:'doc._modulo', indicadores:'ind._modulo'};
+  var modAba = {ocorrencias:'nc._modulo', acoes:'nc._modulo', documentos:'doc._modulo', indicadores:'ind._modulo', reg_aud:'aud._modulo', reg_cal:'cal._modulo', reg_risco:'risco._modulo', reg_oport:'oport._modulo', reg_forn:'forn._modulo'};
   var vePainel = pode('geral.empresa') || pode('geral.usuarios') || pode('geral.niveis') || pode('geral.processos') || S.eu.papel === 'gestor';
   if(SOLO) desenharModulos(vePainel);
   $('abas').innerHTML = ABAS.filter(function(a){ return !a.solo && (a.gestor ? vePainel : true) && (!modAba[a.k] || pode(modAba[a.k])); }).map(function(a){
@@ -693,6 +726,8 @@ function irPara(aba){
     window.scrollTo(0, 0);
   }
   try { sessionStorage.setItem('sgi_aba', aba); } catch(e){}
+  if(/^reg_/.test(aba)){ telaReg(aba.slice(4)); return; }
+  if(/^(aud|cal|risco|oport|forn)_inicio$/.test(aba)){ telaPendencias(aba.split('_')[0]); return; }
   ({painel:telaPainel, nc_inicio:function(){ telaPendencias('nc'); }, doc_inicio:function(){ telaPendencias('doc'); }, ocorrencias:telaOcorrencias, acoes:telaAcoes, documentos:telaDocumentos,
     indicadores:telaIndicadores, config:telaConfig})[aba]();
 }
@@ -704,9 +739,15 @@ var MODULOS = [
   {k:'nc', t:'Não conformidades', perm:'nc._modulo', abas:[['nc_inicio','Início'],['ocorrencias','Consultas'],['acoes','Plano de ação']]},
   {k:'doc', t:'Documentos', perm:'doc._modulo', abas:[['doc_inicio','Início'],['documentos','Consultas']]},
   {k:'ind', t:'Indicadores', perm:'ind._modulo', abas:[['indicadores','Indicadores']]},
+  {k:'aud', t:'Auditorias', perm:'aud._modulo', abas:[['aud_inicio','Início'],['reg_aud','Consultas']]},
+  {k:'cal', t:'Calibração', perm:'cal._modulo', abas:[['cal_inicio','Início'],['reg_cal','Consultas']]},
+  {k:'risco', t:'Riscos', perm:'risco._modulo', abas:[['risco_inicio','Início'],['reg_risco','Consultas']]},
+  {k:'oport', t:'Oportunidades', perm:'oport._modulo', abas:[['oport_inicio','Início'],['reg_oport','Consultas']]},
+  {k:'forn', t:'Fornecedores', perm:'forn._modulo', abas:[['forn_inicio','Início'],['reg_forn','Consultas']]},
   {k:'cfg', t:'Configurações', gestor:true, abas:[['config','Configurações']]}
 ];
 MODULOS.forEach(function(m){ m.ic = icAba(m.k === 'geral' ? 'painel' : m.k === 'nc' ? 'ocorrencias' : m.abas[m.abas.length > 1 ? 1 : 0][0]); });
+var MOD_NOVOS = ['aud','cal','risco','oport','forn'];
 function icAba(k){ var a = ABAS.filter(function(x){ return x.k === k; })[0]; return a ? a.ic : ''; }
 function moduloDe(aba){ return MODULOS.filter(function(m){ return m.abas.some(function(x){ return x[0] === aba; }); })[0] || MODULOS[0]; }
 function desenharModulos(vePainel){
@@ -728,6 +769,9 @@ function desenharAcaoFaixa(md){
   var h = '';
   if((md.k === 'nc' || md.k === 'geral') && pode('nc.nova') && pode('nc._modulo')) h = '<button class="btn ouro" id="fxNova">+ Nova ocorrência</button>';
   if(md.k === 'doc' && nivel() >= 2) h = '<button class="btn ouro" id="fxNovoDoc">+ Novo documento</button>';
+  if(MOD_NOVOS.indexOf(md.k) >= 0 && podeReg(md.k, 'cadastrar') && S.mods[md.k])
+    h = '<button class="btn ouro" id="fxNovoReg">+ '+(md.k === 'aud' ? 'Nova auditoria' : md.k === 'oport' ? 'Nova oportunidade' : 'Novo '+S.mods[md.k].singular)+'</button>';
+  if(h.indexOf('fxNovoReg') >= 0) setTimeout(function(){ if($('fxNovoReg')) $('fxNovoReg').onclick = function(){ formReg(md.k, null); }; }, 0);
   $('faixaAcao').innerHTML = h;
   if($('fxNova')) $('fxNova').onclick = function(){ novaOcorrencia(); };
   if($('fxNovoDoc')) $('fxNovoDoc').onclick = function(){ formDoc({revisao_meses:12}); };
@@ -750,6 +794,8 @@ function telaPendencias(mod){
       m.verificar.forEach(function(o){ h += pend('check', 'Verificar eficácia · '+o.numero, o.titulo, '', "abrirOc("+o.id+")"); });
       m.ocorrencias.forEach(function(o){ h += pend('flag', o.numero+' · '+o.titulo, 'Você é o responsável · '+rotStatus(o), o.prazo, "abrirOc("+o.id+")"); });
       m.acoes.forEach(function(a){ h += pend('wrench', a.descricao, a.numero+' · '+a.titulo, a.prazo, "abrirOc("+a.ocorrencia_id+")"); });
+    } else if(MOD_NOVOS.indexOf(mod) >= 0){
+      (m.registros || []).filter(function(x){ return x.modulo === mod; }).forEach(function(x){ h += pend('check', x.acao+' · '+x.numero, x.titulo, x.prazo, "abrirReg("+x.id+")"); });
     } else {
       m.aprovar.forEach(function(d){ h += pend('file', d.acao+' · '+d.codigo+(d.versao ? ' rev. '+d.versao : ''), d.titulo, d.prazo, "abrirDoc("+d.id+")"); });
       m.ciencia.forEach(function(d){ h += pend('eye', 'Ler e dar ciência: '+d.codigo, d.titulo+' · rev. '+d.versao_vigente, '', "abrirDoc("+d.id+")"); });
@@ -769,7 +815,7 @@ function iniciar(){
   tema();
   api('eu').then(function(r){
     S.eu = r.eu; S.empresas = r.empresas; S.usuarios = r.usuarios; S.L = r.listas; S.hoje = r.hoje;
-    S.processos = r.processos || []; S.cfg = r.cfg || {}; S.niveis = r.niveis || []; aplicarCfg();
+    S.processos = r.processos || []; S.cfg = r.cfg || {}; S.niveis = r.niveis || []; S.mods = r.mods || {}; S.modulos = r.modulos || {}; aplicarCfg();
     if(SOLO){ $('quemPp').textContent = S.eu.nivel || {gestor:'Gestor do SGI', membro:'Membro', leitor:'Consulta'}[S.eu.papel] || 'Sem acesso'; $('usuPp').textContent = $('quemPp').textContent; }
     $('btnNovo').style.display = pode('nc.nova') && pode('nc._modulo') ? '' : 'none';
     if(!S.eu.papel){
@@ -794,7 +840,7 @@ function iniciar(){
     $('topo').style.display = '';
     var aba = 'painel'; try { aba = sessionStorage.getItem('sgi_aba') || 'painel'; } catch(e){}
     if(aba === 'config' && !(S.eu.papel === 'gestor' || pode('geral.usuarios') || pode('geral.niveis'))) aba = 'painel';
-    var modAba2 = {ocorrencias:'nc._modulo', acoes:'nc._modulo', documentos:'doc._modulo', indicadores:'ind._modulo'};
+    var modAba2 = {ocorrencias:'nc._modulo', acoes:'nc._modulo', documentos:'doc._modulo', indicadores:'ind._modulo', reg_aud:'aud._modulo', reg_cal:'cal._modulo', reg_risco:'risco._modulo', reg_oport:'oport._modulo', reg_forn:'forn._modulo'};
     if(modAba2[aba] && !pode(modAba2[aba])) aba = 'painel';
     irPara(aba);
   }).catch(function(e){
@@ -827,6 +873,7 @@ function telaPainel(){
     m.acoes.forEach(function(a){ itens += pend('wrench', a.descricao, a.numero+' · '+a.titulo, a.prazo, "abrirOc("+a.ocorrencia_id+")"); });
     m.ocorrencias.forEach(function(o){ itens += pend('flag', o.numero+' · '+o.titulo, 'Você é o responsável · '+rotStatus(o), o.prazo, "abrirOc("+o.id+")"); });
     m.ciencia.forEach(function(d){ itens += pend('eye', 'Ler e dar ciência: '+d.codigo, d.titulo+' · rev. '+d.versao_vigente, '', "abrirDoc("+d.id+")"); });
+    (m.registros || []).forEach(function(x){ itens += pend('check', x.acao+' · '+x.numero, x.titulo, x.prazo, "abrirReg("+x.id+")"); });
 
     var fases = ['aberta','analise','acao','verificacao'], maxF = 1;
     fases.forEach(function(f){ maxF = Math.max(maxF, p.nc_por_status[f] || 0); });
@@ -1656,6 +1703,8 @@ function telaConfig(){
     (S.eu.admin_hub ? '<h4 class="cf-sub" style="margin-top:24px">Convites</h4><div id="cfConvites" class="mudo peq">Carregando…</div>' : '')+'</div>'+
     '<div class="cartao"><h3>Processos <small>clique em um processo para desativar ou reativar</small></h3><div id="cfProc"></div>'+
       '<div style="display:flex;gap:8px;margin-top:12px;max-width:420px"><input type="text" id="cfProcNome" maxlength="80" placeholder="Novo processo"><button class="btn sm pri" id="cfProcAdd">Adicionar</button></div></div>'+
+    '<div class="cartao"><h3>Módulos do sistema <small>'+(S.eu.admin_hub ? 'desligado, o módulo some para todos' : 'só o administrador do Hub muda')+'</small></h3><div id="cfLiga"></div>'+
+      '<p class="mudo peq" style="margin:12px 0 0">Ligado, o módulo aparece para quem tem o módulo marcado no nível de acesso.</p></div>'+
     '<div class="cartao"><h3>Configuração dos módulos</h3><div id="cfMod"></div></div>'+
     '<div class="cartao"><h3>Indicadores</h3><div id="cfInd"></div><button class="btn sm pri" id="cfNovoInd" style="margin-top:10px">+ Indicador</button></div>'+
     '<div class="cartao"><h3>Avisos automáticos (n8n)</h3><div class="peq texto">O endereço abaixo devolve, por pessoa, as ações vencidas e as que vencem em 3 dias, com o telefone cadastrado no Hub. Crie um fluxo no n8n que chame este endereço todo dia às 7h e envie a mensagem pelo WhatsApp.\n\n'+
@@ -1666,7 +1715,7 @@ function telaConfig(){
   if($('cfConvites')) desenharConvites();
   $('cfProcAdd').onclick = function(){ var nm = val('cfProcNome'); if(!nm) return;
     executar(this, api('processo_salvar', {nome:nm}), function(r){ S.processos.push({id:r.id, nome:nm, ativo:1}); $('cfProcNome').value = ''; desenharProcessos(); }); };
-  desenharProcessos(); formConfigModulos();
+  desenharProcessos(); formConfigModulos(); desenharLiga();
   S.catalogoPerms = null; desenharNiveis();
   $('cfImportar').onclick = telaImportar;
   $('cfNovoInd').onclick = function(){ editarIndicador({sentido:'maior', casas:1, ativo:1}); };
@@ -1867,6 +1916,208 @@ function desenharProcessos(){
   });
 }
 
+/* ═════════ Liga/desliga de módulos ═════════ */
+function desenharLiga(){
+  var c = S.cfg || {}, adm = !!S.eu.admin_hub;
+  $('cfLiga').innerHTML = '<div class="mods-cfg">'+Object.keys(S.modulos || {}).map(function(k){
+    var on = c['mod_'+k] !== '0';
+    return '<label class="'+(on ? '' : 'off')+'"><input type="checkbox" class="ligaMod" value="'+k+'"'+(on ? ' checked' : '')+(adm ? '' : ' disabled')+'> '+esc(S.modulos[k])+'<span class="mudo peq" style="margin-left:auto">'+(on ? 'ligado' : 'desligado')+'</span></label>';
+  }).join('')+'</div>';
+  if(!adm) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.ligaMod'), function(x){
+    x.onchange = function(){
+      var cfg = {}; cfg['mod_'+x.value] = x.checked ? '1' : '0';
+      api('config_salvar', {cfg:cfg}).then(function(r){
+        S.cfg = r.cfg; return api('eu');
+      }).then(function(r){ S.eu = r.eu; desenharLiga(); desenharAbas(); avisar(S.modulos[x.value]+(x.checked ? ' ligado.' : ' desligado.')); })
+        .catch(function(e){ x.checked = !x.checked; avisar(e.message, true); });
+    };
+  });
+}
+
+/* ═════════ Módulos novos: auditorias, calibração, riscos, oportunidades, fornecedores ═════════ */
+function podeReg(mod, item){
+  if(!pode(mod+'._modulo') && S.eu.nivel_id) return false;
+  if(S.eu.nivel_id) return pode(mod+'.'+item);
+  return item === 'excluir' ? S.eu.papel === 'gestor' : nivel() >= 2;
+}
+var STATUS_COR = {planejada:'aberta', execucao:'acao', concluida:'concluida', cancelada:'cancelada', ativo:'concluida', reprovado:'vencida', manutencao:'pendente',
+  inativo:'cancelada', aberto:'aberta', tratamento:'acao', monitorado:'concluida', encerrado:'cancelada', avaliacao:'pendente', homologado:'concluida',
+  restricao:'pendente', bloqueado:'vencida'};
+var NIVEL_ROT = {baixo:'Baixo', medio:'Médio', alto:'Alto', critico:'Crítico'};
+function seloReg(mod, st){ return '<span class="selo s-'+(STATUS_COR[st] || 'rascunho')+'">'+esc(S.mods[mod].status[st] || st)+'</span>'; }
+function seloSit(s){ return s === 'vencido' ? '<span class="selo s-vencida">vencido</span>' : s === 'vencendo' ? '<span class="selo s-pendente">vence em 30 dias</span>' : ''; }
+function seloNivel(n, nota){ return n ? '<span class="selo nv-'+n+'">'+NIVEL_ROT[n]+(nota != null ? ' · '+numBR(nota, 0) : '')+'</span>' : '<span class="mudo">—</span>'; }
+function opsDe(o){ return Array.isArray(o) ? o.map(function(x){ return [x, x]; }) : paresObj(o); }
+function rotOp(c, v){ if(v == null || v === '') return ''; return Array.isArray(c[2]) ? v : (c[2][v] || v); }
+
+function telaReg(mod){
+  var def = S.mods[mod], c = $('conteudo');
+  S.filtros['reg_'+mod] = S.filtros['reg_'+mod] || {status:'', texto:'', cel:''};
+  var f = S.filtros['reg_'+mod];
+  c.innerHTML = (def.matriz ? '<div class="cartao" id="rgMatriz"></div>' : '')+
+    '<div class="barra"><select id="rgSt">'+opcoes(paresObj(def.status), f.status, 'Todas as situações')+'</select>'+
+    '<input type="search" class="busca" id="rgBusca" placeholder="Buscar número, nome ou texto" value="'+esc(f.texto)+'">'+
+    (!SOLO && podeReg(mod, 'cadastrar') ? '<button class="btn pri" id="rgNovo">+ Novo</button>' : '')+
+    '<button class="btn" id="rgCsv">CSV</button></div><div id="rgLista"><div class="vazio">Carregando…</div></div>';
+  $('rgSt').onchange = function(){ f.status = this.value; telaReg(mod); };
+  var tm; $('rgBusca').oninput = function(){ var v = this.value; clearTimeout(tm); tm = setTimeout(function(){ f.texto = v; carregarReg(mod); }, 300); };
+  if($('rgNovo')) $('rgNovo').onclick = function(){ formReg(mod, null); };
+  carregarReg(mod);
+}
+function carregarReg(mod){
+  var def = S.mods[mod], f = S.filtros['reg_'+mod];
+  api('reg_lista', {modulo:mod, empresa:S.empresa, status:f.status, texto:f.texto}).then(function(r){
+    var itens = r.itens;
+    if(def.matriz) desenharMatriz(mod, itens);
+    if(f.cel) itens = itens.filter(function(x){ return x.dados.probabilidade + 'x' + x.dados.impacto === f.cel; });
+    $('rgCsv').onclick = function(){
+      var cols = ['numero','titulo','situacao','responsavel', def.data_ref].concat(Object.keys(def.campos).map(function(k){ return def.campos[k][0]; }));
+      csv(mod, itens, cols, function(x){ return [x.numero, x.titulo, def.status[x.status], x.responsavel || '', dt(x.data_ref)].concat(Object.keys(def.campos).map(function(k){ return rotOp(def.campos[k], x.dados[k]); })); });
+    };
+    if(!itens.length){ $('rgLista').innerHTML = '<div class="cartao vazio">Nada cadastrado'+(f.status || f.texto || f.cel ? ' com esse filtro' : ' ainda')+'.</div>'; return; }
+    var extra = def.matriz ? '<th>Nível</th>' : def.nota ? '<th>Nota</th>' : '';
+    $('rgLista').innerHTML = '<div class="tab-wrap"><table><thead><tr><th>Número</th><th>'+(mod === 'forn' ? 'Fornecedor' : mod === 'cal' ? 'Instrumento' : 'Título')+'</th><th>Responsável</th><th>'+esc(def.data_ref)+'</th>'+extra+'<th>Situação</th></tr></thead><tbody>'+
+      itens.map(function(x){
+        var sub = (def.lista || []).map(function(k){ return rotOp(def.campos[k], x.dados[k]); }).filter(Boolean).join(' · ');
+        return '<tr class="cl" onclick="abrirReg('+x.id+')"><td class="num"><span class="placa">'+esc(x.numero)+'</span></td>'+
+          '<td><b>'+esc(x.titulo)+'</b>'+(sub || x.processo ? '<div class="mudo peq">'+esc([sub, x.processo].filter(Boolean).join(' · '))+'</div>' : '')+'</td>'+
+          '<td>'+esc(x.responsavel || '—')+'</td><td class="num'+(x.situacao === 'vencido' ? ' venc' : '')+'">'+(dt(x.data_ref) || '—')+'</td>'+
+          (def.matriz ? '<td>'+seloNivel(x.nivel, x.nota)+'</td>' : def.nota ? '<td class="num">'+(x.nota != null ? numBR(x.nota, 1) : '—')+'</td>' : '')+
+          '<td>'+seloReg(mod, x.status)+' '+seloSit(x.situacao)+'</td></tr>';
+      }).join('')+'</tbody></table></div><p class="mudo peq">'+itens.length+' registro(s)</p>';
+  }).catch(function(e){ $('rgLista').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
+}
+/* Matriz 5 × 5: cada casa mostra quantos estão ali; clicar filtra. */
+function desenharMatriz(mod, itens){
+  var def = S.mods[mod], f = S.filtros['reg_'+mod], cont = {};
+  itens.forEach(function(x){ if(x.dados.probabilidade && x.dados.impacto){ var k = x.dados.probabilidade+'x'+x.dados.impacto; cont[k] = (cont[k] || 0) + 1; } });
+  var nv = function(n){ return n >= 17 ? 'critico' : n >= 10 ? 'alto' : n >= 5 ? 'medio' : 'baixo'; };
+  var h = '';
+  for(var p = 5; p >= 1; p--){
+    h += '<div class="eixo">'+p+'</div>';
+    for(var i = 1; i <= 5; i++){
+      var k = p+'x'+i, q = cont[k] || 0;
+      h += '<div class="mz '+nv(p*i)+(q ? '' : ' v0')+(f.cel === k ? ' on' : '')+'" data-k="'+k+'" title="'+esc(def.campos.probabilidade[0])+' '+p+' × '+esc(def.campos.impacto[0])+' '+i+'">'+(q || '·')+'</div>';
+    }
+  }
+  h += '<div></div>'+[1,2,3,4,5].map(function(i){ return '<div class="eixo">'+i+'</div>'; }).join('');
+  $('rgMatriz').innerHTML = '<h3>Matriz <small>'+esc(def.campos.probabilidade[0])+' (linhas) × '+esc(def.campos.impacto[0])+' (colunas)'+(f.cel ? ' · <a href="#" id="mzLimpa">mostrar todos</a>' : '')+'</small></h3>'+
+    '<div class="matriz">'+h+'</div><div class="matriz-leg"><span><i class="nv-baixo"></i>Baixo até 4</span><span><i class="nv-medio"></i>Médio 5 a 9</span><span><i class="nv-alto"></i>Alto 10 a 16</span><span><i class="nv-critico"></i>Crítico 17 a 25</span></div>';
+  Array.prototype.forEach.call($('rgMatriz').querySelectorAll('.mz:not(.v0)'), function(el){
+    el.onclick = function(){ f.cel = f.cel === el.getAttribute('data-k') ? '' : el.getAttribute('data-k'); carregarReg(mod); };
+  });
+  if($('mzLimpa')) $('mzLimpa').onclick = function(e){ e.preventDefault(); f.cel = ''; carregarReg(mod); };
+}
+
+function campoReg(prefixo, k, c, v){
+  var id = prefixo+k, lab = '<span>'+esc(c[0])+'</span>';
+  if(c[1] === 'longo') return '<label class="campo" style="grid-column:1/-1">'+lab+'<textarea id="'+id+'">'+esc(v)+'</textarea></label>';
+  if(c[1] === 'escolha' || c[1] === 'escala') return '<label class="campo">'+lab+'<select id="'+id+'">'+opcoes(opsDe(c[2]), v == null ? '' : v, 'Escolha…')+'</select></label>';
+  if(c[1] === 'numero') return '<label class="campo">'+lab+'<input type="number" step="any" min="0" id="'+id+'" value="'+esc(v)+'"></label>';
+  if(c[1] === 'data') return '<label class="campo">'+lab+'<input type="date" id="'+id+'" value="'+esc(v)+'"></label>';
+  return '<label class="campo">'+lab+'<input type="text" maxlength="300" id="'+id+'" value="'+esc(v)+'"></label>';
+}
+function lerCampos(prefixo, campos){ var o = {}; Object.keys(campos).forEach(function(k){ o[k] = val(prefixo+k); }); return o; }
+
+function formReg(mod, r){
+  var def = S.mods[mod]; r = r || {dados:{}};
+  var emps = minhasEmpresas().map(function(e){ return [e.id, e.nome]; });
+  var procs = (S.processos || []).filter(function(p){ return +p.ativo || p.nome === r.processo; }).map(function(p){ return [p.nome, p.nome]; });
+  var rotTit = mod === 'forn' ? 'Razão social' : mod === 'cal' ? 'Nome do instrumento' : 'Título';
+  modal((r.id ? 'Editar ' : 'Novo: ')+def.singular,
+    '<label class="campo"><span>'+rotTit+'</span><input type="text" id="rgTit" maxlength="200" value="'+esc(r.titulo)+'"></label>'+
+    '<div class="grade"><label class="campo"><span>Empresa</span><select id="rgEmp">'+opcoes(emps, r.empresa_id || S.empresa || (emps[0] || [''])[0])+'</select></label>'+
+    '<label class="campo"><span>'+esc(def.resp)+'</span>'+selPessoa('rgResp', r.responsavel_id, '—')+'</label>'+
+    '<label class="campo"><span>Processo</span><select id="rgProc">'+opcoes(procs, r.processo || '', '—')+'</select></label>'+
+    '<label class="campo"><span>'+esc(def.data_ref)+'</span><input type="date" id="rgData" value="'+esc(r.data_ref)+'"></label>'+
+    Object.keys(def.campos).map(function(k){ return campoReg('rgC_', k, def.campos[k], r.dados[k]); }).join('')+'</div>'+
+    (mod === 'cal' ? '<p class="mudo peq" style="margin:0">Ao registrar uma calibração, a próxima data é calculada pela periodicidade.</p>' : '')+
+    (def.matriz ? '<p class="mudo peq" style="margin:0">Nível = '+esc(def.campos.probabilidade[0].toLowerCase())+' × '+esc(def.campos.impacto[0].toLowerCase())+'. Reavaliar atualiza o nível e marca a próxima revisão para daqui a 12 meses.</p>' : ''),
+    [{t:'Cancelar', fn:fecharModal}, {t:'Salvar', cls:'pri', fn:function(b){
+      executar(b, api('reg_salvar', {id:r.id || 0, modulo:mod, empresa_id:val('rgEmp'), titulo:val('rgTit'), responsavel_id:val('rgResp'),
+        processo:val('rgProc'), data_ref:val('rgData'), dados:lerCampos('rgC_', def.campos)}), function(x){
+          fecharModal(); avisar(x.numero ? 'Cadastrado como '+x.numero+'.' : 'Salvo.'); if(S.aba === 'reg_'+mod) carregarReg(mod); abrirReg(x.id); });
+    }}]);
+  $('modalF').querySelector('.modal').style.maxWidth = '760px';
+}
+
+function abrirReg(id){
+  gavAtual = {tipo:'reg', id:id};
+  $('gavTopo').innerHTML = '<div class="mudo">Carregando…</div>'; $('gavCorpo').innerHTML = ''; abrirGaveta();
+  api('reg_detalhe', {id:id}).then(function(r){ if(gavAtual && gavAtual.id === id) desenharReg(r); })
+    .catch(function(e){ $('gavCorpo').innerHTML = '<div class="erro-caixa">'+esc(e.message)+'</div>'; });
+}
+function desenharReg(res){
+  var r = res.registro, mod = r.modulo, def = S.mods[mod], it = def.item;
+  $('gavTopo').innerHTML = '<div class="tipo">'+esc(def.titulo).toUpperCase()+' · '+esc(empNome(r.empresa_id))+'</div>'+
+    '<span class="placa">'+esc(r.numero)+'</span><h2>'+esc(r.titulo)+'</h2><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">'+
+    seloReg(mod, r.status)+seloSit(r.situacao)+(def.matriz ? seloNivel(r.nivel, r.nota) : '')+(def.nota && r.nota != null ? '<span class="selo s-rascunho">nota '+numBR(r.nota, 1)+'</span>' : '')+'</div>';
+  var h = '', bt = '';
+  if(podeReg(mod, 'status')) (def.fluxo[r.status] || []).forEach(function(s){ bt += '<button class="btn sm" data-para="'+s+'">'+esc(def.status[s])+'</button>'; });
+  if(podeReg(mod, 'cadastrar')) bt += '<button class="btn sm" id="rgEdit">Editar dados</button>';
+  if(podeReg(mod, 'excluir')) bt += '<button class="btn sm perigo" id="rgExc">Excluir</button>';
+  if(bt) h += '<div class="botoes" style="margin-bottom:16px">'+bt+'</div>';
+  h += '<div class="cartao"><h3>Dados</h3><dl class="def"><dt>'+esc(def.resp)+'</dt><dd>'+esc(r.responsavel || '—')+'</dd>'+
+    '<dt>Processo</dt><dd>'+esc(r.processo || '—')+'</dd><dt>'+esc(def.data_ref)+'</dt><dd class="'+(r.situacao === 'vencido' ? 'venc' : '')+'">'+(dt(r.data_ref) || '—')+'</dd>'+
+    Object.keys(def.campos).map(function(k){ var v = rotOp(def.campos[k], r.dados[k]); return v === '' ? '' : '<dt>'+esc(def.campos[k][0])+'</dt><dd style="white-space:pre-wrap">'+esc(v)+'</dd>'; }).join('')+'</dl></div>';
+  h += '<div class="cartao"><h3>'+esc(it.titulo)+' <small>'+res.itens.length+'</small></h3>'+
+    (podeReg(mod, 'itens') ? '<button class="btn sm pri" id="rgItem" style="margin-bottom:12px">'+esc(it.botao)+'</button>' : '')+
+    (res.itens.length ? res.itens.map(function(i){
+      var cls = i.dados.classe ? it.campos.classe[2][i.dados.classe] : '';
+      return '<div class="reg-it"><div class="l1"><b class="num">'+dt(i.data)+'</b>'+(cls ? '<span class="selo s-'+(/^nc/.test(i.dados.classe) ? 'vencida' : i.dados.classe === 'conforme' ? 'concluida' : 'pendente')+'">'+esc(cls)+'</span>' : '')+
+        (i.nota != null ? (def.matriz ? seloNivel(nivelDe(+i.nota), i.nota) : '<span class="selo s-rascunho">nota '+numBR(i.nota, 1)+'</span>') : '')+
+        (i.dados.resultado ? '<span class="selo s-'+(i.dados.resultado === 'aprovado' ? 'concluida' : 'vencida')+'">'+(i.dados.resultado === 'aprovado' ? 'Aprovado' : 'Reprovado')+'</span>' : '')+
+        '<span class="mudo peq" style="margin-left:auto">'+esc(i.usuario)+'</span></div>'+
+        (i.texto ? '<div class="ds" style="white-space:pre-wrap;margin-top:4px">'+esc(i.texto)+'</div>' : '')+
+        '<dl>'+Object.keys(it.campos).filter(function(k){ return k !== 'classe' && k !== 'resultado' && i.dados[k] != null && i.dados[k] !== ''; }).map(function(k){
+          return '<dt>'+esc(it.campos[k][0])+'</dt><dd>'+esc(rotOp(it.campos[k], i.dados[k]))+'</dd>'; }).join('')+'</dl>'+
+        (i.anexos || []).map(function(a){ return '<a class="anexo" target="_blank" rel="noopener" href="'+API+'?action=baixar&tipo=anexo&id='+a.id+'">'+IC('file')+' '+esc(a.nome_original)+' <span class="mudo">'+kb(a.bytes)+'</span></a>'; }).join('')+
+        (i.oc ? '<div class="peq" style="margin-top:6px">Ocorrência <a href="#" onclick="abrirOc('+i.oc_id+');return false"><b>'+esc(i.oc.numero)+'</b></a> · '+esc(S.L.status[i.oc.status] || i.oc.status)+'</div>'
+          : (it.abre_oc && podeReg(mod, 'abrir_oc') && pode('nc.nova') && i.dados.classe !== 'conforme' ? '<button class="btn sm" style="margin-top:6px" data-oc="'+i.id+'">Abrir ocorrência</button>' : ''))+'</div>';
+    }).join('') : '<div class="mudo">Nada registrado ainda.</div>')+'</div>';
+  h += '<div class="cartao"><h3>Histórico</h3><div class="hist">'+res.historico.map(function(x){ return '<div class="h"><b>'+esc(x.usuario)+'</b> <span class="mudo">'+dth(x.em)+'</span><div class="texto">'+esc(x.texto)+'</div></div>'; }).join('')+'</div></div>';
+  $('gavCorpo').innerHTML = h;
+  var depois = function(msg){ return function(){ fecharModal(); if(msg) avisar(msg); abrirReg(r.id); if(S.aba === 'reg_'+mod) carregarReg(mod); }; };
+  Array.prototype.forEach.call($('gavCorpo').querySelectorAll('[data-para]'), function(b){
+    b.onclick = function(){
+      var para = b.getAttribute('data-para'), motivo = ['cancelada','bloqueado','reprovado','inativo','encerrado'].indexOf(para) >= 0;
+      modal(def.status[para], '<label class="campo"><span>'+(motivo ? 'Motivo' : 'Observação (opcional)')+'</span><textarea id="rgObs"></textarea></label>',
+        [{t:'Voltar', fn:fecharModal}, {t:'Confirmar', cls:motivo ? 'perigo' : 'pri', fn:function(bb){ executar(bb, api('reg_status', {id:r.id, para:para, obs:val('rgObs')}), depois('Situação atualizada.')); }}]);
+    };
+  });
+  if($('rgEdit')) $('rgEdit').onclick = function(){ formReg(mod, r); };
+  if($('rgExc')) $('rgExc').onclick = function(){
+    modal('Excluir '+r.numero, '<p style="margin-top:0">Apaga o registro e tudo o que foi lançado nele. Não dá para desfazer.</p><label class="campo"><span>Para confirmar, digite '+esc(r.numero)+'</span><input type="text" id="rgConf" autocomplete="off"></label>',
+      [{t:'Cancelar', fn:fecharModal}, {t:'Excluir', cls:'perigo', fn:function(bb){ executar(bb, api('reg_excluir', {id:r.id, confirmar:val('rgConf')}), function(){ fecharModal(); fecharGaveta(); avisar('Excluído.'); if(S.aba === 'reg_'+mod) carregarReg(mod); }); }}]);
+  };
+  if($('rgItem')) $('rgItem').onclick = function(){ formItemReg(r, depois); };
+  Array.prototype.forEach.call($('gavCorpo').querySelectorAll('[data-oc]'), function(b){
+    b.onclick = function(){ executar(b, api('reg_abrir_oc', {item_id:+b.getAttribute('data-oc')}), function(x){ avisar('Ocorrência '+x.numero+' aberta.'); abrirReg(r.id); }); };
+  });
+}
+function nivelDe(n){ return n >= 17 ? 'critico' : n >= 10 ? 'alto' : n >= 5 ? 'medio' : 'baixo'; }
+function formItemReg(r, depois){
+  var def = S.mods[r.modulo], it = def.item, ini = {};
+  if(def.matriz){ ini.probabilidade = r.dados.probabilidade; ini.impacto = r.dados.impacto; }
+  modal(it.botao+' · '+r.numero,
+    '<div class="grade">'+(it.data ? '<label class="campo"><span>'+esc(it.data)+'</span><input type="date" id="riData" value="'+esc(S.hoje)+'" max="'+esc(S.hoje)+'"></label>' : '')+
+    Object.keys(it.campos).map(function(k){ return campoReg('riC_', k, it.campos[k], ini[k]); }).join('')+'</div>'+
+    (it.notas ? '<p class="mudo peq" style="margin:0 0 12px">Notas de 0 a 10. A nota final é a média: 7 ou mais sugere homologar, de 5 a 7 homologar com restrição, abaixo de 5 bloquear.</p>' : '')+
+    '<label class="campo"><span>'+esc(it.texto)+'</span><textarea id="riTxt"></textarea></label>'+
+    (it.anexo ? '<label class="campo"><span>Certificado (opcional)</span><input type="file" id="riArq" accept=".pdf,.jpg,.jpeg,.png"></label>' : ''),
+    [{t:'Cancelar', fn:fecharModal}, {t:'Salvar', cls:'pri', fn:function(b){
+      var dados = lerCampos('riC_', it.campos), arq = $('riArq') && $('riArq').files[0];
+      var corpo;
+      if(arq){
+        if(arq.size > 25*1048576){ avisar('Arquivo acima de 25 MB.', true); return; }
+        corpo = new FormData(); corpo.append('reg_id', r.id); corpo.append('texto', val('riTxt')); corpo.append('data', val('riData'));
+        Object.keys(dados).forEach(function(k){ corpo.append('dados['+k+']', dados[k]); }); corpo.append('arquivo', arq);
+      } else corpo = {reg_id:r.id, texto:val('riTxt'), data:val('riData'), dados:dados};
+      executar(b, api('reg_item_salvar', corpo), depois('Registrado.'));
+    }}]);
+}
+
 /* ═════════ Configuração dos módulos ═════════ */
 function formConfigModulos(){
   var c = S.cfg || {}, ik = (c.ishikawa || '').split('|');
@@ -1899,6 +2150,7 @@ function aplicarCfg(){
 }
 function pode(k){
   if(!S.eu) return false;
+  if((S.eu.mods_off || []).indexOf(String(k).split('.')[0]) >= 0) return false;
   if(S.eu.admin_hub) return true;
   var p = S.eu.perms || [];
   return p.indexOf(k) >= 0 || (k.indexOf('nc.') === 0 && p.indexOf('nc.total') >= 0);
