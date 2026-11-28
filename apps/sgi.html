@@ -742,7 +742,7 @@ $('usuSair').onclick = function(){ fecharMenus(); $('btnSair').onclick(); };
 /* Minhas pendências de um módulo, com busca. */
 function telaPendencias(mod){
   var c = $('conteudo');
-  c.innerHTML = '<div class="pend-cab"><h2>Minhas pendências</h2><label class="busca-p"><span>Buscar</span><input type="search" id="pdBusca"></label></div>'+
+  c.innerHTML = '<div class="pend-cab"><h2>Minhas pendências</h2><label class="busca-p"><span>Buscar</span><input type="search" id="pdBusca" placeholder="Código, título ou pessoa"></label></div>'+
     '<div class="cartao" id="pdLista"><div class="vazio">Carregando…</div></div>';
   api('painel', {empresa:S.empresa}).then(function(p){
     var m = p.minhas, h = '';
